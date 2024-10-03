@@ -1,0 +1,67 @@
+[tool.poetry]
+name = "obsweatherscale"
+# Keep only Major and Minor version in this configuration,
+# the patch version is calculated when releasing the library
+version = "1.0"
+description = "Python library for ML-based downscaling of surface weather analysis fields, with conditioning on in-situ observations."
+authors = [
+    "Iciar Lloréns Jovar <iciar.llorensjover@meteoswiss.ch>",
+    "Francesco Zanetta <francesco.zanetta@meteoswiss.ch>",
+    ]
+readme = "README.rst"
+include = ["HISTORY.rst"]
+
+[[tool.poetry.source]]
+name = "pypi-mch"
+url = "https://service.meteoswiss.ch/nexus/repository/python-all/simple"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "pypi-mch-publish"
+# only hub entrypoint can be used for publishing libraries (accessible from CI/CD server)
+url = "https://hub.meteoswiss.ch/nexus/repository/python-mch/"
+priority = "explicit"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.10.0"
+pydata-sphinx-theme = "^0.15.2"
+pylint = "^3.0.2"
+pytest = "^8.2.1"
+pytest-cov = "^5.0.0"
+sphinx = "^8.0.2"
+sphinx-autoapi = "^3.1.0"
+yapf = "^0.40.2"
+
+[tool.yapf]
+based_on_style = "pep8"
+column_limit = "120"
+
+[tool.pylint.master]
+disable = [
+    'C0114', # missing-module-docstring
+    'C0115', # missing-class-docstring
+    'C0116', # missing-function-docstring
+    'W0511', # fix me or to-do comments are already covered by SonarQube
+]
+
+[tool.pylint.format]
+# Maximum number of lines in a module.
+max-line-length = 120
+
+[tool.pylint.design]
+# Minimum number of public methods for a class (see R0903).
+min-public-methods = 0
+
+[tool.mypy]
+ignore_missing_imports = true
+disallow_untyped_defs = true
+
+[tool.coverage.run]
+omit = ["test/**",  "doc/**"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
