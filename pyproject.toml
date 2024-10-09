@@ -24,6 +24,10 @@ priority = "explicit"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
+torch = "^2.4.1"
+gpytorch = "^1.13"
+xarray = "^2024.9.0"
+zarr = "^2.18.3"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.10.0"
@@ -34,6 +38,7 @@ pytest-cov = "^5.0.0"
 sphinx = "^8.0.2"
 sphinx-autoapi = "^3.1.0"
 yapf = "^0.40.2"
+ipykernel = "^6.29.5"
 
 [tool.yapf]
 based_on_style = "pep8"
