@@ -5,7 +5,7 @@ name = "obsweatherscale"
 version = "1.0"
 description = "Python library for ML-based downscaling of surface weather analysis fields, with conditioning on in-situ observations."
 authors = [
-    "Iciar Lloréns Jovar <iciar.llorensjover@meteoswiss.ch>",
+    "Icíar Lloréns Jovar <iciar.llorensjover@meteoswiss.ch>",
     "Francesco Zanetta <francesco.zanetta@meteoswiss.ch>",
     ]
 readme = "README.rst"

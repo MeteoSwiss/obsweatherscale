@@ -50,7 +50,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'obsweatherscale'
 copyright = u"2024, MeteoSwiss"
-author = u"Francesco Zanetta and Iciar Lloréns Jovar"
+author = u"Francesco Zanetta and Icíar Lloréns Jovar"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -126,7 +126,8 @@ latex_elements = {
 latex_documents = [
     (master_doc, 'obsweatherscale.tex',
      u'obsweatherscale Documentation',
-     u'Francesco Zanetta', 'manual'),
+     u'Francesco Zanetta',
+     u'Icíar Lloréns Jover', 'manual'),
 ]
 
 # -- Options for manual page output ------------------------------------
