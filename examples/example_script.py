@@ -208,7 +208,11 @@ def main(config):
     model = GPModel(mean_function, kernel, train_x, train_y, likelihood)
 
     # Initialize optimizer and loss
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+    optimizer = torch.optim.Adam([
+        {'params': model.parameters()},
+        {'params': likelihood.parameters()},
+        ],
+        lr=config.learning_rate)
     mll = ExactMarginalLogLikelihood(likelihood, model)
 
     # Train
@@ -261,8 +265,8 @@ if __name__ == "__main__":
     parser.add_argument('--targets', type=list, default=["weather:wind_speed_of_gust"])
     parser.add_argument('--random_masking', type=bool, default=True)
     parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--n_iter', type=int, default=30)
-    parser.add_argument('--learning_rate', type=float, default=0.1)
+    parser.add_argument('--n_iter', type=int, default=500)
+    parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--use_gpu', type=bool, default=True)
     parser.add_argument('--seed', type=int, default=123)
     parser.add_argument('--prec_size', type=int, default=100)
