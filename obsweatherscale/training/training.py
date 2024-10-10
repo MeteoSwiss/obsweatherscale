@@ -14,7 +14,8 @@ def train_model(
         dataset_val_t: Dataset,
         model: torch.nn.Module,
         likelihood,
-        loss_fct,
+        train_loss_fct,
+        val_loss_fct,
         device: torch.device,
         optimizer: torch.optim,
         batch_size: int,
@@ -67,7 +68,7 @@ def train_model(
             with settings.observation_nan_policy(nan_policy):
                 model.set_train_data(inputs=batch_x, targets=batch_y, strict=False)
                 distribution = model(batch_x)
-                loss = -loss_fct(distribution, batch_y).mean()
+                loss = train_loss_fct(distribution, batch_y)
                 train_loss = loss.item()
                 
                 loss.backward()
@@ -86,7 +87,7 @@ def train_model(
                 with settings.observation_nan_policy(nan_policy), settings.fast_pred_var():
                     model.set_train_data(batch_x_c, batch_y_c, strict=False)
                     distribution_val = model(batch_x_t)
-                    val_loss = -loss_fct(distribution_val, batch_y_t).mean().item()
+                    val_loss = val_loss_fct(distribution_val, batch_y_t).mean().item()
             
         ### Logging ###
         # Save model at each iteration
