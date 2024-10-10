@@ -15,6 +15,7 @@ from obsweatherscale.likelihoods import TransformedGaussianLikelihood
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
+from obsweatherscale.training.loss_functions import crps_normal_loss_fct, mll_loss_fct
 from obsweatherscale.training.training import train_model
 from obsweatherscale.transformations import QuantileFittedTransformer, Standardizer, Transformer
 
@@ -214,10 +215,14 @@ def main(config):
         ],
         lr=config.learning_rate)
     mll = ExactMarginalLogLikelihood(likelihood, model)
+    train_loss_fct = mll_loss_fct(mll)
+    val_loss_fct = crps_normal_loss_fct()
 
     # Train
     model, train_progress = train_model(dataset_train, dataset_val_c, dataset_val_t,
-                                        model, likelihood, mll, device, optimizer,
+                                        model, likelihood,
+                                        train_loss_fct, val_loss_fct,
+                                        device, optimizer,
                                         config.batch_size,
                                         output_dir, model_filename, config.n_iter,
                                         random_masking=True, seed=config.seed,
@@ -251,7 +256,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir', type=str,
                         default=Path('/', 'scratch', 'mch', 'illornsj',
                                      'data', 'experiments',
-                                     'spatial_deep_gpytorch',
+                                     'spatial_deep_kernel',
                                      'artifacts'))
     parser.add_argument('--x_train_filename', type=str, default="x_train_replicate.zarr")
     parser.add_argument('--y_train_filename', type=str, default="y_train_replicate.zarr")
