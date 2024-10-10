@@ -1,4 +1,3 @@
-import math
 import torch
 import torch.distributions as dist
 
@@ -24,7 +23,7 @@ def crps_normal(obs: torch.Tensor, mu: torch.Tensor, sigma: torch.Tensor) -> tor
 
     # Compute CRPS
     term1 = (obs - mu) * (2 * cdf_obs - 1)
-    term2 = 2 * sigma * pdf_obs - 1 / torch.sqrt(torch.tensor(3.141592653589793))
+    term2 = 2 * sigma * pdf_obs - 1 / torch.sqrt(torch.tensor(torch.pi))
     crps = term1 + term2
 
     return crps.mean()
@@ -37,7 +36,7 @@ def crps_normal_loss_fct():
 
         mu = torch.where(mask, 0.0, distribution.mean)
         sigma = torch.where(mask,
-                            math.sqrt(1 / (2 * torch.pi)),
+                            1 / torch.sqrt(torch.tensor(torch.pi)),
                             distribution.stddev)
         return crps_normal(obs, mu, sigma)
     return loss_fct
