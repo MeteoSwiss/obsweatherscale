@@ -95,7 +95,7 @@ def train_model(
             likelihood.eval()
             with torch.no_grad():
                 batch_idx_val = sample_batch_idx(
-                    dataset_length,
+                    dataset_val_length,
                     batch_size
                 )
                 batch_x_c, batch_y_c = dataset_val_c[batch_idx_val]
