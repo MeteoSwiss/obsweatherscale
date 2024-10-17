@@ -109,7 +109,10 @@ def train_model(
                         strict=False
                     )
                     distribution_val = model(batch_x_t)
-                    val_loss = val_loss_fct(distribution_val, batch_y_t).mean().item()
+                    val_loss = val_loss_fct(
+                        distribution_val,
+                        batch_y_t
+                    ).item()
             
         ### Logging ###
         # Save model at each iteration
