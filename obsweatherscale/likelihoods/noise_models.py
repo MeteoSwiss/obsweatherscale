@@ -24,11 +24,15 @@ class TransformedNoise(Noise):
         pure_noise_var: torch.Tensor,
         y: torch.Tensor
     ) -> DiagLinearOperator:
-        noise_diag = pure_noise_var * self.transformer.noise_transform(y) ** 2
+        noise_diag = pure_noise_var \
+                     * self.transformer.noise_transform(y) ** 2
         return DiagLinearOperator(noise_diag)
 
 
-class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
+class TransformedHomoskedasticNoise(
+    TransformedNoise,
+    HomoskedasticNoise
+):
     def __init__(
         self,
         transformer: Transformer,
@@ -36,10 +40,12 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
         noise_constraint=None,
         batch_shape=torch.Size()
     ):
-        HomoskedasticNoise.__init__(self,
-                                    noise_prior=noise_prior,
-                                    noise_constraint=noise_constraint,
-                                    batch_shape=batch_shape)
+        HomoskedasticNoise.__init__(
+            self,
+            noise_prior=noise_prior,
+            noise_constraint=noise_constraint,
+            batch_shape=batch_shape
+            )
         TransformedNoise.__init__(self, transformer)
 
     def forward(
@@ -49,13 +55,20 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
         shape: Optional[torch.Size] = None,
         **kwargs: Any
     ) -> DiagLinearOperator:
-        pure_noise_var = super(HomoskedasticNoise, self).forward(*params,
-                                                                 shape=shape,
-                                                                 **kwargs).diag
-        return super(TransformedNoise, self).forward(pure_noise_var, y)
+        pure_noise_var = super(
+            HomoskedasticNoise,
+            self
+        ).forward(*params, shape=shape, **kwargs).diag
+        return super(
+            TransformedNoise,
+            self
+        ).forward(pure_noise_var, y)
 
 
-class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
+class TransformedHeteroskedasticNoise(
+    TransformedNoise,
+    HeteroskedasticNoise
+):
     def __init__(
         self,
         transformer: Transformer,
@@ -63,10 +76,12 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
         noise_indices=None,
         noise_constraint=None
     ):
-        HeteroskedasticNoise.__init__(self,
-                                      noise_model=noise_model,
-                                      noise_indices=noise_indices,
-                                      noise_constraint=noise_constraint)
+        HeteroskedasticNoise.__init__(
+            self,
+            noise_model=noise_model,
+            noise_indices=noise_indices,
+            noise_constraint=noise_constraint
+        )
         TransformedNoise.__init__(self, transformer)
 
     def forward(
@@ -77,14 +92,25 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
         shape: Optional[torch.Size] = None,
         noise: Optional[torch.Tensor] = None,
     ) -> DiagLinearOperator:
-        pure_noise_var = super(HeteroskedasticNoise, self).forward(*params,
-                                                                   batch_shape=batch_shape,
-                                                                   shape=shape,
-                                                                   noise=noise).diag
-        return super(TransformedNoise, self).forward(pure_noise_var, y)
+        pure_noise_var = super(
+            HeteroskedasticNoise,
+            self
+        ).forward(
+            *params,
+            batch_shape=batch_shape,
+            shape=shape,
+            noise=noise
+        ).diag
+        return super(
+            TransformedNoise,
+            self
+        ).forward(pure_noise_var, y)
 
 
-class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
+class TransformedFixedGaussianNoise(
+    TransformedNoise,
+    FixedGaussianNoise
+):
     def __init__(
         self,
         transformer: Transformer,
@@ -110,14 +136,23 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         batch_shape, n = shape
 
         # Get pure noise
-        if noise is not None:  # noise is provided
+        # noise is provided
+        if noise is not None:  
             pure_noise_var = DiagLinearOperator(noise).diag()
-        elif self.noise.numel() == 1:  # self.noise is a scalar, we need to broadcast
+
+        # self.noise is a scalar, we need to broadcast
+        elif self.noise.numel() == 1:  
             noise_diag = self.noise.expand((batch_shape, 1))
-            pure_noise_var = ConstantDiagLinearOperator(noise_diag, diag_shape=n).diag()
-        elif shape[-1] == self.noise.shape[-1]:  # self.noise is same shape as "shape"
+            pure_noise_var = ConstantDiagLinearOperator(
+                noise_diag, diag_shape=n
+            ).diag()
+
+        # self.noise is same shape as "shape"
+        elif shape[-1] == self.noise.shape[-1]:
             pure_noise_var = DiagLinearOperator(self.noise).diag()
-        else:  # no noise provided AND self.noise has wrong shape -> noise is 0
+            
+        # no noise provided AND self.noise has wrong shape: noise is 0
+        else:  
             pure_noise_var = ZeroLinearOperator().diag()
 
         # Transform noise

@@ -7,12 +7,13 @@ def crps_normal(
     sigma: torch.Tensor
 ) -> torch.Tensor:
     """
-    Computes the Continuous Ranked Probability Score (CRPS) for a normal distribution.
+    Computes the Continuous Ranked Probability Score (CRPS)
+    for a normal distribution.
 
     Parameters:
         obs (torch.Tensor): Observed values.
         mu (torch.Tensor): Mean of the normal distribution.
-        sigma (torch.Tensor): Standard deviation of the normal distribution.
+        sigma (torch.Tensor): std of the normal distribution.
 
     Returns:
         torch.Tensor: The CRPS for the normal distribution.
@@ -20,13 +21,14 @@ def crps_normal(
     # Create normal distribution
     normal_dist = dist.Normal(mu, sigma)
 
-    # Compute cumulative distribution function and probability density function
+    # Compute cumul distr function and prob density function
     cdf_obs = normal_dist.cdf(obs)
     pdf_obs = normal_dist.log_prob(obs).exp()
 
     # Compute CRPS
     term1 = (obs - mu) * (2 * cdf_obs - 1)
-    term2 = 2 * sigma * pdf_obs - 1 / torch.sqrt(torch.tensor(torch.pi))
+    term2 = 2 * sigma * pdf_obs \
+            - 1 / torch.sqrt(torch.tensor(torch.pi))
     crps = term1 + term2
 
     return crps.mean()
@@ -38,9 +40,11 @@ def crps_normal_loss_fct():
         obs = torch.where(mask, 0.0, obs)
 
         mu = torch.where(mask, 0.0, distribution.mean)
-        sigma = torch.where(mask,
-                            1 / torch.sqrt(torch.tensor(torch.pi)),
-                            distribution.stddev)
+        sigma = torch.where(
+            mask,
+            1 / torch.sqrt(torch.tensor(torch.pi)),
+            distribution.stddev
+        )
         return crps_normal(obs, mu, sigma)
     return loss_fct
 

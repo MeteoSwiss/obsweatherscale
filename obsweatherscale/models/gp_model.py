@@ -11,7 +11,11 @@ class GPModel(ExactGP):
         train_y: torch.Tensor,
         likelihood
     ):
-        super(GPModel, self).__init__(train_x, train_y, likelihood)
+        super(GPModel, self).__init__(
+            train_x,
+            train_y,
+            likelihood
+        )
         self.mean_module = mean_function
         self.covar_module = kernel
 
