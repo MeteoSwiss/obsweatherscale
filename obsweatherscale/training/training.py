@@ -34,6 +34,8 @@ def train_model(
     nan_policy: str = 'mask',
     prec_size: int = 100,
 ) -> tuple[torch.nn.Module, dict]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     dataset_length = len(dataset_train)
     dataset_val_length = len(dataset_val_c)
     train_progression = {"iter": [],
