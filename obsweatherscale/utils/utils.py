@@ -1,6 +1,5 @@
 import torch
 
-
 class RandomStateContext:
     def __enter__(self):
         self.current_state = torch.random.get_rng_state()
@@ -12,7 +11,7 @@ class RandomStateContext:
 
 
 def set_active_dims(
-        active_dims: list[int] | None = None
+        active_dims: list[int] = None
     ) -> torch.Tensor | slice:
     if active_dims is None:
         return slice(None)

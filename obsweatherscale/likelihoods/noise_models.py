@@ -1,13 +1,15 @@
 from typing import Any, Optional
 
 import torch
-from gpytorch.likelihoods.noise_models import (FixedGaussianNoise, HeteroskedasticNoise,
-                                               HomoskedasticNoise, Noise)
-from linear_operator.operators import (ConstantDiagLinearOperator, DiagLinearOperator,
+from gpytorch.likelihoods.noise_models import (FixedGaussianNoise,
+                                               HeteroskedasticNoise,
+                                               HomoskedasticNoise,
+                                               Noise)
+from linear_operator.operators import (ConstantDiagLinearOperator,
+                                       DiagLinearOperator,
                                        ZeroLinearOperator)
 
 from ..transformations.transformer import Transformer
-
 
 class TransformedNoise(Noise):
     def __init__(
