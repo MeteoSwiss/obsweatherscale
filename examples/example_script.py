@@ -219,14 +219,23 @@ def main(config):
     val_loss_fct = crps_normal_loss_fct()
 
     # Train
-    model, train_progress = train_model(dataset_train, dataset_val_c, dataset_val_t,
-                                        model, likelihood,
-                                        train_loss_fct, val_loss_fct,
-                                        device, optimizer,
-                                        config.batch_size,
-                                        output_dir, model_filename, config.n_iter,
-                                        random_masking=True, seed=config.seed,
-                                        prec_size=config.prec_size)
+    model, train_progress = train_model(
+        dataset_train,
+        dataset_val_c,
+        dataset_val_t,
+        model,
+        likelihood,
+        train_loss_fct=train_loss_fct,
+        val_loss_fct=val_loss_fct,
+        device=device,
+        optimizer=optimizer,
+        batch_size=config.batch_size,
+        output_dir=output_dir,
+        model_filename=model_filename,
+        n_iter=config.n_iter,
+        random_masking=config.random_masking,
+        seed=config.seed,
+        prec_size=config.prec_size)
     
     # Identify and label the best performing model
     best_model_idx = np.argmin(train_progress["val loss"])

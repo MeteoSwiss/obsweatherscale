@@ -1,3 +1,4 @@
+import torch
 from gpytorch.kernels import Kernel, RBFKernel, ScaleKernel
 
 class ScaledRBFKernel(Kernel):
@@ -53,5 +54,11 @@ class ScaledRBFKernel(Kernel):
             self.kernel.outputscale = variance
         self.kernel.raw_outputscale.requires_grad = train_variance
 
-    def forward(self, x1, x2, *params, **kwargs):
+    def forward(
+        self,
+        x1: torch.Tensor,
+        x2: torch.Tensor,
+        *params,
+        **kwargs
+    ) -> torch.Tensor:
         return self.kernel(x1, x2, *params, **kwargs)

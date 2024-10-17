@@ -72,8 +72,11 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         *params: Any,
         **kwargs: Any
     ) -> torch.distributions.Normal:
-        noise = self._shaped_noise_covar(function_samples.mean,
-                                         *params, **kwargs).diagonal(dim1=-1, dim2=-2)
+        noise = self._shaped_noise_covar(
+            function_samples.mean,
+            *params,
+            **kwargs
+        ).diagonal(dim1=-1, dim2=-2)
         return base_distributions.Normal(function_samples, noise.sqrt())
 
     def marginal(

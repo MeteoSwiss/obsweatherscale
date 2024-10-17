@@ -3,7 +3,6 @@ import torch
 from .transformer import Transformer
 from ..constants import A, B, C
 
-
 class QuantileFittedTransformer(Transformer):
     def __init__(
         self,

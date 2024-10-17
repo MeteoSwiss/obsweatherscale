@@ -1,8 +1,11 @@
 import torch
 import torch.distributions as dist
 
-
-def crps_normal(obs: torch.Tensor, mu: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor:
+def crps_normal(
+    obs: torch.Tensor,
+    mu: torch.Tensor,
+    sigma: torch.Tensor
+) -> torch.Tensor:
     """
     Computes the Continuous Ranked Probability Score (CRPS) for a normal distribution.
 

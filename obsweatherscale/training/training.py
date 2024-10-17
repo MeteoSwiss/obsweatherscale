@@ -8,25 +8,32 @@ from torch.utils.data import Dataset
 
 from ..utils.utils import RandomStateContext
 
+def sample_batch_idx(
+    length: int,
+    batch_size: int
+) -> list[int]:
+    return random.sample(range(length), batch_size)
+
+
 def train_model(
-        dataset_train: Dataset,
-        dataset_val_c: Dataset,
-        dataset_val_t: Dataset,
-        model: torch.nn.Module,
-        likelihood,
-        train_loss_fct,
-        val_loss_fct,
-        device: torch.device,
-        optimizer: torch.optim,
-        batch_size: int,
-        output_dir: Path,
-        model_filename: str,
-        n_iter: int,
-        random_masking: bool = True,
-        seed: int = None, 
-        nan_policy: str = 'mask',
-        prec_size: int = 100,
-    ) -> tuple[torch.nn.Module, dict]:
+    dataset_train: Dataset,
+    dataset_val_c: Dataset,
+    dataset_val_t: Dataset,
+    model: torch.nn.Module,
+    likelihood,
+    train_loss_fct,
+    val_loss_fct,
+    device: torch.device,
+    optimizer: torch.optim,
+    batch_size: int,
+    output_dir: Path,
+    model_filename: str,
+    n_iter: int,
+    random_masking: bool = True,
+    seed: int = None, 
+    nan_policy: str = 'mask',
+    prec_size: int = 100,
+) -> tuple[torch.nn.Module, dict]:
     dataset_length = len(dataset_train)
     dataset_val_length = len(dataset_val_c)
     train_progression = {"iter": [],
@@ -47,26 +54,33 @@ def train_model(
         start = time.time()
 
         with settings.max_preconditioner_size(prec_size):
-            ### Training ###
             optimizer.zero_grad()
 
+            ### Training ###
             model.train()
             likelihood.train()
 
-            optimizer.zero_grad()
-
             # Get iter data
-            batch_idx = random.sample(range(dataset_length), batch_size)
+            batch_idx = sample_batch_idx(
+                dataset_length,
+                batch_size
+            )
             batch_x, batch_y = dataset_train[batch_idx]
 
             # Random masking
             if random_masking:
                 with RandomStateContext():
-                    random_mask = torch.bernoulli(torch.ones(mask_shape)*0.5).bool()
-                    batch_y[random_mask.expand_as(batch_y)] = torch.nan
+                    random_mask = torch.bernoulli(
+                        torch.ones(mask_shape)*0.5
+                    ).bool().expand_as(batch_y)
+                    batch_y[random_mask] = torch.nan
 
             with settings.observation_nan_policy(nan_policy):
-                model.set_train_data(inputs=batch_x, targets=batch_y, strict=False)
+                model.set_train_data(
+                    inputs=batch_x,
+                    targets=batch_y,
+                    strict=False
+                )
                 distribution = model(batch_x)
                 loss = train_loss_fct(distribution, batch_y)
                 train_loss = loss.item()
@@ -80,18 +94,29 @@ def train_model(
             model.eval()
             likelihood.eval()
             with torch.no_grad():
-                batch_idx_val = random.sample(range(dataset_val_length), batch_size)
+                batch_idx_val = sample_batch_idx(
+                    dataset_length,
+                    batch_size
+                )
                 batch_x_c, batch_y_c = dataset_val_c[batch_idx_val]
                 batch_x_t, batch_y_t = dataset_val_t[batch_idx_val]
 
-                with settings.observation_nan_policy(nan_policy), settings.fast_pred_var():
-                    model.set_train_data(batch_x_c, batch_y_c, strict=False)
+                with settings.observation_nan_policy(nan_policy), \
+                     settings.fast_pred_var():
+                    model.set_train_data(
+                        batch_x_c,
+                        batch_y_c,
+                        strict=False
+                    )
                     distribution_val = model(batch_x_t)
                     val_loss = val_loss_fct(distribution_val, batch_y_t).mean().item()
             
         ### Logging ###
         # Save model at each iteration
-        torch.save(model.state_dict(), output_dir / f"{model_filename}_iter_{i}")
+        torch.save(
+            model.state_dict(),
+            output_dir / f"{model_filename}_iter_{i}"
+        )
 
         # Save training log
         train_progression["iter"].append(i+1)
