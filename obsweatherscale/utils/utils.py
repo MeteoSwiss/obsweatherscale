@@ -15,4 +15,6 @@ def set_active_dims(
     ) -> torch.Tensor | slice:
     if active_dims is None:
         return slice(None)
-    return torch.tensor(active_dims, requires_grad=False)
+    return torch.tensor(
+        active_dims, requires_grad=False
+    )

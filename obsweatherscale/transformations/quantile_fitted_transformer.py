@@ -39,11 +39,15 @@ class QuantileFittedTransformer(Transformer):
         self,
         data: torch.Tensor
     ) -> torch.Tensor:
-        return ((self.a * self.b * torch.exp(self.b * data)) /
-                ((self.c * torch.exp(self.b * data) + 1) ** 2))
+        return (
+            (self.a * self.b * torch.exp(self.b * data)) /
+            ((self.c * torch.exp(self.b * data) + 1) ** 2)
+        )
     
     def noise_transform(
         self,
         data: torch.Tensor
     ) -> torch.Tensor:
-        return self.transform_derivative(self.inverse_transform(data))
+        return self.transform_derivative(
+            self.inverse_transform(data)
+        )

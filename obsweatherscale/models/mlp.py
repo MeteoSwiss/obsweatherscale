@@ -15,9 +15,13 @@ class MLP(nn.Module):
         dimensions = [d_in] + d_hidden + [d_out]
         layers = []
         for i in range(len(dimensions)-2):
-            layers.append(nn.Linear(dimensions[i], dimensions[i+1]))
+            layers.append(
+                nn.Linear(dimensions[i], dimensions[i+1])
+            )
             layers.append(nn.ReLU())
-        layers.append(nn.Linear(dimensions[-2], dimensions[-1]))
+        layers.append(
+            nn.Linear(dimensions[-2], dimensions[-1])
+        )
         self.mlp = nn.Sequential(*layers)
         self.output_activation_fct = output_activation_fct
 
