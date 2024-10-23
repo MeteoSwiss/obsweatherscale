@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 import xarray as xr
 
-from obsweatherscale.data_io.zarr_utils import open_zarr_file
+from obsweatherscale.data_io import open_zarr_file
 from obsweatherscale.transformations import (QuantileFittedTransformer,
                                              Standardizer,
                                              Transformer)
