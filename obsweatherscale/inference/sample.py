@@ -6,6 +6,7 @@ from torch.distributions import Normal
 
 Distribution = Union[MultivariateNormal, Normal]
 
+
 def sample(
     distribution,
     n_samples: int
@@ -15,6 +16,7 @@ def sample(
             f"Data should be of shape [batch_size, n_points]"
             f" or [batch_size, n_points, n_vars]"
         )
+    
     sample_size = torch.Size((n_samples,))
     samples = distribution.sample(sample_size)
     # Add "variable" dimension to make it robust for multitask

@@ -2,6 +2,7 @@ from pathlib import Path
 
 import xarray as xr
 
+
 def open_zarr_file(
     filename: Path,
     data_key: list[str] | None = None,
@@ -17,7 +18,7 @@ def to_zarr_with_compressor(
         filename: Path,
         compressor, 
         chunk_size: dict = None,
-    ):
+):
     if chunk_size is None:
         chunk_size = dict(data.sizes)
         chunk_size['time'] = 'auto'
