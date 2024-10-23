@@ -133,7 +133,7 @@ class WindDataset(torch.utils.data.Dataset):
         # Create dimensions
         dims = self.dims
         if len(pred.shape) > 3:
-            dims = (self.realization_name,) + dims
+            dims += (self.realization_name,)
         
         # Transform back to DataArray
         pred = xr.DataArray(pred.detach(), self.coords, dims, name=name)
