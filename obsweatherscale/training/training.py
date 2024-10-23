@@ -103,8 +103,7 @@ def train_model(
                 batch_x_c, batch_y_c = dataset_val_c[batch_idx_val]
                 batch_x_t, batch_y_t = dataset_val_t[batch_idx_val]
 
-                with settings.observation_nan_policy(nan_policy), \
-                     settings.fast_pred_var():
+                with settings.observation_nan_policy(nan_policy):
                     model.set_train_data(
                         batch_x_c,
                         batch_y_c,
