@@ -30,7 +30,8 @@ xarray = "^2024.9.0"
 zarr = "^2.18.3"
 matplotlib = "^3.9.2"
 tqdm = "^4.66.5"
-scoringrules = "^0.7.0"
+scoringrules = "0.5.3"
+dask = "^2024.10.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.10.0"
