@@ -50,7 +50,6 @@ def main(config):
         config.y_target_filename,
         config.inputs,
         config.targets,
-        config.y_standardization,
         standardizer,
         y_transformer
     )
@@ -90,7 +89,7 @@ def main(config):
         mean_function, kernel, context_x, context_y, likelihood
     )
     model.load_state_dict(
-        torch.load(model_path, map_location=torch.device('cpu'))
+        torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
     )
 
     ## Evaluate
@@ -201,14 +200,14 @@ if __name__ == "__main__":
         type=str,
         default=Path('/', 'scratch', 'mch', 'illornsj',
                      'data', 'experiments',
-                     'spatial_deep_gpytorch', 'artifacts')
+                     'spatial_deep_kernel', 'artifacts')
     )
     parser.add_argument(
         '--output_dir',
         type=str,
         default=Path('/', 'scratch', 'mch', 'illornsj',
                      'data', 'experiments',
-                     'spatial_deep_gpytorch', 'results')
+                     'spatial_deep_kernel', 'results')
     )
     parser.add_argument(
         '--x_target_filename',
