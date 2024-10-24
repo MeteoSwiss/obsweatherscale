@@ -114,7 +114,7 @@ def main(config):
     best_model_path = config.output_dir / "{}_iter_{}".format(
         model_filename, best_model_idx
     )
-    model.load_state_dict(torch.load(best_model_path))
+    model.load_state_dict(torch.load(best_model_path, weights_only=True))
 
     # Save
     torch.save(
