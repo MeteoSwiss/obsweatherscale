@@ -11,6 +11,7 @@ from linear_operator.operators import (ConstantDiagLinearOperator,
 
 from ..transformations.transformer import Transformer
 
+
 class TransformedNoise(Noise):
     def __init__(
         self,

@@ -1,6 +1,7 @@
 import torch
 from gpytorch.kernels import Kernel, RBFKernel, ScaleKernel
 
+
 class ScaledRBFKernel(Kernel):
     def __init__(
         self,

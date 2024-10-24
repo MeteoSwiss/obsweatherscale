@@ -70,23 +70,29 @@ def main(config):
 
     # Initialize model
     mean_function = NeuralMean(
-        net=MLP(len(MF_INPUTS), [32, 32], 1),
-        active_dims=[INPUTS.index(v) for v in MF_INPUTS]
+        net=MLP(
+            len(MF_INPUTS), [32, 32], 1,
+            active_dims=[INPUTS.index(v) for v in MF_INPUTS]
+        )
     )
+    # optim lengthscale: [0.25992706, 0.1681214, 0.08974447]
     spatial_kernel = ScaledRBFKernel(
         lengthscale=torch.tensor([0.25992706, 0.1681214, 0.08974447]),
         active_dims=[INPUTS.index(v) for v in SPATIAL_INPUTS],
         train_lengthscale=False
-    ) 
+    )
     neural_kernel = NeuralKernel(
-        net=MLP(len(K_INPUTS), [32, 32], 4),
-        kernel=ScaledRBFKernel(),
-        active_dims=[INPUTS.index(v) for v in K_INPUTS]
+        net=MLP(
+            len(K_INPUTS), [32, 32], 4,
+            active_dims=[INPUTS.index(v) for v in K_INPUTS]
+        ),
+        kernel=ScaledRBFKernel()
     )
     kernel = spatial_kernel * neural_kernel
     model = GPModel(
         mean_function, kernel, context_x, context_y, likelihood
     )
+
     model.load_state_dict(
         torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
     )

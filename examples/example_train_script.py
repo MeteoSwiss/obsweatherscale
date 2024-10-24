@@ -60,6 +60,12 @@ def main(config):
     likelihood = TransformedGaussianLikelihood(noise_model)
 
     # Initialize model
+    mean_function = NeuralMean(
+        net=MLP(
+            len(MF_INPUTS), [32, 32], 1,
+            active_dims=[INPUTS.index(v) for v in MF_INPUTS]
+        )
+    )
     # optim lengthscale: [0.25992706, 0.1681214, 0.08974447]
     spatial_kernel = ScaledRBFKernel(
         lengthscale=torch.tensor([0.25992706, 0.1681214, 0.08974447]),
@@ -67,18 +73,15 @@ def main(config):
         train_lengthscale=False
     )
     neural_kernel = NeuralKernel(
-        net=MLP(len(K_INPUTS), [32, 32], 4),
-        kernel=ScaledRBFKernel(),
-        active_dims=[INPUTS.index(v) for v in K_INPUTS]
+        net=MLP(
+            len(K_INPUTS), [32, 32], 4,
+            active_dims=[INPUTS.index(v) for v in K_INPUTS]
+        ),
+        kernel=ScaledRBFKernel()
     )
     kernel = spatial_kernel * neural_kernel
-    mean_function = NeuralMean(
-        net=MLP(len(MF_INPUTS), [32, 32], 1),
-        active_dims=[INPUTS.index(v) for v in MF_INPUTS]
-    )
-
     model = GPModel(mean_function, kernel, train_x, train_y, likelihood)
-
+    
     # Initialize optimizer and loss
     optimizer = torch.optim.Adam([
         {'params': model.parameters()},
@@ -111,6 +114,8 @@ def main(config):
     
     # Identify and label the best performing model
     best_model_idx = np.argmin(train_progress["val loss"])
+    best_val_loss = np.min(train_progress["val loss"])
+    print(f"Best model idx: {best_model_idx}, best val loss: {best_val_loss}")
     best_model_path = config.output_dir / "{}_iter_{}".format(
         model_filename, best_model_idx
     )
