@@ -69,22 +69,21 @@ def main(config):
     likelihood = TransformedGaussianLikelihood(noise_model)
 
     # Initialize model
+    mean_function = NeuralMean(
+        net=MLP(len(MF_INPUTS), [32, 32], 1),
+        active_dims=[INPUTS.index(v) for v in MF_INPUTS]
+    )
     spatial_kernel = ScaledRBFKernel(
         lengthscale=torch.tensor([0.25992706, 0.1681214, 0.08974447]),
         active_dims=[INPUTS.index(v) for v in SPATIAL_INPUTS],
         train_lengthscale=False
-    )
+    ) 
     neural_kernel = NeuralKernel(
         net=MLP(len(K_INPUTS), [32, 32], 4),
         kernel=ScaledRBFKernel(),
         active_dims=[INPUTS.index(v) for v in K_INPUTS]
     )
     kernel = spatial_kernel * neural_kernel
-    mean_function = NeuralMean(
-        net=MLP(len(MF_INPUTS), [32, 32], 1),
-        active_dims=[INPUTS.index(v) for v in MF_INPUTS]
-    )
-
     model = GPModel(
         mean_function, kernel, context_x, context_y, likelihood
     )
