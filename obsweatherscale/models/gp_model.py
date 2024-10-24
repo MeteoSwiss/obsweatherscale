@@ -2,6 +2,7 @@ import torch
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.models import ExactGP
 
+
 class GPModel(ExactGP):
     def __init__(
         self,
