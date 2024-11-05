@@ -3,6 +3,7 @@ import argparse
 import pickle
 from pathlib import Path
 
+import gpytorch.settings as settings
 import torch
 import zarr
 
@@ -75,7 +76,6 @@ def main(config):
             active_dims=[INPUTS.index(v) for v in MF_INPUTS]
         )
     )
-    # optim lengthscale: [0.25992706, 0.1681214, 0.08974447]
     spatial_kernel = ScaledRBFKernel(
         lengthscale=torch.tensor([0.25992706, 0.1681214, 0.08974447]),
         active_dims=[INPUTS.index(v) for v in SPATIAL_INPUTS],
@@ -92,85 +92,76 @@ def main(config):
     model = GPModel(
         mean_function, kernel, context_x, context_y, likelihood
     )
-
     model.load_state_dict(
         torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
     )
 
     ## Evaluate
-    nan_policy = "mask"
-    n_samples = 101
-
     model.to(device)
     likelihood.to(device)
     dataset_context.to(device)
     dataset_target.to(device)
 
-    # Use seed for reproducibility
-    torch.manual_seed(config.seed)
-
-    # Evaluate model on target stations using context stations
-    model.eval()
-    likelihood.eval()
-    
-    context_distr = marginal(
-        predict_posterior(
-            model, likelihood, context_x, context_y, target_x, nan_policy
+    with settings.observation_nan_policy(config.nan_policy):
+         # Evaluate model on target stations using context stations ("context")
+        context_distr = marginal(
+            predict_posterior(
+                model, likelihood, context_x, context_y, target_x
+            )
         )
-    )
-    samples_context = sample(context_distr, n_samples)
 
-    # Evaluate model on target stations w/ target stations ("hyperlocal")
-    hyperloc_distr = marginal(
-        predict_posterior(
-            model, likelihood, target_x, target_y, target_x, nan_policy
+        # Evaluate model on target stations w/ target stations ("hyperlocal")
+        hyperloc_distr = marginal(
+            predict_posterior(
+                model, likelihood, target_x, target_y, target_x
+            )
         )
-    )
-    samples_hyperloc = sample(hyperloc_distr, n_samples)
 
-    # Evaluate prior on target stations
-    prior_distr = marginal(
-        predict_prior(
-            model, likelihood, target_x, target_y, nan_policy
+        # Evaluate prior on target stations
+        prior_distr = marginal(
+            predict_prior(
+                model, likelihood, target_x, target_y
+            )
         )
-    )
-    samples_prior = sample(prior_distr, n_samples)
+
+    samples_context = sample(context_distr, config.n_samples)
+    samples_hyperloc = sample(hyperloc_distr, config.n_samples)
+    samples_prior = sample(prior_distr, config.n_samples)
 
     ## Postprocess - each pred is a tuple (samples, mean, std)
-    wrap_fun = dataset_target.wrap_pred
-    xarray_name = config.targets[0]
-
     pred_context = wrap_and_denormalize(
         samples_context,
         context_distr.mean.unsqueeze(-1),
         context_distr.stddev.unsqueeze(-1),
-        wrap_fun=wrap_fun,
+        wrap_fun=dataset_target.wrap_pred,
         denormalize_fun=y_transformer.inverse_transform,
-        name=xarray_name
+        name=config.targets[0]
     )
     pred_target = wrap_and_denormalize(
         samples_hyperloc,
         hyperloc_distr.mean.unsqueeze(-1),
         hyperloc_distr.stddev.unsqueeze(-1),
-        wrap_fun=wrap_fun,
+        wrap_fun=dataset_target.wrap_pred,
         denormalize_fun=y_transformer.inverse_transform,
-        name=xarray_name
+        name=config.targets[0]
     )
     pred_prior = wrap_and_denormalize(
         samples_prior,
         prior_distr.mean.unsqueeze(-1),
         prior_distr.stddev.unsqueeze(-1),
-        wrap_fun=wrap_fun,
+        wrap_fun=dataset_target.wrap_pred,
         denormalize_fun=y_transformer.inverse_transform,
-        name=xarray_name
+        name=config.targets[0]
     )
 
     ## Save
     compressor = zarr.Blosc(
         cname='zstd', clevel=3, shuffle=zarr.Blosc.SHUFFLE
     )
-    for pred, version in zip((pred_context, pred_target, pred_prior),
-                             ("context", "hyperlocal", "prior")):
+    for pred, version in zip(
+        (pred_context, pred_target, pred_prior),
+        ("context", "hyperlocal", "prior")
+    ):
         dir = output_dir / version
         samples, mean, var = pred
         
@@ -203,16 +194,20 @@ if __name__ == "__main__":
     parser.add_argument(
         '--artifacts_dir',
         type=str,
-        default=Path('/', 'scratch', 'mch', 'illornsj',
-                     'data', 'experiments',
-                     'spatial_deep_kernel', 'artifacts')
+        default=Path(
+            '/', 'scratch', 'mch', 'illornsj',
+            'data', 'experiments',
+            'spatial_deep_kernel', 'artifacts'
+        )
     )
     parser.add_argument(
         '--output_dir',
         type=str,
-        default=Path('/', 'scratch', 'mch', 'illornsj',
-                     'data', 'experiments',
-                     'spatial_deep_kernel', 'results')
+        default=Path(
+            '/', 'scratch', 'mch', 'illornsj',
+            'data', 'experiments',
+            'spatial_deep_kernel', 'results'
+        )
     )
     parser.add_argument(
         '--x_target_filename',
@@ -252,10 +247,9 @@ if __name__ == "__main__":
         '--targets', type=list, default=["weather:wind_speed_of_gust"]
     )
     parser.add_argument('--inputs', type=list, default=INPUTS)
-    parser.add_argument('--batch_size', type=int, default=20)
-    parser.add_argument('--seed', type=int, default=123)
-    parser.add_argument('--gpu', type=list, default=[0])
+    parser.add_argument('--n_samples', type=int, default=101)
     parser.add_argument('--use_gpu', type=bool, default=False)
+    parser.add_argument('--nan_policy', type=str, default='fill')
 
     args, _ = parser.parse_known_args()
 

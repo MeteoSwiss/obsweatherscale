@@ -1,4 +1,3 @@
-import gpytorch.settings as settings
 import torch
 from gpytorch.distributions import MultivariateNormal
 from torch.distributions import Normal
@@ -12,7 +11,7 @@ def predict_posterior(
     context_x: torch.Tensor,
     context_y: torch.Tensor,
     target_x: torch.Tensor,
-    nan_policy: str
+    noise: bool = True
 ) -> MultivariateNormal:
     model.eval()
     likelihood.eval()
@@ -22,8 +21,9 @@ def predict_posterior(
         targets=context_y,
         strict=False
     )
-    with settings.observation_nan_policy(nan_policy):
-        post_distribution = likelihood(model(target_x))
+    post_distribution = model(target_x)
+    if noise:
+        return likelihood(post_distribution)
     return post_distribution
 
 
@@ -32,7 +32,7 @@ def predict_prior(
     likelihood: TransformedGaussianLikelihood,
     target_x: torch.Tensor,
     target_y: torch.Tensor,
-    nan_policy: str
+    noise: bool = True
 ) -> MultivariateNormal:
     model.train()
     likelihood.train()
@@ -42,8 +42,9 @@ def predict_prior(
         targets=target_y,
         strict=False
     )
-    with settings.observation_nan_policy(nan_policy):
-        prior_distribution = likelihood(model(target_x))
+    prior_distribution = model(target_x)
+    if noise:
+        return likelihood(prior_distribution)
     return prior_distribution
 
 
