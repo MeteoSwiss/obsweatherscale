@@ -6,8 +6,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from gpytorch.mlls import ExactMarginalLogLikelihood
-
 
 from examples.example_data_processing import (INPUTS,
                                               K_INPUTS,
@@ -16,7 +14,8 @@ from examples.example_data_processing import (INPUTS,
                                               get_training_data)
 from obsweatherscale.kernels import (NeuralKernel,
                                      ScaledRBFKernel)
-from obsweatherscale.likelihoods import TransformedGaussianLikelihood
+from obsweatherscale.likelihoods import (TransformedGaussianLikelihood,
+                                         ExactMarginalLogLikelihoodFill)
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
@@ -60,6 +59,7 @@ def main(config):
     likelihood = TransformedGaussianLikelihood(noise_model)
 
     # Initialize model
+    torch.manual_seed(config.seed)
     mean_function = NeuralMean(
         net=MLP(
             len(MF_INPUTS), [32, 32], 1,
@@ -72,6 +72,7 @@ def main(config):
         active_dims=[INPUTS.index(v) for v in SPATIAL_INPUTS],
         train_lengthscale=False
     )
+    torch.manual_seed(config.seed)
     neural_kernel = NeuralKernel(
         net=MLP(
             len(K_INPUTS), [32, 32], 4,
@@ -83,12 +84,12 @@ def main(config):
     model = GPModel(mean_function, kernel, train_x, train_y, likelihood)
     
     # Initialize optimizer and loss
-    optimizer = torch.optim.Adam([
-        {'params': model.parameters()},
-        {'params': likelihood.parameters()},
-        ],
-        lr=config.learning_rate)
-    mll = ExactMarginalLogLikelihood(likelihood, model)
+    optimizer = torch.optim.Adam(
+        [{'params': model.parameters()},
+         {'params': likelihood.parameters()}],
+        lr=config.learning_rate
+    )
+    mll = ExactMarginalLogLikelihoodFill(likelihood, model)
     train_loss_fct = mll_loss_fct(mll)
     val_loss_fct = crps_normal_loss_fct()
 
@@ -109,6 +110,7 @@ def main(config):
         n_iter=config.n_iter,
         random_masking=config.random_masking,
         seed=config.seed,
+        nan_policy=config.nan_policy,
         prec_size=config.prec_size
     )
     
@@ -123,7 +125,7 @@ def main(config):
 
     # Save
     torch.save(
-        model.state_dict(), config.output_dir / "best_model"
+        model.state_dict(), output_dir / "best_model"
     )
     with open(
         output_dir / "train_progress.pkl", 'wb'
@@ -211,10 +213,11 @@ if __name__ == "__main__":
     parser.add_argument('--random_masking', type=bool, default=True)
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--n_iter', type=int, default=500)
-    parser.add_argument('--learning_rate', type=float, default=0.001)
+    parser.add_argument('--learning_rate', type=float, default=0.024)
     parser.add_argument('--use_gpu', type=bool, default=True)
     parser.add_argument('--seed', type=int, default=123)
-    parser.add_argument('--prec_size', type=int, default=100)
+    parser.add_argument('--prec_size', type=int, default=1000)
+    parser.add_argument('--nan_policy', type=str, default='fill')
 
     args, _ = parser.parse_known_args()
 

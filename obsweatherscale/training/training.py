@@ -31,7 +31,7 @@ def train_model(
     n_iter: int,
     random_masking: bool = True,
     seed: int = None, 
-    nan_policy: str = 'mask',
+    nan_policy: str = 'fill',
     prec_size: int = 100,
 ) -> tuple[torch.nn.Module, dict]:
     output_dir.mkdir(parents=True, exist_ok=True)
