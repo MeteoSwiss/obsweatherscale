@@ -160,44 +160,47 @@ if __name__ == "__main__":
     parser.add_argument(
         '--data_dir',
         type=str,
-        default=Path('/', 'scratch', 'mch', 'illornsj', 'data', 'cosmo-1e'))
+        default=Path(
+            '/', 'scratch', 'mch', 'illornsj', 'data', 'cosmo-1e'
+        )
+    )
     parser.add_argument(
         '--output_dir',
         type=str,
         default=Path(
-            '/', 'scratch', 'mch', 'illornsj',
-            'data', 'experiments', 'spatial_deep_kernel', 'artifacts'
+            '/', 'scratch', 'mch', 'illornsj', 'data',
+            'experiments', 'spatial_deep_kernel', 'artifacts'
             )
         )
     parser.add_argument(
         '--x_train_filename',
         type=str,
-        default="x_train_replicate.zarr"
+        default="x_train.zarr"
     )
     parser.add_argument(
         '--y_train_filename',
         type=str,
-        default="y_train_replicate.zarr"
+        default="y_train.zarr"
     )
     parser.add_argument(
         '--x_val_c_filename',
         type=str,
-        default="x_val_context_replicate.zarr"
+        default="x_val_context.zarr"
     )
     parser.add_argument(
         '--y_val_c_filename',
         type=str,
-        default="y_val_context_replicate.zarr"
+        default="y_val_context.zarr"
     )
     parser.add_argument(
         '--x_val_t_filename',
         type=str,
-        default="x_val_target_replicate.zarr"
+        default="x_val_target.zarr"
     )
     parser.add_argument(
         '--y_val_t_filename',
         type=str,
-        default="y_val_target_replicate.zarr"
+        default="y_val_target.zarr"
     )
     parser.add_argument(
         '--standardizer_filename', type=str, default="standardizer.pkl"

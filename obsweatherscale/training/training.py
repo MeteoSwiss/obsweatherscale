@@ -31,9 +31,11 @@ def train_model(
 
     dataset_length = len(dataset_train)
     dataset_val_length = len(dataset_val_c)
-    train_progression = {"iter": [],
-                         "train loss": [],
-                         "val loss": []}
+    train_progression = {
+        "iter": [],
+        "train loss": [],
+        "val loss": []
+    }
     mask_shape = (1, *dataset_train.y.shape[1:])
 
     torch.manual_seed(seed)
@@ -82,7 +84,7 @@ def train_model(
                 
                 loss.backward()
                 optimizer.step()
-            
+
             stop_train = time.time()
 
             ### Validation ###
@@ -107,7 +109,7 @@ def train_model(
                         distribution_val,
                         batch_y_t
                     ).item()
-            
+
         ### Logging ###
         # Save model at each iteration
         torch.save(
