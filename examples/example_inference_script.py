@@ -212,22 +212,22 @@ if __name__ == "__main__":
     parser.add_argument(
         '--x_target_filename',
         type=str,
-        default="x_test_target_replicate.zarr"
+        default="x_test_target.zarr"
     )
     parser.add_argument(
         '--x_context_filename',
         type=str,
-        default= "x_test_context_replicate.zarr"
+        default= "x_test_context.zarr"
     )
     parser.add_argument(
         '--y_target_filename',
         type=str,
-        default="y_test_target_replicate.zarr"
+        default="y_test_target.zarr"
     )
     parser.add_argument(
         '--y_context_filename',
         type=str,
-        default="y_test_context_replicate.zarr"
+        default="y_test_context.zarr"
     )
     parser.add_argument(
         '--model_filename', type=str, default="best_model"
