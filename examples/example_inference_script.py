@@ -25,6 +25,7 @@ from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoi
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.transformations import QuantileFittedTransformer
+from obsweatherscale.utils import init_device
 
 
 def main(config):
@@ -59,8 +60,7 @@ def main(config):
     context_y, target_y = context_y.squeeze(-1), target_y.squeeze(-1)
 
     # Initialize device
-    device = torch.device("cuda:0") \
-        if torch.cuda.is_available() and config.use_gpu else torch.device("cpu")
+    device = init_device(config.gpu, config.use_gpu)
 
     # Initialize likelihood
     transformer = QuantileFittedTransformer()
@@ -248,6 +248,7 @@ if __name__ == "__main__":
     )
     parser.add_argument('--inputs', type=list, default=INPUTS)
     parser.add_argument('--n_samples', type=int, default=101)
+    parser.add_argument('--gpu', type=list, default=None)
     parser.add_argument('--use_gpu', type=bool, default=False)
     parser.add_argument('--nan_policy', type=str, default='fill')
 

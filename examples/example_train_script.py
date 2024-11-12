@@ -19,10 +19,10 @@ from obsweatherscale.likelihoods import (TransformedGaussianLikelihood,
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
-from obsweatherscale.training.loss_functions import (crps_normal_loss_fct,
-                                                     mll_loss_fct)
-from obsweatherscale.training.training import train_model
+from obsweatherscale.training import (crps_normal_loss_fct, mll_loss_fct,
+                                      train_model)
 from obsweatherscale.transformations import QuantileFittedTransformer
+from obsweatherscale.utils import init_device
     
 
 def main(config):
@@ -48,8 +48,7 @@ def main(config):
     train_x, train_y = dataset_train.get_dataset()
 
     # Initialize device
-    device = torch.device("cuda:0") \
-        if torch.cuda.is_available() and config.use_gpu else torch.device("cpu")
+    device = init_device(config.gpu, config.use_gpu)
 
     # Initialize likelihood
     transformer = QuantileFittedTransformer()
@@ -214,6 +213,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--n_iter', type=int, default=500)
     parser.add_argument('--learning_rate', type=float, default=0.024)
+    parser.add_argument('--gpu', type=list, default=None)
     parser.add_argument('--use_gpu', type=bool, default=True)
     parser.add_argument('--seed', type=int, default=123)
     parser.add_argument('--prec_size', type=int, default=1000)
