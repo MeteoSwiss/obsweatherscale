@@ -1,4 +1,3 @@
-import random
 import time
 from pathlib import Path
 
@@ -6,13 +5,7 @@ import gpytorch.settings as settings
 import torch
 from torch.utils.data import Dataset
 
-from ..utils.utils import RandomStateContext
-
-def sample_batch_idx(
-    length: int,
-    batch_size: int
-) -> list[int]:
-    return random.sample(range(length), batch_size)
+from ..utils import RandomStateContext, sample_batch_idx
 
 
 def train_model(

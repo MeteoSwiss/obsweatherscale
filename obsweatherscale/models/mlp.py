@@ -3,7 +3,7 @@ from typing import Callable, Optional
 import torch
 import torch.nn as nn
 
-from ..utils.utils import set_active_dims
+from ..utils import set_active_dims
 
 
 class MLP(nn.Module):
