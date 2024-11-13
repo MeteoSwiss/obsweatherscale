@@ -104,3 +104,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Experiments and slurm scripts
+experiments/
+*.sh
+*.err
+*.out
