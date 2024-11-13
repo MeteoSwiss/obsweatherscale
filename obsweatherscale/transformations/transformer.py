@@ -4,13 +4,12 @@ import abc
 class Transformer():
     @abc.abstractmethod
     def __init__(self):
-        super(Transformer, self).__init__()
-        ...
+        pass
 
     @abc.abstractmethod
-    def transform():
-        ...
+    def transform(self, data):
+        pass
 
     @abc.abstractmethod
-    def inverse_transform():
-        ...
+    def inverse_transform(self, data):
+        pass

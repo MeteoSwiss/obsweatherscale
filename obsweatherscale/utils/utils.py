@@ -1,25 +1,37 @@
 import random
+from typing import Optional, Union
 import torch
 
 
 class RandomStateContext:
+    def __init__(self):
+        self.current_state = None
+
     def __enter__(self):
         self.current_state = torch.random.get_rng_state()
         torch.manual_seed(torch.seed())
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         torch.random.set_rng_state(self.current_state)
 
 
+def apply_random_masking(data: torch.Tensor, p: float = 0.5) -> torch.Tensor:
+    mask_shape = (1, *data.shape[1:])
+    with RandomStateContext():
+        random_mask = torch.bernoulli(
+            torch.ones(mask_shape)*p
+        ).bool().expand_as(data)
+        data[random_mask] = torch.nan
+    return data
+
+
 def set_active_dims(
-        active_dims: list[int] = None
+        active_dims: Optional[list[int]] = None
     ) -> torch.Tensor | slice:
     if active_dims is None:
         return slice(None)
-    return torch.tensor(
-        active_dims, requires_grad=False
-    )
+    return torch.tensor(active_dims, requires_grad=False)
 
 
 def sample_batch_idx(
@@ -30,9 +42,9 @@ def sample_batch_idx(
 
 
 def init_device(
-    gpu: list[int] | int= None,
+    gpu: Optional[list[int] | int] = None,
     use_gpu: bool = True
-) -> tuple[torch.nn.Module, torch.device]:
+) -> Union[torch.nn.Module, torch.device]:
     """Initialize device based on cpu/gpu and number of gpu
     Parameters
     ----------

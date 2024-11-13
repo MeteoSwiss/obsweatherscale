@@ -1,33 +1,37 @@
+from typing import Any, Optional
+
 import torch
 from gpytorch.kernels import Kernel, RBFKernel, ScaleKernel
+from gpytorch.priors import Prior
 
 
 class ScaledRBFKernel(Kernel):
     def __init__(
         self,
-        variance=None,
-        lengthscale=None,
-        ard_num_dims=None,
-        batch_shape=None,
-        active_dims=None,
-        lengthscale_prior=None,
-        lengthscale_constraint=None,
-        outputscale_prior=None,
-        outputscale_constraint=None,
+        variance: Optional[torch.Tensor] = None,
+        lengthscale: Optional[torch.Tensor] = None,
+        ard_num_dims: Optional[int] = None,
+        batch_shape: Optional[torch.Size] = None,
+        active_dims: Optional[list[int]] = None,
+        lengthscale_prior: Optional[Prior] = None,
+        lengthscale_constraint: Optional[torch.nn.Module] = None,
+        outputscale_prior: Optional[Prior] = None,
+        outputscale_constraint: Optional[torch.nn.Module] = None,
         train_lengthscale: bool = True,
         train_variance: bool = True,
-        eps=1e-06,
-        **kwargs
-    ):
+        eps: float = 1e-06,
+        **kwargs: Any
+    ) -> None:
         super().__init__()
 
-        if (active_dims is not None
+        if (
+            active_dims is not None
             and lengthscale is not None
             and len(lengthscale) != len(active_dims)
         ):
             raise ValueError(
                 "The length of 'lengthscale' must match"
-                f" the length of 'active_dims'"
+                " the length of 'active_dims'"
             )
 
         if lengthscale is not None:
@@ -36,14 +40,14 @@ class ScaledRBFKernel(Kernel):
         if not train_lengthscale and lengthscale is None:
             raise ValueError(
                 "A lengthscale value must be provided"
-                f" if lengthscale is not trainable"
+                " if lengthscale is not trainable"
             )
 
         if not train_variance and variance is None:
             raise ValueError(
                 "A variance value must be provided "
-                f"if variance is not trainable"
-                )
+                "if variance is not trainable"
+            )
 
         self.rbf_kernel = RBFKernel(
             ard_num_dims=ard_num_dims,
@@ -54,7 +58,7 @@ class ScaledRBFKernel(Kernel):
             eps=eps,
             **kwargs
         )
-        
+
         # Set lengthscale
         if lengthscale is not None:
             self.rbf_kernel.lengthscale = lengthscale
@@ -75,7 +79,7 @@ class ScaledRBFKernel(Kernel):
         self,
         x1: torch.Tensor,
         x2: torch.Tensor,
-        *params,
-        **kwargs
+        *params: Any,
+        **kwargs: Any
     ) -> torch.Tensor:
         return self.kernel(x1, x2, *params, **kwargs)
