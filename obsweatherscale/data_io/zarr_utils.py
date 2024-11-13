@@ -1,11 +1,13 @@
 from pathlib import Path
+from typing import Optional
 
 import xarray as xr
+import zarr
 
 
 def open_zarr_file(
     filename: Path,
-    data_key: list[str] | None = None,
+    data_key: Optional[list[str]] = None,
     time_slice: slice = slice(None)
 ) -> xr.Dataset:
     data = xr.open_zarr(filename)
@@ -14,11 +16,11 @@ def open_zarr_file(
 
 
 def to_zarr_with_compressor(
-        data: xr.Dataset,
-        filename: Path,
-        compressor, 
-        chunk_size: dict = None,
-):
+    data: xr.Dataset,
+    filename: Path,
+    compressor: zarr.Blosc,
+    chunk_size: Optional[dict] = None,
+) -> None:
     if chunk_size is None:
         chunk_size = dict(data.sizes)
         chunk_size['time'] = 'auto'
@@ -31,8 +33,5 @@ def to_zarr_with_compressor(
     chunked_data.to_zarr(
         filename,
         mode='w',
-        encoding={
-            var: {'compressor': compressor}
-            for var in data.variables
-        }
+        encoding={var: {'compressor': compressor} for var in data.variables}
     )

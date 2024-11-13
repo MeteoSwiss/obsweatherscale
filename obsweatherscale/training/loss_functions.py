@@ -1,5 +1,7 @@
 import torch
 import torch.distributions as dist
+from gpytorch import ExactMarginalLogLikelihood
+from gpytorch.distributions import MultivariateNormal
 
 def crps_normal(
     obs: torch.Tensor,
@@ -27,29 +29,32 @@ def crps_normal(
 
     # Compute CRPS
     term1 = (obs - mu) * (2 * cdf_obs - 1)
-    term2 = 2 * sigma * pdf_obs \
-            - 1 / torch.sqrt(torch.tensor(torch.pi))
+    term2 = 2 * sigma * pdf_obs - 1 / torch.sqrt(torch.tensor(torch.pi))
     crps = term1 + term2
 
     return crps.mean()
 
 
 def crps_normal_loss_fct():
-    def loss_fct(distribution, obs):
+    def loss_fct(
+        distribution: MultivariateNormal,
+        obs: torch.Tensor
+    ) -> torch.Tensor:
         mask = torch.isnan(obs)
         obs = torch.where(mask, 0.0, obs)
 
         mu = torch.where(mask, 0.0, distribution.mean)
         sigma = torch.where(
-            mask,
-            1 / torch.sqrt(torch.tensor(torch.pi)),
-            distribution.stddev
+            mask, 1 / torch.sqrt(torch.tensor(torch.pi)), distribution.stddev
         )
         return crps_normal(obs, mu, sigma)
     return loss_fct
 
 
-def mll_loss_fct(mll):
-    def loss_fct(distribution, obs):
+def mll_loss_fct(mll: ExactMarginalLogLikelihood):
+    def loss_fct(
+        distribution: MultivariateNormal,
+        obs: torch.Tensor
+    ) -> torch.Tensor:
         return -mll(distribution, obs).mean()
     return loss_fct

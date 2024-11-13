@@ -7,13 +7,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from examples.example_data_processing import (INPUTS,
-                                              K_INPUTS,
-                                              MF_INPUTS,
+from examples.example_data_processing import (INPUTS, K_INPUTS, MF_INPUTS,
                                               SPATIAL_INPUTS,
                                               get_training_data)
-from obsweatherscale.kernels import (NeuralKernel,
-                                     ScaledRBFKernel)
+from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods import (TransformedGaussianLikelihood,
                                          ExactMarginalLogLikelihoodFill)
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
@@ -23,7 +20,7 @@ from obsweatherscale.training import (crps_normal_loss_fct, mll_loss_fct,
                                       train_model)
 from obsweatherscale.transformations import QuantileFittedTransformer
 from obsweatherscale.utils import init_device
-    
+
 
 def main(config):
     output_dir = config.output_dir
@@ -61,7 +58,7 @@ def main(config):
     torch.manual_seed(config.seed)
     mean_function = NeuralMean(
         net=MLP(
-            len(MF_INPUTS), [32, 32], 1,
+            dimensions=[len(MF_INPUTS), 32, 32, 1],
             active_dims=[INPUTS.index(v) for v in MF_INPUTS]
         )
     )
@@ -74,14 +71,17 @@ def main(config):
     torch.manual_seed(config.seed)
     neural_kernel = NeuralKernel(
         net=MLP(
-            len(K_INPUTS), [32, 32], 4,
+            dimensions=[len(K_INPUTS), 32, 32, 4],
             active_dims=[INPUTS.index(v) for v in K_INPUTS]
         ),
         kernel=ScaledRBFKernel()
     )
     kernel = spatial_kernel * neural_kernel
-    model = GPModel(mean_function, kernel, train_x, train_y, likelihood)
-    
+    model = GPModel(
+        train_x, train_y, likelihood,
+        modules={'mean_module': mean_function, 'covar_module': kernel}
+    )
+
     # Initialize optimizer and loss
     optimizer = torch.optim.Adam(
         [{'params': model.parameters()},
@@ -112,20 +112,18 @@ def main(config):
         nan_policy=config.nan_policy,
         prec_size=config.prec_size
     )
-    
+
     # Identify and label the best performing model
     best_model_idx = np.argmin(train_progress["val loss"])
     best_val_loss = np.min(train_progress["val loss"])
     print(f"Best model idx: {best_model_idx}, best val loss: {best_val_loss}")
-    best_model_path = config.output_dir / "{}_iter_{}".format(
-        model_filename, best_model_idx
+    best_model_filename = f"{model_filename}_iter_{best_model_idx}"
+    model.load_state_dict(
+        torch.load(config.output_dir / best_model_filename, weights_only=True)
     )
-    model.load_state_dict(torch.load(best_model_path, weights_only=True))
 
     # Save
-    torch.save(
-        model.state_dict(), output_dir / "best_model"
-    )
+    torch.save(model.state_dict(), output_dir / "best_model")
     with open(
         output_dir / "train_progress.pkl", 'wb'
     ) as train_progress_path:
@@ -149,10 +147,9 @@ def main(config):
 
     # Free GPU
     torch.cuda.empty_cache()
+
     stop = time.time()
-    print(f"Total time: {stop - start:.3f} s "
-          f"/ {(stop - start)/60:.3f} min"
-    )
+    print(f"Total time: {stop - start:.3f} s / {(stop - start)/60:.3f} min")
 
 
 if __name__ == "__main__":
@@ -160,47 +157,29 @@ if __name__ == "__main__":
     parser.add_argument(
         '--data_dir',
         type=str,
-        default=Path(
-            '/', 'scratch', 'mch', 'illornsj', 'data', 'cosmo-1e'
-        )
+        default=Path('/', 'scratch', 'mch', 'illornsj', 'data', 'cosmo-1e')
     )
     parser.add_argument(
         '--output_dir',
         type=str,
         default=Path(
-            '/', 'scratch', 'mch', 'illornsj', 'data',
-            'experiments', 'spatial_deep_kernel', 'artifacts'
-            )
+            '/', 'scratch', 'mch', 'illornsj', 'data', 'experiments',
+            'spatial_deep_kernel', 'artifacts'
         )
+    )
+    parser.add_argument('--x_train_filename', type=str, default="x_train.zarr")
+    parser.add_argument('--y_train_filename', type=str, default="y_train.zarr")
     parser.add_argument(
-        '--x_train_filename',
-        type=str,
-        default="x_train.zarr"
+        '--x_val_c_filename', type=str, default="x_val_context.zarr"
     )
     parser.add_argument(
-        '--y_train_filename',
-        type=str,
-        default="y_train.zarr"
+        '--y_val_c_filename', type=str, default="y_val_context.zarr"
     )
     parser.add_argument(
-        '--x_val_c_filename',
-        type=str,
-        default="x_val_context.zarr"
+        '--x_val_t_filename', type=str, default="x_val_target.zarr"
     )
     parser.add_argument(
-        '--y_val_c_filename',
-        type=str,
-        default="y_val_context.zarr"
-    )
-    parser.add_argument(
-        '--x_val_t_filename',
-        type=str,
-        default="x_val_target.zarr"
-    )
-    parser.add_argument(
-        '--y_val_t_filename',
-        type=str,
-        default="y_val_target.zarr"
+        '--y_val_t_filename', type=str, default="y_val_target.zarr"
     )
     parser.add_argument(
         '--standardizer_filename', type=str, default="standardizer.pkl"

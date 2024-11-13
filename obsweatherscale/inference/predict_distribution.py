@@ -1,12 +1,13 @@
 import torch
 from gpytorch.distributions import MultivariateNormal
+from gpytorch.models import ExactGP
 from torch.distributions import Normal
 
 from obsweatherscale.likelihoods import TransformedGaussianLikelihood
 
 
 def predict_posterior(
-    model,
+    model: ExactGP,
     likelihood: TransformedGaussianLikelihood,
     context_x: torch.Tensor,
     context_y: torch.Tensor,
@@ -16,19 +17,17 @@ def predict_posterior(
     model.eval()
     likelihood.eval()
 
-    model.set_train_data(
-        inputs=context_x,
-        targets=context_y,
-        strict=False
-    )
+    model.set_train_data(inputs=context_x, targets=context_y, strict=False)
     post_distribution = model(target_x)
+
     if noise:
         return likelihood(post_distribution)
+
     return post_distribution
 
 
 def predict_prior(
-    model,
+    model: ExactGP,
     likelihood: TransformedGaussianLikelihood,
     target_x: torch.Tensor,
     target_y: torch.Tensor,
@@ -37,14 +36,12 @@ def predict_prior(
     model.train()
     likelihood.train()
 
-    model.set_train_data(
-        inputs=target_x,
-        targets=target_y,
-        strict=False
-    )
+    model.set_train_data(inputs=target_x, targets=target_y, strict=False)
     prior_distribution = model(target_x)
+
     if noise:
         return likelihood(prior_distribution)
+
     return prior_distribution
 
 

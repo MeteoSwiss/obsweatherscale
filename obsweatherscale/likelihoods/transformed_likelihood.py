@@ -1,14 +1,11 @@
 import math
 from typing import Any, Union
 
-import gpytorch.settings as settings
 import torch
-from gpytorch import ExactMarginalLogLikelihood
-from gpytorch.distributions import (base_distributions,
-                                    MultivariateNormal)
+from gpytorch import ExactMarginalLogLikelihood, settings
+from gpytorch.distributions import base_distributions, MultivariateNormal
 from gpytorch.likelihoods import _GaussianLikelihoodBase
-from linear_operator.operators import (LinearOperator,
-                                       MaskedLinearOperator)
+from linear_operator.operators import LinearOperator, MaskedLinearOperator
 
 from .noise_models import TransformedNoise
 
@@ -23,14 +20,16 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
 
     def _shaped_noise_covar(
         self,
-        y: torch.Tensor,
-        *params: Any, **kwargs: Any
+        base_shape: torch.Size,
+        *params: Any,
+        y: torch.Tensor = None,
+        **kwargs: Any
     ) -> Union[torch.Tensor, LinearOperator]:
-        base_shape = y.shape
-        return self.noise_covar(
-            *params, y=y, shape=base_shape, **kwargs
-        )
-    
+        # If `y` is provided, derive `base_shape` from `y`
+        if y is not None:
+            base_shape = y.shape
+        return self.noise_covar(*params, y=y, shape=base_shape, **kwargs)
+
     def expected_log_prob(
         self, target: torch.Tensor,
         input: MultivariateNormal,
@@ -38,7 +37,7 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         **kwargs: Any
     ) -> torch.Tensor:
         noise = self._shaped_noise_covar(
-            input.mean, *params, **kwargs
+            input.mean.shape, *params, y=input.mean, **kwargs
         ).diagonal(dim1=-1, dim2=-2)
         # Potentially reshape the noise to deal with multitask case
         noise = noise.view(*noise.shape[:-1], *input.event_shape)
@@ -62,7 +61,10 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         elif nan_policy == "fill":
             mask = torch.isnan(target)
             cov = input.covariance_matrix
-            cov_masked = torch.where(mask.unsqueeze(-1) + mask.unsqueeze(-1).mT, 0.0, cov)
+            cov_masked = torch.where(
+                mask.unsqueeze(-1) + mask.unsqueeze(-1).mT, 0.0, cov
+            )
+
             input = MultivariateNormal(
                 mean=torch.where(mask, 0.0, input.mean),
                 covariance_matrix=torch.where(
@@ -73,8 +75,8 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
             target = torch.where(mask, 0.0, target)
 
         mean, variance = input.mean, input.variance
-        res = (((target - mean).square() + variance)
-               / noise + noise.log() + math.log(2 * math.pi))
+        res = ((target - mean).square() + variance) \
+            / noise + noise.log() + math.log(2 * math.pi)
         res = res.mul(-0.5)
 
         if nan_policy == "fill":
@@ -83,9 +85,7 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         # Do appropriate summation for multitask Gaussian likelihoods
         num_event_dim = len(input.event_shape)
         if num_event_dim > 1:
-            res = res.sum(
-                list(range(-1, -num_event_dim, -1))
-            )
+            res = res.sum(list(range(-1, -num_event_dim, -1)))
 
         return res
 
@@ -96,13 +96,12 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         **kwargs: Any
     ) -> torch.distributions.Normal:
         noise = self._shaped_noise_covar(
-            function_samples.mean,
+            function_samples.mean.shape,
             *params,
+            y=function_samples.mean,
             **kwargs
         ).diagonal(dim1=-1, dim2=-2)
-        return base_distributions.Normal(
-            function_samples, noise.sqrt()
-        )
+        return base_distributions.Normal(function_samples, noise.sqrt())
 
     def marginal(
         self,
@@ -110,33 +109,38 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         *params: Any,
         **kwargs: Any
     ) -> MultivariateNormal:
-        mean, covar = function_dist.mean, \
-                      function_dist.lazy_covariance_matrix
+        mean, covar = function_dist.mean, function_dist.lazy_covariance_matrix
         noise_covar = self._shaped_noise_covar(
-            mean, *params, **kwargs
+            mean.shape, *params, y=mean, **kwargs
         )
         full_covar = covar + noise_covar
         return function_dist.__class__(mean, full_covar)
 
 
 class ExactMarginalLogLikelihoodFill(ExactMarginalLogLikelihood):
-    def __init__(self, likelihood, model):
-        super().__init__(likelihood, model)
-    
-    def forward(self, function_dist, target, *params, **kwargs):
+    def forward(
+        self,
+        function_dist: _GaussianLikelihoodBase,
+        target: torch.Tensor,
+        *params: Any,
+        **kwargs: Any
+    ) -> torch.Tensor:
         r"""
-        Computes the MLL given :math:`p(\mathbf f)` and :math:`\mathbf y`.
+        Computes the MLL given :math:`p(\mathbf f)`
+        and :math:`\mathbf y`.
 
-        :param ~gpytorch.distributions.MultivariateNormal function_dist: :math:`p(\mathbf f)`
-            the outputs of the latent function (the :obj:`gpytorch.models.ExactGP`)
+        :param ~gpytorch.distributions._GaussianLikelihoodBase function_dist:
+            :math:`p(\mathbf f)` the outputs of the latent function
+            (the :obj:`gpytorch.models.ExactGP`)
         :param torch.Tensor target: :math:`\mathbf y` The target values
         :rtype: torch.Tensor
-        :return: Exact MLL. Output shape corresponds to batch shape of the model/input data.
+        :return: Exact MLL. Output shape corresponds to batch shape
+          of the model/input data.
         """
         if not isinstance(function_dist, MultivariateNormal):
             raise RuntimeError(
                 "ExactMarginalLogLikelihoodFill can only "
-                f"operate on Gaussian random variables"
+                "operate on Gaussian random variables"
             )
 
         # Determine output likelihood
@@ -144,18 +148,25 @@ class ExactMarginalLogLikelihoodFill(ExactMarginalLogLikelihood):
 
         # Remove NaN values if enabled
         if settings.observation_nan_policy.value() == "mask":
-            observed = settings.observation_nan_policy._get_observed(target, output.event_shape)
+            observed = settings.observation_nan_policy._get_observed(
+                target, output.event_shape
+            )
             output = MultivariateNormal(
                 mean=output.mean[..., observed],
                 covariance_matrix=MaskedLinearOperator(
-                    output.lazy_covariance_matrix, observed.reshape(-1), observed.reshape(-1)
+                    output.lazy_covariance_matrix,
+                    observed.reshape(-1),
+                    observed.reshape(-1)
                 ),
             )
             target = target[..., observed]
         elif settings.observation_nan_policy.value() == "fill":
             mask = torch.isnan(target)
             cov = output.covariance_matrix
-            cov_masked = torch.where(mask.unsqueeze(-1) + mask.unsqueeze(-1).mT, 0.0, cov)
+            cov_masked = torch.where(
+                mask.unsqueeze(-1) + mask.unsqueeze(-1).mT, 0.0, cov
+            )
+
             output = MultivariateNormal(
                 mean=torch.where(mask, 0.0, output.mean),
                 covariance_matrix=torch.where(

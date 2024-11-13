@@ -3,23 +3,17 @@ import argparse
 import pickle
 from pathlib import Path
 
-import gpytorch.settings as settings
 import torch
 import zarr
+from gpytorch import settings
 
-from examples.example_data_processing import (INPUTS,
-                                              K_INPUTS,
-                                              MF_INPUTS,
-                                              SPATIAL_INPUTS,
-                                              get_eval_data,
+from examples.example_data_processing import (INPUTS, K_INPUTS, MF_INPUTS,
+                                              SPATIAL_INPUTS, get_dataset,
                                               wrap_and_denormalize)
 from obsweatherscale.data_io.zarr_utils import to_zarr_with_compressor
-from obsweatherscale.inference import (marginal,
-                                       predict_posterior,
-                                       predict_prior,
-                                       sample)
-from obsweatherscale.kernels import (NeuralKernel,
-                                     ScaledRBFKernel)
+from obsweatherscale.inference import (marginal, predict_posterior,
+                                       predict_prior, sample)
+from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods import TransformedGaussianLikelihood
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
 from obsweatherscale.means import NeuralMean
@@ -44,17 +38,23 @@ def main(config):
         y_transformer = pickle.load(y_transformer_path)
 
     # Load and normalize test data
-    dataset_context, dataset_target = get_eval_data(
-        config.data_dir,
-        config.x_context_filename,
-        config.y_context_filename,
-        config.x_target_filename,
-        config.y_target_filename,
-        config.inputs,
-        config.targets,
-        standardizer,
-        y_transformer
+    dataset_context = get_dataset(
+        x_filename=config.data_dir / config.x_context_filename,
+        y_filename=config.data_dir / config.y_context_filename,
+        inputs=config.inputs,
+        targets=config.targets,
+        standardizer=standardizer,
+        y_transformer=y_transformer
     )
+    dataset_target = get_dataset(
+        x_filename=config.data_dir / config.x_target_filename,
+        y_filename=config.data_dir / config.y_target_filename,
+        inputs=config.inputs,
+        targets=config.targets,
+        standardizer=standardizer,
+        y_transformer=y_transformer
+    )
+
     context_x, context_y = dataset_context.get_dataset()
     target_x, target_y = dataset_target.get_dataset()
     context_y, target_y = context_y.squeeze(-1), target_y.squeeze(-1)
@@ -72,7 +72,7 @@ def main(config):
     # Initialize model
     mean_function = NeuralMean(
         net=MLP(
-            len(MF_INPUTS), [32, 32], 1,
+            dimensions=[len(MF_INPUTS), 32, 32, 1],
             active_dims=[INPUTS.index(v) for v in MF_INPUTS]
         )
     )
@@ -83,17 +83,22 @@ def main(config):
     )
     neural_kernel = NeuralKernel(
         net=MLP(
-            len(K_INPUTS), [32, 32], 4,
+            dimensions=[len(K_INPUTS), 32, 32, 4],
             active_dims=[INPUTS.index(v) for v in K_INPUTS]
         ),
         kernel=ScaledRBFKernel()
     )
     kernel = spatial_kernel * neural_kernel
     model = GPModel(
-        mean_function, kernel, context_x, context_y, likelihood
+        context_x, context_y, likelihood,
+        modules={'mean_module': mean_function, 'covar_module': kernel}
     )
     model.load_state_dict(
-        torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
+        torch.load(
+            model_path,
+            map_location=torch.device('cpu'),
+            weights_only=True
+        )
     )
 
     ## Evaluate
@@ -103,14 +108,16 @@ def main(config):
     dataset_target.to(device)
 
     with settings.observation_nan_policy(config.nan_policy):
-         # Evaluate model on target stations using context stations ("context")
+         # Evaluate model on target stations
+         # using context stations ("context")
         context_distr = marginal(
             predict_posterior(
                 model, likelihood, context_x, context_y, target_x
             )
         )
 
-        # Evaluate model on target stations w/ target stations ("hyperlocal")
+        # Evaluate model on target stations
+        # using target stations ("hyperlocal")
         hyperloc_distr = marginal(
             predict_posterior(
                 model, likelihood, target_x, target_y, target_x
@@ -119,9 +126,7 @@ def main(config):
 
         # Evaluate prior on target stations
         prior_distr = marginal(
-            predict_prior(
-                model, likelihood, target_x, target_y
-            )
+            predict_prior(model, likelihood, target_x, target_y)
         )
 
     samples_context = sample(context_distr, config.n_samples)
@@ -155,29 +160,27 @@ def main(config):
     )
 
     ## Save
-    compressor = zarr.Blosc(
-        cname='zstd', clevel=3, shuffle=zarr.Blosc.SHUFFLE
-    )
+    compressor = zarr.Blosc(cname='zstd', clevel=3, shuffle=zarr.Blosc.SHUFFLE)
     for pred, version in zip(
         (pred_context, pred_target, pred_prior),
         ("context", "hyperlocal", "prior")
     ):
-        dir = output_dir / version
+        directory = output_dir / version
         samples, mean, var = pred
-        
+
         to_zarr_with_compressor(
             mean,
-            filename=dir / "mean.zarr",
+            filename=directory / "mean.zarr",
             compressor=compressor
         )
         to_zarr_with_compressor(
             var,
-            filename=dir / "std.zarr",
+            filename=directory / "std.zarr",
             compressor=compressor
         )
         to_zarr_with_compressor(
             samples,
-            filename=dir / "samples.zarr",
+            filename=directory / "samples.zarr",
             compressor=compressor
         )
 
@@ -187,16 +190,13 @@ if __name__ == "__main__":
     parser.add_argument(
         '--data_dir',
         type=str,
-        default=Path(
-            '/', 'scratch', 'mch', 'illornsj',
-              'data', 'cosmo-1e')
+        default=Path('/', 'scratch', 'mch', 'illornsj', 'data', 'cosmo-1e')
     )
     parser.add_argument(
         '--artifacts_dir',
         type=str,
         default=Path(
-            '/', 'scratch', 'mch', 'illornsj',
-            'data', 'experiments',
+            '/', 'scratch', 'mch', 'illornsj', 'data', 'experiments',
             'spatial_deep_kernel', 'artifacts'
         )
     )
@@ -204,44 +204,28 @@ if __name__ == "__main__":
         '--output_dir',
         type=str,
         default=Path(
-            '/', 'scratch', 'mch', 'illornsj',
-            'data', 'experiments',
+            '/', 'scratch', 'mch', 'illornsj', 'data', 'experiments',
             'spatial_deep_kernel', 'results'
         )
     )
     parser.add_argument(
-        '--x_target_filename',
-        type=str,
-        default="x_test_target.zarr"
+        '--x_target_filename', type=str, default="x_test_target.zarr"
     )
     parser.add_argument(
-        '--x_context_filename',
-        type=str,
-        default= "x_test_context.zarr"
+        '--x_context_filename', type=str, default= "x_test_context.zarr"
     )
     parser.add_argument(
-        '--y_target_filename',
-        type=str,
-        default="y_test_target.zarr"
+        '--y_target_filename', type=str, default="y_test_target.zarr"
     )
     parser.add_argument(
-        '--y_context_filename',
-        type=str,
-        default="y_test_context.zarr"
+        '--y_context_filename', type=str, default="y_test_context.zarr"
     )
-    parser.add_argument(
-        '--model_filename', type=str, default="best_model"
-    )
+    parser.add_argument('--model_filename', type=str, default="best_model")
 
     parser.add_argument(
-        '--standardizer_filename',
-        type=str,
-        default="standardizer.pkl"
-    )
+        '--standardizer_filename', type=str, default="standardizer.pkl")
     parser.add_argument(
-        '--y_transformer_filename',
-        type=str,
-        default="y_transformer.pkl"
+        '--y_transformer_filename', type=str, default="y_transformer.pkl"
     )
     parser.add_argument(
         '--targets', type=list, default=["weather:wind_speed_of_gust"]

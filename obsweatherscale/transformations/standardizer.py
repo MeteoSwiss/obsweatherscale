@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 
 
@@ -5,14 +7,14 @@ class Standardizer():
     def __init__(
         self,
         data: torch.Tensor,
-        variables: tuple[int] = None
+        variables: Optional[tuple[int]] = None
     ):
         self.fit(data, variables)
 
     def fit(
         self,
         data: torch.Tensor,
-        variables: list[str] = None
+        variables: Optional[list[str]] = None
     ):
         self.mean = data.mean(axis=variables).squeeze()
         self.std = data.std(axis=variables).squeeze()
