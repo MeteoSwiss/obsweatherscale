@@ -113,7 +113,7 @@ def main(config):
 
     # Start predicting timestep by timestep
     stop = time.time()
-    print(f"Before loop - time: {stop - start:.3f}")
+    print(f"Before loop - time: {stop - start:.3f}", flush=True)
 
     model.eval()
     likelihood.eval()
@@ -131,7 +131,7 @@ def main(config):
             standardizer=standardizer,
         )
         wrap_fun = dataset_target.wrap_pred
-        print(f"Dataset creation - time: {time.time() - start:.3f}")
+        print(f"Dataset creation - time: {time.time() - start:.3f}", flush=True)
 
         # 2. Get batch data
         x_c, y_c = dataset_context[i:i + config.batch_size]
@@ -173,7 +173,10 @@ def main(config):
 
         # 6. Log
         stop = time.time()
-        print(f"Iter {i}/{timesteps} - total time: {stop - start:.3f}")
+        print(
+            f"Iter {i}/{timesteps} - total time: {stop - start:.3f}",
+            flush=True
+        )
 
     print("Prediction completed")
 
