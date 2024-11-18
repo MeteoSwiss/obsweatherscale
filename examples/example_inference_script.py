@@ -7,12 +7,14 @@ import torch
 import zarr
 from gpytorch import settings
 
-from examples.example_data_processing import (INPUTS, K_INPUTS, MF_INPUTS,
-                                              SPATIAL_INPUTS, get_dataset,
-                                              wrap_and_denormalize)
-from obsweatherscale.data_io.zarr_utils import to_zarr_with_compressor
-from obsweatherscale.inference import (marginal, predict_posterior,
-                                       predict_prior, sample)
+from examples.example_data_processing import (
+    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, get_dataset,
+    wrap_and_denormalize
+)
+from obsweatherscale.data_io import to_zarr_with_compressor
+from obsweatherscale.inference import (
+    marginal, predict_posterior, predict_prior, sample
+)
 from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods import TransformedGaussianLikelihood
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise

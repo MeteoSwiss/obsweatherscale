@@ -11,15 +11,15 @@ import torch
 import xarray as xr
 from gpytorch import settings
 
-from examples.example_data_processing import (INPUTS, K_INPUTS, MF_INPUTS,
-                                              SPATIAL_INPUTS, WindDataset,
-                                              WindDatasetTarget,
-                                              wrap_and_denormalize)
+from examples.example_data_processing import (
+    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, WindDataset,
+    WindDatasetTarget, wrap_and_denormalize
+)
 from obsweatherscale.inference import predict_posterior
 from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
-from obsweatherscale.likelihoods.transformed_likelihood import TransformedGaussianLikelihood
-from obsweatherscale.means.neural_mean import NeuralMean
+from obsweatherscale.likelihoods import TransformedGaussianLikelihood
+from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.transformations import QuantileFittedTransformer
 from obsweatherscale.utils import init_device
@@ -226,6 +226,7 @@ if __name__ == "__main__":
     parser.add_argument('--prec_size', type=int, default=1000)
     parser.add_argument('--nan_policy', type=str, default='fill')
 
+    parser.add_argument('--delete_previous', type=bool, default=True)
     parser.add_argument('--nwp_interp_method', type=str, default='linear')
     parser.add_argument('--resolution', type=int, default=250)
 

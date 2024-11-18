@@ -7,17 +7,19 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from examples.example_data_processing import (INPUTS, K_INPUTS, MF_INPUTS,
-                                              SPATIAL_INPUTS,
-                                              get_training_data)
+from examples.example_data_processing import (
+    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, get_training_data
+)
 from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
-from obsweatherscale.likelihoods import (TransformedGaussianLikelihood,
-                                         ExactMarginalLogLikelihoodFill)
+from obsweatherscale.likelihoods import (
+    TransformedGaussianLikelihood, ExactMarginalLogLikelihoodFill
+)
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
-from obsweatherscale.training import (crps_normal_loss_fct, mll_loss_fct,
-                                      train_model)
+from obsweatherscale.training import (
+    crps_normal_loss_fct, mll_loss_fct, train_model
+)
 from obsweatherscale.transformations import QuantileFittedTransformer
 from obsweatherscale.utils import init_device
 

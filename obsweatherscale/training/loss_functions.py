@@ -3,6 +3,7 @@ import torch.distributions as dist
 from gpytorch import ExactMarginalLogLikelihood
 from gpytorch.distributions import MultivariateNormal
 
+
 def crps_normal(
     obs: torch.Tensor,
     mu: torch.Tensor,

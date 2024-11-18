@@ -5,8 +5,9 @@ import torch
 import xarray as xr
 
 from obsweatherscale.data_io import open_zarr_file
-from obsweatherscale.transformations import (QuantileFittedTransformer,
-                                             Standardizer, Transformer)
+from obsweatherscale.transformations import (
+    QuantileFittedTransformer, Standardizer, Transformer
+)
 
 MF_INPUTS = [
     "weather:wind_speed_of_gust",
