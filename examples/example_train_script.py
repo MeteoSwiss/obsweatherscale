@@ -118,7 +118,10 @@ def main(config):
     # Identify and label the best performing model
     best_model_idx = np.argmin(train_progress["val loss"])
     best_val_loss = np.min(train_progress["val loss"])
-    print(f"Best model idx: {best_model_idx}, best val loss: {best_val_loss}")
+    print(
+        f"Best model idx: {best_model_idx}, best val loss: {best_val_loss}",
+        flush=True
+    )
     best_model_filename = f"{model_filename}_iter_{best_model_idx}"
     model.load_state_dict(
         torch.load(config.output_dir / best_model_filename, weights_only=True)
@@ -151,7 +154,10 @@ def main(config):
     torch.cuda.empty_cache()
 
     stop = time.time()
-    print(f"Total time: {stop - start:.3f} s / {(stop - start)/60:.3f} min")
+    print(
+        f"Total time: {stop - start:.3f} s / {(stop - start)/60:.3f} min",
+        flush=True
+    )
 
 
 if __name__ == "__main__":

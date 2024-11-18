@@ -137,7 +137,8 @@ def train_model(
             f"Loss: {train_loss:.3f}   "
             f"Val loss: {val_loss:.3f}   "
             f"train time: {stop_train - start:.3f}   "
-            f"time: {stop - start:.3f}"
+            f"time: {stop - start:.3f}",
+            flush=True
         )
 
     return model, train_progression
