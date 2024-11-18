@@ -109,8 +109,9 @@ def main(config):
     dataset_context.to(device)
     dataset_target.to(device)
 
+    # 1. Predict distributions
     with settings.observation_nan_policy(config.nan_policy):
-         # Evaluate model on target stations
+         # Evaluate posterior on target stations
          # using context stations ("context")
         context_distr = marginal(
             predict_posterior(
@@ -118,7 +119,7 @@ def main(config):
             )
         )
 
-        # Evaluate model on target stations
+        # Evaluate posterior on target stations
         # using target stations ("hyperlocal")
         hyperloc_distr = marginal(
             predict_posterior(
@@ -126,60 +127,37 @@ def main(config):
             )
         )
 
-        # Evaluate prior on target stations
+        # Evaluate prior on target stations ("prior")
         prior_distr = marginal(
             predict_prior(model, likelihood, target_x, target_y)
         )
 
+    # 2. Sample from distributions
     samples_context = sample(context_distr, config.n_samples)
     samples_hyperloc = sample(hyperloc_distr, config.n_samples)
     samples_prior = sample(prior_distr, config.n_samples)
 
-    ## Postprocess - each pred is a tuple (samples, mean, std)
-    pred_context = wrap_and_denormalize(
+    # 3. Wrap into xr.Dataset
+    inv_transform = y_transformer.inverse_transform
+    wrap_fun = dataset_target.wrap_pred
+    name = config.targets[0]
+    samples_context, samples_hyperloc, samples_prior = wrap_and_denormalize(
         samples_context,
-        context_distr.mean.unsqueeze(-1),
-        context_distr.stddev.unsqueeze(-1),
-        wrap_fun=dataset_target.wrap_pred,
-        denormalize_fun=y_transformer.inverse_transform,
-        name=config.targets[0]
-    )
-    pred_target = wrap_and_denormalize(
         samples_hyperloc,
-        hyperloc_distr.mean.unsqueeze(-1),
-        hyperloc_distr.stddev.unsqueeze(-1),
-        wrap_fun=dataset_target.wrap_pred,
-        denormalize_fun=y_transformer.inverse_transform,
-        name=config.targets[0]
-    )
-    pred_prior = wrap_and_denormalize(
         samples_prior,
-        prior_distr.mean.unsqueeze(-1),
-        prior_distr.stddev.unsqueeze(-1),
-        wrap_fun=dataset_target.wrap_pred,
-        denormalize_fun=y_transformer.inverse_transform,
-        name=config.targets[0]
+        wrap_fun=wrap_fun,
+        denormalize_fun=inv_transform,
+        name=name
     )
 
-    ## Save
+    # 4. Save
     compressor = zarr.Blosc(cname='zstd', clevel=3, shuffle=zarr.Blosc.SHUFFLE)
-    for pred, version in zip(
-        (pred_context, pred_target, pred_prior),
+    for samples, version in zip(
+        (samples_context, samples_hyperloc, samples_prior),
         ("context", "hyperlocal", "prior")
     ):
         directory = output_dir / version
-        samples, mean, var = pred
 
-        to_zarr_with_compressor(
-            mean,
-            filename=directory / "mean.zarr",
-            compressor=compressor
-        )
-        to_zarr_with_compressor(
-            var,
-            filename=directory / "std.zarr",
-            compressor=compressor
-        )
         to_zarr_with_compressor(
             samples,
             filename=directory / "samples.zarr",
