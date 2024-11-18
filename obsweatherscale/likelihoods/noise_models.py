@@ -2,12 +2,13 @@ import abc
 from typing import Any, Optional
 
 import torch
-from gpytorch.likelihoods.noise_models import (FixedGaussianNoise,
-                                               HeteroskedasticNoise,
-                                               HomoskedasticNoise, Noise)
+from gpytorch.likelihoods.noise_models import (
+    FixedGaussianNoise, HeteroskedasticNoise, HomoskedasticNoise, Noise
+)
 from gpytorch.priors import Prior
-from linear_operator.operators import (ConstantDiagLinearOperator,
-                                       DiagLinearOperator, ZeroLinearOperator)
+from linear_operator.operators import (
+    ConstantDiagLinearOperator, DiagLinearOperator, ZeroLinearOperator
+)
 
 from ..transformations.transformer import Transformer
 
