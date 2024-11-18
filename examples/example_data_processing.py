@@ -278,6 +278,6 @@ def wrap_and_denormalize(
     for tensor in data:
         tensor = denormalize_fun(tensor)
         tensor = wrap_fun(tensor, name=name)
-        tensor = tensor.to_dataset(name=name)
+        tensor = tensor.to_dataset()
         result.append(tensor)
     return tuple(result)
