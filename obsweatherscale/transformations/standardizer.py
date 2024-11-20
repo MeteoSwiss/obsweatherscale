@@ -21,18 +21,18 @@ class Standardizer():
 
     def transform(
         self,
-        data: torch.Tensor,
+        y: torch.Tensor,
         copy: bool = False
     ) -> torch.Tensor:
         if copy:
-            data = data.copy()
-        return (data - self.mean) / self.std
+            y = y.copy()
+        return (y - self.mean) / self.std
 
     def inverse_transform(
         self,
-        data: torch.Tensor,
+        z: torch.Tensor,
         copy: bool = False
     ) -> torch.Tensor:
         if copy:
-            data = data.copy()
-        return data*self.std + self.mean
+            z = z.copy()
+        return z*self.std + self.mean

@@ -1,5 +1,5 @@
 import math
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import torch
 from gpytorch import ExactMarginalLogLikelihood, settings
@@ -22,7 +22,7 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         self,
         base_shape: torch.Size,
         *params: Any,
-        y: torch.Tensor = None,
+        y: Optional[torch.Tensor] = None,
         **kwargs: Any
     ) -> Union[torch.Tensor, LinearOperator]:
         # If `y` is provided, derive `base_shape` from `y`

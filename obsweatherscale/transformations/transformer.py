@@ -7,9 +7,9 @@ class Transformer():
         pass
 
     @abc.abstractmethod
-    def transform(self, data):
+    def transform(self, y):
         pass
 
     @abc.abstractmethod
-    def inverse_transform(self, data):
+    def inverse_transform(self, z):
         pass
