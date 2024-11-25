@@ -133,8 +133,11 @@ def main(config):
         )
 
     # 2. Sample from distributions
+    torch.manual_seed(config.seed)
     samples_context = sample(context_distr, config.n_samples)
+    torch.manual_seed(config.seed)
     samples_hyperloc = sample(hyperloc_distr, config.n_samples)
+    torch.manual_seed(config.seed)
     samples_prior = sample(prior_distr, config.n_samples)
 
     # 3. Wrap into xr.Dataset
@@ -214,6 +217,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_samples', type=int, default=101)
     parser.add_argument('--gpu', type=list, default=None)
     parser.add_argument('--use_gpu', type=bool, default=False)
+    parser.add_argument('--seed', type=int, default=123)
     parser.add_argument('--nan_policy', type=str, default='fill')
 
     args, _ = parser.parse_known_args()
