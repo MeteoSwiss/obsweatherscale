@@ -10,12 +10,12 @@ import gc
 import torch
 import xarray as xr
 from gpytorch import settings
+from torch.distributions import Normal
 
 from examples.example_data_processing import (
-    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, WindDataset,
-    WindDatasetTarget, wrap_and_denormalize
+    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, WindDataset, WindDatasetTarget
 )
-from obsweatherscale.inference import predict_posterior
+from obsweatherscale.inference import predict_posterior, sample
 from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
 from obsweatherscale.likelihoods import TransformedGaussianLikelihood
@@ -122,7 +122,12 @@ def main(config):
     if output_path_std.exists() and config.delete_previous:
         shutil.rmtree(output_path_std)
 
-    for i in range(0, timesteps, config.batch_size):
+    num_threads = int(os.getenv("SLURM_CPUS_PER_TASK", 1))
+    torch.set_num_threads(num_threads)
+
+    range_min = 0
+    range_max = timesteps
+    for i in range(range_min, range_max, config.batch_size):
         start = time.time()
 
         # 1. Create dataset
@@ -131,7 +136,7 @@ def main(config):
             standardizer=standardizer,
         )
         wrap_fun = dataset_target.wrap_pred
-        print(f"Dataset creation - time: {time.time() - start:.3f}", flush=True)
+        print(f"Dataset creation time: {time.time() - start:.3f}", flush=True)
 
         # 2. Get batch data
         x_c, y_c = dataset_context[i:i + config.batch_size]
@@ -144,16 +149,25 @@ def main(config):
             settings.memory_efficient(True),
             settings.observation_nan_policy(config.nan_policy)
         ):
-            posterior = predict_posterior(model, likelihood, x_c, y_c, x_t)
-            pred_mean, pred_std = posterior.mean, posterior.stddev
+            post = predict_posterior(model, likelihood, x_c, y_c, x_t)
+        # Create marginal distribution in CPU for sampling
+        marginal_cpu = Normal(post.mean.cpu(), post.stddev.cpu())
 
-        pred_mean_da, pred_std_da = wrap_and_denormalize(
-            pred_mean.cpu().unsqueeze(-1),
-            pred_std.cpu().unsqueeze(-1),
-            wrap_fun=wrap_fun,
-            denormalize_fun=y_transformer.inverse_transform,
-            name=config.targets[0]
-        )
+        del (dataset_target, post, x_c, y_c, x_t)
+        torch.cuda.empty_cache()
+        gc.collect()
+
+        # Generate samples from marginals on CPU and apply inverse transform
+        samples = sample(marginal_cpu, config.n_samples)
+        transformed_samples = y_transformer.inverse_transform(samples)
+
+        # Compute empirical mean and std
+        pred_mean = transformed_samples.mean(dim=-1)
+        pred_std = transformed_samples.std(dim=-1)
+
+        # Wrap
+        pred_mean_da = wrap_fun(pred_mean, name=config.targets[0]).to_dataset()
+        pred_std_da = wrap_fun(pred_std, name=config.targets[0]).to_dataset()
 
         # 4. Save
         if i == 0:
@@ -165,8 +179,8 @@ def main(config):
 
         # 5. Clear cache and collect garbage
         del (
-            dataset_target, posterior, pred_mean, pred_std,
-            pred_mean_da, pred_std_da, x_c, y_c, x_t
+            marginal_cpu, pred_mean, pred_std, pred_mean_da, pred_std_da,
+            samples
         )
         torch.cuda.empty_cache()
         gc.collect()
@@ -224,12 +238,13 @@ if __name__ == "__main__":
     parser.add_argument('--inputs', type=list, default=INPUTS)
 
     parser.add_argument('--batch_size', type=int, default=3)
+    parser.add_argument('--n_samples', type=int, default=1000)
     parser.add_argument('--gpu', type=list, default=None)
     parser.add_argument('--use_gpu', type=bool, default=True)
-    parser.add_argument('--prec_size', type=int, default=1000)
+    parser.add_argument('--prec_size', type=int, default=2000)
     parser.add_argument('--nan_policy', type=str, default='fill')
 
-    parser.add_argument('--delete_previous', type=bool, default=True)
+    parser.add_argument('--delete_previous', type=bool, default=False)
     parser.add_argument('--nwp_interp_method', type=str, default='linear')
     parser.add_argument('--resolution', type=int, default=250)
 

@@ -281,3 +281,20 @@ def wrap_and_denormalize(
         tensor = tensor.to_dataset()
         result.append(tensor)
     return tuple(result)
+
+
+def wrap_tensor(
+        pred: torch.Tensor,
+        dims,
+        coords,
+        name: str = "",
+        realization_name: str = "realization"
+    ) -> xr.DataArray:
+        # Create dimensions
+        if len(pred.shape) > 3:
+            dims += (realization_name,)
+
+        # Transform back to DataArray
+        pred = xr.DataArray(pred.detach(), coords, dims, name=name)
+
+        return pred
