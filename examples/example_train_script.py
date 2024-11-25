@@ -92,7 +92,7 @@ def main(config):
     )
     mll = ExactMarginalLogLikelihoodFill(likelihood, model)
     train_loss_fct = mll_loss_fct(mll)
-    val_loss_fct = crps_normal_loss_fct()
+    val_loss_fct = crps_normal_loss_fct(likelihood)
 
     # Train
     model, train_progress = train_model(
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     parser.add_argument('--random_masking', type=bool, default=True)
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--n_iter', type=int, default=500)
-    parser.add_argument('--learning_rate', type=float, default=0.024)
+    parser.add_argument('--learning_rate', type=float, default=0.025)
     parser.add_argument('--gpu', type=list, default=None)
     parser.add_argument('--use_gpu', type=bool, default=True)
     parser.add_argument('--seed', type=int, default=123)
