@@ -1,7 +1,10 @@
+from typing import Optional
+
 import torch
 import torch.distributions as dist
 from gpytorch import ExactMarginalLogLikelihood
 from gpytorch.distributions import MultivariateNormal
+from gpytorch.likelihoods import _GaussianLikelihoodBase
 
 
 def crps_normal(
@@ -36,13 +39,18 @@ def crps_normal(
     return crps.mean()
 
 
-def crps_normal_loss_fct():
+def crps_normal_loss_fct(
+    likelihood: Optional[_GaussianLikelihoodBase]
+) -> callable:
     def loss_fct(
         distribution: MultivariateNormal,
         obs: torch.Tensor
     ) -> torch.Tensor:
         mask = torch.isnan(obs)
         obs = torch.where(mask, 0.0, obs)
+
+        if likelihood is not None:
+            distribution = likelihood(distribution)
 
         mu = torch.where(mask, 0.0, distribution.mean)
         sigma = torch.where(
