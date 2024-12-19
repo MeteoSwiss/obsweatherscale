@@ -1,4 +1,5 @@
 import abc
+import torch
 
 class Transformer():
     @abc.abstractmethod
@@ -6,9 +7,13 @@ class Transformer():
         pass
 
     @abc.abstractmethod
-    def transform(self, y):
+    def transform(self, y: torch.Tensor) -> torch.Tensor:
         pass
 
     @abc.abstractmethod
-    def inverse_transform(self, z):
+    def inverse_transform(self, z: torch.Tensor) -> torch.Tensor:
+        pass
+
+    @abc.abstractmethod
+    def noise_transform(self, data: torch.Tensor) -> torch.Tensor:
         pass

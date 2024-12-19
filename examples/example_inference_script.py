@@ -8,8 +8,7 @@ import zarr
 from gpytorch import settings
 
 from examples.example_data_processing import (
-    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, get_dataset,
-    wrap_and_denormalize
+    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, get_dataset
 )
 from obsweatherscale.data_io import to_zarr_with_compressor
 from obsweatherscale.inference import (
@@ -21,7 +20,7 @@ from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoi
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.transformations import QuantileFittedTransformer
-from obsweatherscale.utils import init_device
+from obsweatherscale.utils import init_device, wrap_tensor
 
 
 def main(config):
@@ -80,7 +79,7 @@ def main(config):
     )
     spatial_kernel = ScaledRBFKernel(
         lengthscale=torch.tensor([0.25992706, 0.1681214, 0.08974447]),
-        active_dims=[INPUTS.index(v) for v in SPATIAL_INPUTS],
+        active_dims=tuple(INPUTS.index(v) for v in SPATIAL_INPUTS),
         train_lengthscale=False
     )
     neural_kernel = NeuralKernel(
@@ -140,26 +139,21 @@ def main(config):
     torch.manual_seed(config.seed)
     samples_prior = sample(prior_distr, config.n_samples)
 
-    # 3. Wrap into xr.Dataset
-    inv_transform = y_transformer.inverse_transform
-    wrap_fun = dataset_target.wrap_pred
+    # 3. Denormalize and wrap into xr.Dataset
     name = config.targets[0]
-    samples_context, samples_hyperloc, samples_prior = wrap_and_denormalize(
-        samples_context,
-        samples_hyperloc,
-        samples_prior,
-        wrap_fun=wrap_fun,
-        denormalize_fun=inv_transform,
-        name=name
-    )
+    dims = dataset_target.dims
+    coords = dataset_target.coords
+
+    samples_ds = []
+    for tensor in (samples_context, samples_hyperloc, samples_prior):
+        tensor = y_transformer.inverse_transform(tensor)
+        tensor = wrap_tensor(tensor, dims, coords, name=name)
+        samples_ds.append(tensor)
 
     # 4. Save
     compressor = zarr.Blosc(cname='zstd', clevel=3, shuffle=zarr.Blosc.SHUFFLE)
-    for samples, version in zip(
-        (samples_context, samples_hyperloc, samples_prior),
-        ("context", "hyperlocal", "prior")
-    ):
-        directory = output_dir / version
+    for samples, case in zip(samples_ds, ("context", "hyperlocal", "prior")):
+        directory = output_dir / case
 
         to_zarr_with_compressor(
             samples,

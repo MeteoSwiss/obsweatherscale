@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import torch
 import xarray as xr
@@ -8,6 +8,9 @@ from obsweatherscale.data_io import open_zarr_file
 from obsweatherscale.transformations import (
     QuantileFittedTransformer, Standardizer, Transformer
 )
+from obsweatherscale.utils import coords_to_station
+from obsweatherscale.utils.dataset import GPDataset
+
 
 MF_INPUTS = [
     "weather:wind_speed_of_gust",
@@ -49,7 +52,7 @@ INPUTS = sorted(
 )
 
 
-class WindDataset(torch.utils.data.Dataset):
+class WindDataset(GPDataset):
     """ Generic dataset derived for wind specific needs"""
     def __init__(
         self,
@@ -78,15 +81,47 @@ class WindDataset(torch.utils.data.Dataset):
         x = torch.tensor(x.compute().values, dtype=torch.float32)
         if standardizer is None:
             standardizer = self.create_standardizer(x)
-        self.standardizer = standardizer
-        self.x = self.standardizer.transform(x).contiguous()
+        self._standardizer = standardizer
+        self.x = self._standardizer.transform(x).contiguous()
 
         # Normalize outputs
         y = torch.tensor(y.values)
         if y_transformer is None:
             y_transformer = QuantileFittedTransformer()
-        self.y_transformer = y_transformer
-        self.y = self.y_transformer.transform(y).squeeze(-1).contiguous()
+        self._y_transformer = y_transformer
+        self.y = self._y_transformer.transform(y).squeeze(-1).contiguous()
+
+    @property
+    def standardizer(self) -> Standardizer:
+        return self._standardizer
+
+    @standardizer.setter
+    def standardizer(self, value: Standardizer):
+        self._standardizer = value
+
+    @property
+    def y_transformer(self) -> Transformer:
+        return self._y_transformer
+
+    @y_transformer.setter
+    def y_transformer(self, value: Transformer):
+        self._y_transformer = value
+
+    def to(self, device: torch.device):
+        self.x = self.x.to(device)
+        self.y = self.y.to(device)
+
+    def __len__(self):
+        return self.n_samples
+
+    def __getitem__(
+        self,
+        idx: Union[int, list[int], slice]
+    ) -> tuple[torch.Tensor, ...]:
+        return self.x[idx, ...], self.y[idx, ...]
+
+    def get_dataset(self) -> tuple[torch.Tensor, ...]:
+        return self.x, self.y
 
     def reshape_dataset(self, ds, var_name):
         return ds.to_array(var_name).transpose("time", "station", var_name)
@@ -108,40 +143,8 @@ class WindDataset(torch.utils.data.Dataset):
 
         return standardizer
 
-    def to(self, device: torch.device):
-        self.x = self.x.to(device)
-        self.y = self.y.to(device)
 
-    def __len__(self):
-        return self.n_samples
-
-    def __getitem__(
-        self,
-        idx: list[int] | int
-    ) -> tuple[torch.Tensor]:
-        return self.x[idx, ...], self.y[idx, ...]
-
-    def get_dataset(self) -> tuple[torch.Tensor]:
-        return self.x, self.y
-
-    def wrap_pred(
-        self,
-        pred: torch.Tensor,
-        name: str = "",
-        realization_name: str = "realization"
-    ) -> xr.DataArray:
-        # Create dimensions
-        dims = self.dims
-        if len(pred.shape) > 3:
-            dims += (realization_name,)
-
-        # Transform back to DataArray
-        pred = xr.DataArray(pred.detach(), self.coords, dims, name=name)
-
-        return pred
-
-
-class WindDatasetTarget(torch.utils.data.Dataset):
+class WindDatasetTarget(GPDataset):
     """ Target dataset derived for wind specific needs"""
     def __init__(
         self,
@@ -150,7 +153,7 @@ class WindDatasetTarget(torch.utils.data.Dataset):
     ):
         # Transform dataset into dataarray
         var_name = "variable"  # new dimension name
-        ds_x = self.coords_to_station(ds_x)
+        ds_x = coords_to_station(ds_x)
         x = self.reshape_dataset(ds_x, var_name)
 
         # Save dimensions and coords before transforming data to tensor
@@ -162,23 +165,20 @@ class WindDatasetTarget(torch.utils.data.Dataset):
 
         # Normalize inputs
         x = torch.tensor(x.compute().values, dtype=torch.float32)
-        self.standardizer = standardizer
-        self.x = self.standardizer.transform(x).contiguous()
+        self._standardizer = standardizer
+        self.x = self._standardizer.transform(x).contiguous()
 
-    def reshape_dataset(self, ds, var_name):
-        return ds.to_array(var_name).transpose("time", "station", var_name)
+    @property
+    def standardizer(self) -> Standardizer:
+        return self._standardizer
 
-    def coords_to_station(
-        self,
-        dataset: xr.Dataset | xr.DataArray
-    ) -> xr.Dataset | xr.DataArray:
-        return dataset.stack(station=('x', 'y'))
+    @standardizer.setter
+    def standardizer(self, value: Standardizer):
+        self._standardizer = value
 
-    def station_to_coords(
-        self,
-        dataset: xr.Dataset | xr.DataArray
-    ) -> xr.Dataset | xr.DataArray:
-        return dataset.unstack('station')
+    @property
+    def y_transformer(self) -> None:
+        return None
 
     def to(self, device: torch.device):
         self.x = self.x.to(device)
@@ -186,31 +186,14 @@ class WindDatasetTarget(torch.utils.data.Dataset):
     def __len__(self) -> int:
         return self.n_samples
 
-    def __getitem__(
-        self,
-        idx: list[int] | int
-    ) -> torch.Tensor:
+    def __getitem__(self, idx: Union[int, list[int], slice]) -> torch.Tensor:
         return self.x[idx, ...]
 
     def get_dataset(self) -> torch.Tensor:
         return self.x
 
-    def wrap_pred(
-        self,
-        pred: torch.Tensor,
-        name: str = "",
-        realization_name: str = "realization"
-    ) -> xr.DataArray:
-        # Create dimensions
-        dims = self.dims
-        if len(pred.shape) > 3:
-            dims += (realization_name,)
-
-        # Transform back to DataArray
-        pred = xr.DataArray(pred.detach(), self.coords, dims, name=name)
-        pred = self.station_to_coords(pred)
-
-        return pred
+    def reshape_dataset(self, ds, var_name):
+        return ds.to_array(var_name).transpose("time", "station", var_name)
 
 
 def get_dataset(
@@ -219,9 +202,9 @@ def get_dataset(
     inputs: Optional[list[str]],
     targets: Optional[list[str]],
     standardizer: Optional[Standardizer] = None,
-    y_transformer: Optional[QuantileFittedTransformer] = None,
-    time_slice: Optional[slice] = slice(None)
-) -> torch.utils.data.Dataset:
+    y_transformer: Optional[Transformer] = None,
+    time_slice: slice = slice(None)
+) -> WindDataset:
     x = open_zarr_file(x_filename, data_key=inputs, time_slice=time_slice)
     y = open_zarr_file(y_filename, data_key=targets, time_slice=time_slice)
 
@@ -240,7 +223,7 @@ def get_training_data(
     y_val_t_filename: str,
     inputs: Optional[list[str]],
     targets: Optional[list[str]],
-) -> tuple[torch.utils.data.Dataset]:
+) -> tuple[WindDataset, ...]:
 
     dataset_train = get_dataset(
         x_filename=data_dir / x_train_filename,
@@ -266,35 +249,3 @@ def get_training_data(
     )
 
     return dataset_train, dataset_val_c, dataset_val_t
-
-
-def wrap_and_denormalize(
-        *data: tuple[torch.Tensor],
-        wrap_fun: callable,
-        denormalize_fun: callable,
-        name: str
-    ) -> tuple[xr.DataArray]:
-    result = []
-    for tensor in data:
-        tensor = denormalize_fun(tensor)
-        tensor = wrap_fun(tensor, name=name)
-        tensor = tensor.to_dataset()
-        result.append(tensor)
-    return tuple(result)
-
-
-def wrap_tensor(
-        pred: torch.Tensor,
-        dims,
-        coords,
-        name: str = "",
-        realization_name: str = "realization"
-    ) -> xr.DataArray:
-        # Create dimensions
-        if len(pred.shape) > 3:
-            dims += (realization_name,)
-
-        # Transform back to DataArray
-        pred = xr.DataArray(pred.detach(), coords, dims, name=name)
-
-        return pred

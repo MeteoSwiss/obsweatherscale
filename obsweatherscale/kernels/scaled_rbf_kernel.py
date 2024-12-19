@@ -1,8 +1,10 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import torch
+from gpytorch.constraints import Interval
 from gpytorch.kernels import Kernel, RBFKernel, ScaleKernel
 from gpytorch.priors import Prior
+from linear_operator.operators import LinearOperator
 
 
 class ScaledRBFKernel(Kernel):
@@ -12,11 +14,11 @@ class ScaledRBFKernel(Kernel):
         lengthscale: Optional[torch.Tensor] = None,
         ard_num_dims: Optional[int] = None,
         batch_shape: Optional[torch.Size] = None,
-        active_dims: Optional[list[int]] = None,
+        active_dims: Optional[tuple[int, ...]] = None,
         lengthscale_prior: Optional[Prior] = None,
-        lengthscale_constraint: Optional[torch.nn.Module] = None,
+        lengthscale_constraint: Optional[Interval] = None,
         outputscale_prior: Optional[Prior] = None,
-        outputscale_constraint: Optional[torch.nn.Module] = None,
+        outputscale_constraint: Optional[Interval] = None,
         train_lengthscale: bool = True,
         train_variance: bool = True,
         eps: float = 1e-06,
@@ -81,5 +83,5 @@ class ScaledRBFKernel(Kernel):
         x2: torch.Tensor,
         *params: Any,
         **kwargs: Any
-    ) -> torch.Tensor:
+    ) -> Union[torch.Tensor, LinearOperator]:
         return self.kernel(x1, x2, *params, **kwargs)

@@ -1,3 +1,5 @@
+from typing import cast
+
 import torch
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.models import ExactGP
@@ -19,7 +21,7 @@ def predict_posterior(
     model.set_train_data(inputs=context_x, targets=context_y, strict=False)
     post_distribution = model(target_x)
 
-    return likelihood(post_distribution)
+    return cast(MultivariateNormal, likelihood(post_distribution))
 
 
 def predict_prior(
@@ -34,7 +36,7 @@ def predict_prior(
     model.set_train_data(inputs=target_x, targets=target_y, strict=False)
     prior_distribution = model(target_x)
 
-    return likelihood(prior_distribution)
+    return cast(MultivariateNormal, likelihood(prior_distribution))
 
 
 def marginal(distribution: MultivariateNormal) -> Normal:

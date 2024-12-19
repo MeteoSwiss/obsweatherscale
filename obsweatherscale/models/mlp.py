@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Callable, Optional
 
 import torch
 from torch import nn
@@ -10,7 +10,7 @@ class MLP(nn.Module):
     def __init__(
         self,
         dimensions: list[int],
-        output_activation_fct: Optional[callable] = None,
+        output_activation_fct: Optional[Callable] = None,
         active_dims: Optional[list[int]] = None,
     ) -> None:
         super().__init__()

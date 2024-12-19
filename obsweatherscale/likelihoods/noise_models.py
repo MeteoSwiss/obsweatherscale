@@ -27,7 +27,7 @@ class TransformedNoise(Noise):
         y: Optional[torch.Tensor] = None,
     ) -> DiagLinearOperator:
         if y is None:
-            y = 0
+            y = torch.tensor(0)
         noise_diag = pure_noise_var * self.transformer.noise_transform(y) ** 2
         return DiagLinearOperator(noise_diag)
 
@@ -96,7 +96,7 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
             batch_shape=batch_shape,
             shape=shape,
             noise=noise
-        ).diag
+        ).diagonal()
 
         return self.transform_noise(pure_noise_var=pure_noise_var, y=y)
 
@@ -107,8 +107,7 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         transformer: Transformer,
         obs_noise_var: torch.Tensor | int | float = torch.tensor(1.0)
     ) -> None:
-        if not torch.is_tensor(obs_noise_var):
-            obs_noise_var = torch.tensor(obs_noise_var)
+        obs_noise_var = torch.tensor(obs_noise_var)
         super().__init__(transformer)
         FixedGaussianNoise.__init__(self, obs_noise_var)
 
@@ -123,7 +122,8 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         # Determine shape
         if shape is None:
             p = params[0] if torch.is_tensor(params[0]) else params[0][0]
-            shape = p.shape if len(p.shape) == 1 else p.shape[:-1]
+            shape = torch.Size(p.shape) if len(p.shape) == 1 \
+                else torch.Size(p.shape[:-1])
         batch_shape, n = shape
 
         # Get pure noise

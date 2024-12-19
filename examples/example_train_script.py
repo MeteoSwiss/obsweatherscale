@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch.optim.adam import Adam
 
 from examples.example_data_processing import (
     INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, get_training_data
@@ -67,7 +68,7 @@ def main(config):
     # optim lengthscale: [0.25992706, 0.1681214, 0.08974447]
     spatial_kernel = ScaledRBFKernel(
         lengthscale=torch.tensor([0.25992706, 0.1681214, 0.08974447]),
-        active_dims=[INPUTS.index(v) for v in SPATIAL_INPUTS],
+        active_dims=tuple(INPUTS.index(v) for v in SPATIAL_INPUTS),
         train_lengthscale=False
     )
     torch.manual_seed(config.seed)
@@ -85,7 +86,7 @@ def main(config):
     )
 
     # Initialize optimizer and loss
-    optimizer = torch.optim.Adam(
+    optimizer = Adam(
         [{'params': model.parameters()},
          {'params': likelihood.parameters()}],
         lr=config.learning_rate

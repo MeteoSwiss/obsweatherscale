@@ -1,22 +1,23 @@
 import time
 from pathlib import Path
-from typing import Optional, Union
+from typing import Callable, Optional
 
 import torch
 from gpytorch import settings
 from gpytorch.likelihoods import _GaussianLikelihoodBase
 from gpytorch.models import ExactGP
-from torch.utils.data import Dataset
+from torch.optim.optimizer import Optimizer
 
 from ..utils import apply_random_masking, sample_batch_idx
+from ..utils.dataset import GPDataset
 
 
 def train_step(
     model: ExactGP,
-    likelihood: torch.Tensor,
+    likelihood: _GaussianLikelihoodBase,
     batch_x: torch.Tensor,
     batch_y: torch.Tensor,
-    loss_fct: callable
+    loss_fct: Callable
 ) -> float:
     model.train()
     likelihood.train()
@@ -37,7 +38,7 @@ def val_step(
     batch_y_c: torch.Tensor,
     batch_x_t: torch.Tensor,
     batch_y_t: torch.Tensor,
-    loss_fct: callable
+    loss_fct: Callable
 ) -> float:
     model.eval()
     likelihood.eval()
@@ -50,15 +51,15 @@ def val_step(
 
 
 def train_model(
-    dataset_train: Dataset,
-    dataset_val_c: Dataset,
-    dataset_val_t: Dataset,
+    dataset_train: GPDataset,
+    dataset_val_c: GPDataset,
+    dataset_val_t: GPDataset,
     model: ExactGP,
     likelihood: _GaussianLikelihoodBase,
-    train_loss_fct: callable,
-    val_loss_fct: callable,
+    train_loss_fct: Callable,
+    val_loss_fct: Callable,
     device: torch.device,
-    optimizer: torch.optim,
+    optimizer: Optimizer,
     batch_size: int,
     output_dir: Path,
     model_filename: str,
@@ -67,7 +68,7 @@ def train_model(
     seed: Optional[int] = None,
     nan_policy: str = 'fill',
     prec_size: int = 100,
-) -> Union[torch.nn.Module, dict]:
+) -> tuple[ExactGP, dict[str, list]]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     dataset_length = len(dataset_train)
