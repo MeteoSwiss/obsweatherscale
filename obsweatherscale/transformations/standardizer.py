@@ -5,17 +5,17 @@ class Standardizer():
     def __init__(
         self,
         data: torch.Tensor,
-        variables: Optional[tuple[int]] = None
+        variables: Optional[tuple[int, ...]] = None
     ):
         self.fit(data, variables)
 
     def fit(
         self,
         data: torch.Tensor,
-        variables: Optional[list[str]] = None
+        variables: Optional[tuple[int, ...]] = None
     ):
-        self.mean = data.mean(axis=variables).squeeze()
-        self.std = data.std(axis=variables).squeeze()
+        self.mean = data.mean(dim=variables).squeeze()
+        self.std = data.std(dim=variables).squeeze()
 
     def transform(
         self,
@@ -23,7 +23,7 @@ class Standardizer():
         copy: bool = False
     ) -> torch.Tensor:
         if copy:
-            y = y.copy()
+            y = y.detach().clone()
         return (y - self.mean) / self.std
 
     def inverse_transform(
@@ -32,5 +32,5 @@ class Standardizer():
         copy: bool = False
     ) -> torch.Tensor:
         if copy:
-            z = z.copy()
+            z = z.detach().clone()
         return z*self.std + self.mean

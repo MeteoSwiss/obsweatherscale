@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Callable, cast, Optional
 
 import torch
 import torch.distributions as dist
@@ -41,7 +41,7 @@ def crps_normal(
 
 def crps_normal_loss_fct(
     likelihood: Optional[_GaussianLikelihoodBase]
-) -> callable:
+) -> Callable:
     def loss_fct(
         distribution: MultivariateNormal,
         obs: torch.Tensor
@@ -50,7 +50,7 @@ def crps_normal_loss_fct(
         obs = torch.where(mask, 0.0, obs)
 
         if likelihood is not None:
-            distribution = likelihood(distribution)
+            distribution = cast(MultivariateNormal, likelihood(distribution))
 
         mu = torch.where(mask, 0.0, distribution.mean)
         sigma = torch.where(
@@ -65,5 +65,12 @@ def mll_loss_fct(mll: ExactMarginalLogLikelihood):
         distribution: MultivariateNormal,
         obs: torch.Tensor
     ) -> torch.Tensor:
-        return -mll(distribution, obs).mean()
+        log_likelihood = mll(distribution, obs)
+        if isinstance(log_likelihood, torch.Tensor):
+            return -log_likelihood.mean()
+
+        raise TypeError(
+            f"Expected mll to return a torch.Tensor, "
+            f"got {type(log_likelihood)}"
+        )
     return loss_fct

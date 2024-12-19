@@ -1,11 +1,12 @@
 import random
 from typing import Optional, Union
 import torch
+import xarray as xr
 
 
 class RandomStateContext:
     def __init__(self):
-        self.current_state = None
+        self.current_state = torch.random.get_rng_state()
 
     def __enter__(self):
         self.current_state = torch.random.get_rng_state()
@@ -28,7 +29,7 @@ def apply_random_masking(data: torch.Tensor, p: float = 0.5) -> torch.Tensor:
 
 def set_active_dims(
         active_dims: Optional[list[int]] = None
-    ) -> torch.Tensor | slice:
+    ) -> Union[torch.Tensor, slice]:
     if active_dims is None:
         return slice(None)
     return torch.tensor(active_dims, requires_grad=False)
@@ -42,9 +43,9 @@ def sample_batch_idx(
 
 
 def init_device(
-    gpu: Optional[list[int] | int] = None,
+    gpu: Optional[Union[list[int], int]] = None,
     use_gpu: bool = True
-) -> Union[torch.nn.Module, torch.device]:
+) -> torch.device:
     """Initialize device based on cpu/gpu and number of gpu
     Parameters
     ----------
@@ -68,3 +69,20 @@ def init_device(
         device = torch.device("cpu")
 
     return device
+
+
+def wrap_tensor(
+    pred: torch.Tensor,
+    dims,
+    coords,
+    name: str = "",
+    realization_name: str = "realization"
+) -> xr.Dataset:
+    # Create dimensions
+    if len(pred.shape) > 3:
+        dims += (realization_name,)
+
+    # Transform back to DataArray
+    pred_da = xr.DataArray(pred.detach(), coords, dims, name=name)
+
+    return pred_da.to_dataset()

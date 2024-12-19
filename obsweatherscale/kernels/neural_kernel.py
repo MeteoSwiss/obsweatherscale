@@ -1,7 +1,8 @@
-from typing import Any
+from typing import Any, Union
 
 import torch
 from gpytorch.kernels import Kernel
+from linear_operator.operators import LinearOperator
 
 
 class NeuralKernel(Kernel):
@@ -16,7 +17,7 @@ class NeuralKernel(Kernel):
         x2: torch.Tensor,
         *params: Any,
         **kwargs: Any
-    ) -> torch.Tensor:
+    ) -> Union[torch.Tensor, LinearOperator]:
         x1 = self.net(x1)
         x2 = self.net(x2)
 

@@ -22,7 +22,7 @@ from obsweatherscale.likelihoods import TransformedGaussianLikelihood
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.transformations import QuantileFittedTransformer
-from obsweatherscale.utils import init_device
+from obsweatherscale.utils import init_device, station_to_coords, wrap_tensor
 
 
 def main(config):
@@ -79,7 +79,7 @@ def main(config):
     )
     spatial_kernel = ScaledRBFKernel(
         lengthscale=torch.tensor([0.2, 0.1, 0.1]),
-        active_dims=[INPUTS.index(v) for v in SPATIAL_INPUTS],
+        active_dims=tuple(INPUTS.index(v) for v in SPATIAL_INPUTS),
         train_lengthscale=False
     )
     neural_kernel = NeuralKernel(
@@ -135,7 +135,8 @@ def main(config):
             x_target.isel(time=slice(i, i + config.batch_size)),
             standardizer=standardizer,
         )
-        wrap_fun = dataset_target.wrap_pred
+        dims, coords = dataset_target.dims, dataset_target.coords
+        name = config.targets[0]
         print(f"Dataset creation time: {time.time() - start:.3f}", flush=True)
 
         # 2. Get batch data
@@ -166,8 +167,10 @@ def main(config):
         pred_std = transformed_samples.std(dim=-1)
 
         # Wrap
-        pred_mean_da = wrap_fun(pred_mean, name=config.targets[0]).to_dataset()
-        pred_std_da = wrap_fun(pred_std, name=config.targets[0]).to_dataset()
+        pred_mean_da = wrap_tensor(pred_mean, dims, coords, name)
+        pred_mean_da = station_to_coords(pred_mean_da)
+        pred_std_da = wrap_tensor(pred_std, dims, coords, name)
+        pred_std_da = station_to_coords(pred_std_da)
 
         # 4. Save
         if i == 0:
