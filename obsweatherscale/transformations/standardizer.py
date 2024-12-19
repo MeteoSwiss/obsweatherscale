@@ -1,7 +1,5 @@
 from typing import Optional
-
 import torch
-
 
 class Standardizer():
     def __init__(
