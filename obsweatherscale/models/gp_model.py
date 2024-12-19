@@ -1,3 +1,4 @@
+from typing import Any
 import torch
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import _GaussianLikelihoodBase
@@ -16,7 +17,7 @@ class GPModel(ExactGP):
         self.mean_module = modules['mean_module']
         self.covar_module = modules['covar_module']
 
-    def forward(self, x: torch.Tensor, **kwargs) -> MultivariateNormal:
+    def forward(self, x: torch.Tensor, **kwargs: Any) -> MultivariateNormal:
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
         return MultivariateNormal(mean_x, covar_x)

@@ -1,6 +1,5 @@
 import abc
 
-
 class Transformer():
     @abc.abstractmethod
     def __init__(self):

@@ -1,2 +1,2 @@
-from .predict_distribution import marginal, predict_posterior, predict_prior
-from .sample import sample
+from .predict_distribution import *
+from .sample import *

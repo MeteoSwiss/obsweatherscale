@@ -8,7 +8,6 @@ Distribution = Union[MultivariateNormal, Normal]
 
 
 def sample(distribution: Distribution, n_samples: int) -> torch.Tensor:
-
     if distribution.mean.dim() < 2 or distribution.mean.dim() > 3:
         raise ValueError(
             "Data should be of shape [batch_size, n_points]"

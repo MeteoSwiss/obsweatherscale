@@ -1,7 +1,5 @@
 from typing import Optional
-
 import xarray as xr
-
 
 def to_dataarray(
     dataset: xr.Dataset,
