@@ -8,6 +8,7 @@ class NeuralMean(Mean):
     Uses a neural network to compute the mean of the Gaussian process
     prior, starting from the input data.
     """
+
     def __init__(self, net: torch.nn.Module) -> None:
         """Initializes the NeuralMean.
 

@@ -3,6 +3,7 @@ import torch
 from .transformer import Transformer
 
 
+
 class QuantileFittedTransformer(Transformer):
     """QuantileFittedTransformer class.
 
@@ -34,12 +35,10 @@ class QuantileFittedTransformer(Transformer):
         self.a = a
         self.b = b
         self.c = c
-    
+
     def description(self) -> str:
-        return (
-            f"Continuous function approximating quantile transform: "
-            f"f(y) = log(a / y - c) / b"
-        )
+        return (f"Continuous function approximating quantile transform: "
+                f"f(y) = log(a / y - c) / b")
 
     def transform(self, y: torch.Tensor) -> torch.Tensor:
         """Apply the quantile fitted transformation to the input data."""
@@ -52,7 +51,7 @@ class QuantileFittedTransformer(Transformer):
         """
         return self.a / (self.c + torch.exp(-self.b * z))
 
-    def transform_derivative(self, y: torch.Tensor ) -> torch.Tensor:
+    def transform_derivative(self, y: torch.Tensor) -> torch.Tensor:
         """Compute the derivative of the quantile fitted transformation."""
         return self.a / (self.b * y * (self.a - self.c * y))
 
@@ -61,7 +60,7 @@ class QuantileFittedTransformer(Transformer):
         transformation.
         """
         exp_neg_bz = torch.exp(-self.b * z)
-        return (self.a * self.b * exp_neg_bz) / ((self.c + exp_neg_bz) ** 2)
+        return (self.a * self.b * exp_neg_bz) / ((self.c + exp_neg_bz)**2)
 
     def noise_transform(self, data: torch.Tensor) -> torch.Tensor:
         """Apply the noise transformation to the input data."""

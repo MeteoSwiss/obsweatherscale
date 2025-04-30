@@ -7,11 +7,7 @@ from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import _GaussianLikelihoodBase
 
 
-def crps_normal(
-    obs: torch.Tensor,
-    mu: torch.Tensor,
-    sigma: torch.Tensor
-) -> torch.Tensor:
+def crps_normal(obs: torch.Tensor, mu: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor:
     """Wrapper to compute the Continuous Ranked Probability Score (CRPS)
     for a Normal distribution.
 
@@ -57,9 +53,7 @@ def crps_normal(
     return crps.mean()
 
 
-def crps_normal_loss_fct(
-    likelihood: _GaussianLikelihoodBase | None = None
-) -> Callable:
+def crps_normal_loss_fct(likelihood: _GaussianLikelihoodBase | None = None) -> Callable:
     """Wrapper to create a CRPS loss function for normal distributions
     that handles missing values and optionally transforms the
     distribution.
@@ -94,10 +88,9 @@ def crps_normal_loss_fct(
             distribution = cast(MultivariateNormal, likelihood(distribution))
 
         mu = torch.where(mask, 0.0, distribution.mean)
-        sigma = torch.where(
-            mask, 1 / torch.sqrt(torch.tensor(torch.pi)), distribution.stddev
-        )
+        sigma = torch.where(mask, 1 / torch.sqrt(torch.tensor(torch.pi)), distribution.stddev)
         return crps_normal(obs, mu, sigma)
+
     return loss_fct
 
 
@@ -136,8 +129,7 @@ def mll_loss_fct(mll: ExactMarginalLogLikelihood):
         if isinstance(log_likelihood, torch.Tensor):
             return -log_likelihood.mean()
 
-        raise TypeError(
-            f"Expected mll to return a torch.Tensor, "
-            f"got {type(log_likelihood)}"
-        )
+        raise TypeError(f"Expected mll to return a torch.Tensor, "
+                        f"got {type(log_likelihood)}")
+
     return loss_fct

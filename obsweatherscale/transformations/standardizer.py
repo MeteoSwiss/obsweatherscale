@@ -1,6 +1,7 @@
 import torch
 
 
+
 class Standardizer():
     """Standardization transformation class."""
 
@@ -20,7 +21,7 @@ class Standardizer():
             If None, all dimensions will be used.
         """
         self.fit(data, variables)
-    
+
     def description(self):
         return (
             "Standard normalization: f(y) = (y - mean(y) / stddev(y))"
@@ -44,11 +45,7 @@ class Standardizer():
         self.mean = data.mean(dim=variables).squeeze()
         self.std = data.std(dim=variables).squeeze()
 
-    def transform(
-        self,
-        y: torch.Tensor,
-        copy: bool = False
-    ) -> torch.Tensor:
+    def transform(self, y: torch.Tensor, copy: bool = False) -> torch.Tensor:
         """Apply the standardization transformation to the input data."""
         if copy:
             y = y.detach().clone()
@@ -64,4 +61,4 @@ class Standardizer():
         """
         if copy:
             z = z.detach().clone()
-        return z*self.std + self.mean
+        return z * self.std + self.mean

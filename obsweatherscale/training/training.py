@@ -12,13 +12,8 @@ from ..utils import apply_random_masking, sample_batch_idx
 from ..utils.dataset import GPDataset
 
 
-def train_step(
-    model: ExactGP,
-    likelihood: _GaussianLikelihoodBase,
-    batch_x: torch.Tensor,
-    batch_y: torch.Tensor,
-    loss_fct: Callable
-) -> float:
+def train_step(model: ExactGP, likelihood: _GaussianLikelihoodBase, batch_x: torch.Tensor, batch_y: torch.Tensor,
+               loss_fct: Callable) -> float:
     """Perform a training step on the model.
 
     Parameters
@@ -51,15 +46,8 @@ def train_step(
     return loss.item()
 
 
-def val_step(
-    model: ExactGP,
-    likelihood: _GaussianLikelihoodBase,
-    batch_x_c: torch.Tensor,
-    batch_y_c: torch.Tensor,
-    batch_x_t: torch.Tensor,
-    batch_y_t: torch.Tensor,
-    loss_fct: Callable
-) -> float:
+def val_step(model: ExactGP, likelihood: _GaussianLikelihoodBase, batch_x_c: torch.Tensor, batch_y_c: torch.Tensor,
+             batch_x_t: torch.Tensor, batch_y_t: torch.Tensor, loss_fct: Callable) -> float:
     """Perform a validation step on the model.
 
     The validation loss is computed on target xxx_t data
@@ -196,9 +184,7 @@ def train_model(
                 batch_y = apply_random_masking(batch_y)
 
             with settings.observation_nan_policy(nan_policy):
-                train_loss = train_step(
-                    model, likelihood, batch_x, batch_y, train_loss_fct
-                )
+                train_loss = train_step(model, likelihood, batch_x, batch_y, train_loss_fct)
 
             optimizer.step()
             stop_train = time.time()
@@ -210,20 +196,14 @@ def train_model(
             batch_x_t, batch_y_t = dataset_val_t[batch_idx]
 
             with torch.no_grad(), settings.observation_nan_policy(nan_policy):
-                val_loss = val_step(
-                    model, likelihood,
-                    batch_x_c, batch_y_c, batch_x_t, batch_y_t,
-                    val_loss_fct
-                )
+                val_loss = val_step(model, likelihood, batch_x_c, batch_y_c, batch_x_t, batch_y_t, val_loss_fct)
 
         ### Logging ###
         # Save model at each iteration
-        torch.save(
-            model.state_dict(), output_dir / f"{model_filename}_iter_{i}"
-        )
+        torch.save(model.state_dict(), output_dir / f"{model_filename}_iter_{i}")
 
         # Save training log
-        train_progression["iter"].append(i+1)
+        train_progression["iter"].append(i + 1)
         train_progression["train loss"].append(train_loss)
         train_progression["val loss"].append(val_loss)
 
@@ -236,7 +216,6 @@ def train_model(
             f"Val loss: {val_loss:.3f}   "
             f"train time: {stop_train - start:.3f}   "
             f"time: {stop - start:.3f}",
-            flush=True
-        )
+            flush=True)
 
     return model, train_progression

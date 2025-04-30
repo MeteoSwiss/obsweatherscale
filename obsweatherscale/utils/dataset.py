@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 
 
 class GPDataset(Dataset, ABC):
+
     @abstractmethod
     def __getitem__(self, index) -> Any:
         pass
