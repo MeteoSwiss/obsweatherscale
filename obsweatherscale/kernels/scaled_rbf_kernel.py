@@ -15,6 +15,7 @@ class ScaledRBFKernel(Kernel):
     with the option to set the lengthscale and variance parameters.
 
     """
+
     def __init__(
         self,
         variance: torch.Tensor | None = None,
@@ -29,7 +30,7 @@ class ScaledRBFKernel(Kernel):
         train_lengthscale: bool = True,
         train_variance: bool = True,
         eps: float = 1e-06,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Initialize the ScaledRBFKernel.
 
@@ -64,55 +65,71 @@ class ScaledRBFKernel(Kernel):
         """
         super().__init__()
 
-        if (active_dims is not None and lengthscale is not None and len(lengthscale) != len(active_dims)):
-            raise ValueError("The length of 'lengthscale' must match"
-                             " the length of 'active_dims'")
+        if (
+            active_dims is not None
+            and lengthscale is not None
+            and len(lengthscale) != len(active_dims)
+        ):
+            raise ValueError(
+                "The length of 'lengthscale' must match" " the length of 'active_dims'"
+            )
 
         if lengthscale is not None:
             ard_num_dims = len(lengthscale)
 
         if not train_lengthscale and lengthscale is None:
-            raise ValueError("A lengthscale value must be provided"
-                             " if lengthscale is not trainable")
+            raise ValueError(
+                "A lengthscale value must be provided"
+                " if lengthscale is not trainable"
+            )
 
         if not train_variance and variance is None:
-            raise ValueError("A variance value must be provided "
-                             "if variance is not trainable")
+            raise ValueError(
+                "A variance value must be provided " "if variance is not trainable"
+            )
 
-        rbf_kernel = RBFKernel(ard_num_dims=ard_num_dims,
-                               batch_shape=batch_shape,
-                               active_dims=active_dims,
-                               lengthscale_prior=lengthscale_prior,
-                               lengthscale_constraint=lengthscale_constraint,
-                               eps=eps,
-                               **kwargs)
+        rbf_kernel = RBFKernel(
+            ard_num_dims=ard_num_dims,
+            batch_shape=batch_shape,
+            active_dims=active_dims,
+            lengthscale_prior=lengthscale_prior,
+            lengthscale_constraint=lengthscale_constraint,
+            eps=eps,
+            **kwargs,
+        )
 
         # Set lengthscale
         if lengthscale is not None:
             rbf_kernel.raw_lengthscale = nn.Parameter(
-                rbf_kernel.raw_lengthscale_constraint.inverse_transform(
-                    lengthscale
-                ), requires_grad=train_lengthscale)
+                rbf_kernel.raw_lengthscale_constraint.inverse_transform(lengthscale),
+                requires_grad=train_lengthscale,
+            )
         rbf_kernel.raw_lengthscale.requires_grad = train_lengthscale
 
-        self.kernel = ScaleKernel(rbf_kernel,
-                                  outputscale_prior=outputscale_prior,
-                                  outputscale_constraint=outputscale_constraint)
+        self.kernel = ScaleKernel(
+            rbf_kernel,
+            outputscale_prior=outputscale_prior,
+            outputscale_constraint=outputscale_constraint,
+        )
 
         # Set variance
         if variance is not None:
             self.kernel.raw_outputscale = nn.Parameter(
-                self.kernel.raw_outputscale_constraint.inverse_transform(
-                    variance
-                ), requires_grad=train_variance)
+                self.kernel.raw_outputscale_constraint.inverse_transform(variance),
+                requires_grad=train_variance,
+            )
         self.kernel.raw_outputscale.requires_grad = train_variance
 
     def extra_repr(self):
-        return '\n'.join([
-            f"(lengthscale): {self.kernel.base_kernel.lengthscale}", f"(variance): {self.kernel.outputscale}",
-            f"(num_dims): {self.kernel.base_kernel.ard_num_dims}"
-        ])
+        return "\n".join(
+            [
+                f"(lengthscale): {self.kernel.base_kernel.lengthscale}",
+                f"(variance): {self.kernel.outputscale}",
+                f"(num_dims): {self.kernel.base_kernel.ard_num_dims}",
+            ]
+        )
 
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor, *params: Any,
-                **kwargs: Any) -> Union[torch.Tensor, LinearOperator]:
+    def forward(
+        self, x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any
+    ) -> Union[torch.Tensor, LinearOperator]:
         return self.kernel(x1, x2, *params, **kwargs)

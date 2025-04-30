@@ -9,7 +9,7 @@ from ..utils import set_active_dims
 class MLP(nn.Module):
     """Multi-Layer Perceptron (MLP) class.
 
-    This class implements a simple multi-layer perceptron with ReLU 
+    This class implements a simple multi-layer perceptron with ReLU
     activation functions and an optional output activation function.
     """
 
@@ -20,7 +20,7 @@ class MLP(nn.Module):
         active_dims: list[int] | None = None,
     ) -> None:
         """Initialize the MLP model.
-        
+
         Parameters
         ----------
         dimensions : list of int
@@ -34,7 +34,7 @@ class MLP(nn.Module):
         active_dims : list of int, optional
             List of indices specifying which dimensions of the input to
             use. If None, all dimensions are used.
-            
+
         Examples
         --------
         # 10D input, 1D output with sigmoid

@@ -2,7 +2,7 @@ import abc
 import torch
 
 
-class Transformer():
+class Transformer:
 
     @abc.abstractmethod
     def __init__(self):

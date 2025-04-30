@@ -11,7 +11,7 @@ from .noise_models import TransformedNoise
 
 
 class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
-    """ A Gaussian likelihood with a transformed noise model.
+    """A Gaussian likelihood with a transformed noise model.
 
     This likelihood allows custom noise transformations by leveraging
     a `TransformedNoise` object. It supports missing observation
@@ -24,16 +24,16 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
     _shaped_noise_covar(base_shape, *params, y=None, **kwargs)
         Returns a noise covariance object of the correct shape,
         optionally based on `y`.
-    
+
     expected_log_prob(target, input, *params, **kwargs)
         Computes the expected log probability of the target under the
         input distribution, optionally handling NaNs according to the
         active policy.
-    
+
     forward(function_samples, *params, **kwargs)
         Returns a Normal distribution by applying transformed noise to
         function samples.
-    
+
     marginal(function_dist, *params, **kwargs)
         Returns the marginal distribution including the transformed
         noise covariance.
@@ -59,11 +59,13 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         """
         super().__init__(noise_covar=noise_covar)
 
-    def _shaped_noise_covar(self,
-                            base_shape: torch.Size,
-                            *params: Any,
-                            y: torch.Tensor | None = None,
-                            **kwargs: Any) -> Union[torch.Tensor, LinearOperator]:
+    def _shaped_noise_covar(
+        self,
+        base_shape: torch.Size,
+        *params: Any,
+        y: torch.Tensor | None = None,
+        **kwargs: Any,
+    ) -> Union[torch.Tensor, LinearOperator]:
         """
         Returns the noise covariance of the appropriate shape, based on
         the provided `base_shape` and optional target `y`.
@@ -91,10 +93,15 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
             base_shape = y.shape
         return self.noise_covar(*params, y=y, shape=base_shape, **kwargs)
 
-    def expected_log_prob(self, target: torch.Tensor, input: MultivariateNormal, *params: Any,
-                          **kwargs: Any) -> torch.Tensor:
+    def expected_log_prob(
+        self,
+        target: torch.Tensor,
+        input: MultivariateNormal,
+        *params: Any,
+        **kwargs: Any,
+    ) -> torch.Tensor:
         """Expected log probability of target given input distribution.
-        
+
         Computes the expected log probability of the `target` given the
         `input` distribution, accounting for noise and handling missing
         values according to the configured NaN policy.
@@ -118,20 +125,25 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
             The computed log probability for the given target and input
             distribution.
         """
-        noise = self._shaped_noise_covar(input.mean.shape, *params, y=input.mean, **kwargs).diagonal(dim1=-1, dim2=-2)
+        noise = self._shaped_noise_covar(
+            input.mean.shape, *params, y=input.mean, **kwargs
+        ).diagonal(dim1=-1, dim2=-2)
         # Potentially reshape the noise to deal with multitask case
         noise = noise.view(*noise.shape[:-1], *input.event_shape)
 
         # Handle NaN values if enabled
         nan_policy = settings.observation_nan_policy.value()
         if nan_policy == "mask":
-            observed = settings.observation_nan_policy._get_observed(target, input.event_shape)
+            observed = settings.observation_nan_policy._get_observed(
+                target, input.event_shape
+            )
             input = MultivariateNormal(
                 mean=input.mean[..., observed],
                 covariance_matrix=MaskedLinearOperator(
                     input.lazy_covariance_matrix,  # type: ignore
                     observed.reshape(-1),
-                    observed.reshape(-1)),
+                    observed.reshape(-1),
+                ),
             )
             noise = noise[..., observed]
             target = target[..., observed]
@@ -139,20 +151,24 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
             mask = torch.isnan(target)
             cov = input.covariance_matrix
             cov_masked = torch.where(
-                mask.unsqueeze(-1) + mask.unsqueeze(-1).mT,
-                0.0,
-                cov  # type: ignore
+                mask.unsqueeze(-1) + mask.unsqueeze(-1).mT, 0.0, cov  # type: ignore
             )
 
-            input = MultivariateNormal(mean=torch.where(mask, 0.0, input.mean),
-                                       covariance_matrix=torch.where(torch.diag_embed(mask), 1 / (2 * torch.pi),
-                                                                     cov_masked))
+            input = MultivariateNormal(
+                mean=torch.where(mask, 0.0, input.mean),
+                covariance_matrix=torch.where(
+                    torch.diag_embed(mask), 1 / (2 * torch.pi), cov_masked
+                ),
+            )
             noise = torch.where(mask, 0.0, noise)
             target = torch.where(mask, 0.0, target)
 
         mean, variance = input.mean, input.variance
-        res = ((target - mean).square() + variance) \
-            / noise + noise.log() + math.log(2 * math.pi)
+        res = (
+            ((target - mean).square() + variance) / noise
+            + noise.log()
+            + math.log(2 * math.pi)
+        )
         res = res.mul(-0.5)
 
         if nan_policy == "fill":
@@ -165,7 +181,9 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
 
         return res
 
-    def forward(self, function_samples: torch.Tensor, *params: Any, **kwargs: Any) -> torch.distributions.Normal:
+    def forward(
+        self, function_samples: torch.Tensor, *params: Any, **kwargs: Any
+    ) -> torch.distributions.Normal:
         """Applies noise to given function samples.
 
         Returns a Normal distribution by applying the transformed noise
@@ -192,10 +210,13 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
             function_samples.mean.shape,
             *params,
             y=function_samples.mean,  # type: ignore
-            **kwargs).diagonal(dim1=-1, dim2=-2)
+            **kwargs,
+        ).diagonal(dim1=-1, dim2=-2)
         return base_distributions.Normal(function_samples, noise.sqrt())
 
-    def marginal(self, function_dist: MultivariateNormal, *params: Any, **kwargs: Any) -> MultivariateNormal:
+    def marginal(
+        self, function_dist: MultivariateNormal, *params: Any, **kwargs: Any
+    ) -> MultivariateNormal:
         """Computes the marginal distribution by adding the noise
         covariance to the covariance of the function distribution.
 
@@ -253,8 +274,13 @@ class ExactMarginalLogLikelihoodFill(ExactMarginalLogLikelihood):
     for the "fill" policy.
     """
 
-    def forward(self, function_dist: _GaussianLikelihoodBase, target: torch.Tensor, *params: Any,
-                **kwargs: Any) -> torch.Tensor:
+    def forward(
+        self,
+        function_dist: _GaussianLikelihoodBase,
+        target: torch.Tensor,
+        *params: Any,
+        **kwargs: Any,
+    ) -> torch.Tensor:
         """Computes the marginal log likelihood given a function
         distribution and target values.
 
@@ -296,29 +322,41 @@ class ExactMarginalLogLikelihoodFill(ExactMarginalLogLikelihood):
         matrix is adjusted
         """
         if not isinstance(function_dist, MultivariateNormal):
-            raise RuntimeError("ExactMarginalLogLikelihoodFill can only "
-                               "operate on Gaussian random variables")
+            raise RuntimeError(
+                "ExactMarginalLogLikelihoodFill can only "
+                "operate on Gaussian random variables"
+            )
 
         # Determine output likelihood
         output = self.likelihood(function_dist, *params, **kwargs)
 
         # Remove NaN values if enabled
         if settings.observation_nan_policy.value() == "mask":
-            observed = settings.observation_nan_policy._get_observed(target, output.event_shape)
+            observed = settings.observation_nan_policy._get_observed(
+                target, output.event_shape
+            )
             output = MultivariateNormal(
                 mean=output.mean[..., observed],
-                covariance_matrix=MaskedLinearOperator(output.lazy_covariance_matrix, observed.reshape(-1),
-                                                       observed.reshape(-1)),
+                covariance_matrix=MaskedLinearOperator(
+                    output.lazy_covariance_matrix,
+                    observed.reshape(-1),
+                    observed.reshape(-1),
+                ),
             )
             target = target[..., observed]
         elif settings.observation_nan_policy.value() == "fill":
             mask = torch.isnan(target)
             cov = output.covariance_matrix
-            cov_masked = torch.where(mask.unsqueeze(-1) + mask.unsqueeze(-1).mT, 0.0, cov)
+            cov_masked = torch.where(
+                mask.unsqueeze(-1) + mask.unsqueeze(-1).mT, 0.0, cov
+            )
 
-            output = MultivariateNormal(mean=torch.where(mask, 0.0, output.mean),
-                                        covariance_matrix=torch.where(torch.diag_embed(mask), 1 / (2 * torch.pi),
-                                                                      cov_masked))
+            output = MultivariateNormal(
+                mean=torch.where(mask, 0.0, output.mean),
+                covariance_matrix=torch.where(
+                    torch.diag_embed(mask), 1 / (2 * torch.pi), cov_masked
+                ),
+            )
             target = torch.where(mask, 0.0, target)
 
         # Get the log prob of the marginal distribution
