@@ -21,16 +21,26 @@ class DefaultPredictionStrategyFill(DefaultPredictionStrategy):
         train_labels_offset = (self.train_labels - train_mean).unsqueeze(-1)
 
         if nan_policy == "ignore":
-            mean_cache = train_train_covar.evaluate_kernel().solve(train_labels_offset).squeeze(-1)
+            mean_cache = (
+                train_train_covar.evaluate_kernel()
+                .solve(train_labels_offset)
+                .squeeze(-1)
+            )
         elif nan_policy == "mask":
             # Mask all rows and columns in the kernel matrix
             # corresponding to the missing observations.
-            observed = settings.observation_nan_policy._get_observed(self.train_labels,
-                                                                     torch.Size((self.train_labels.shape[-1], )))
+            observed = settings.observation_nan_policy._get_observed(
+                self.train_labels, torch.Size((self.train_labels.shape[-1],))
+            )
             mean_cache = torch.full_like(self.train_labels, torch.nan)
-            kernel = MaskedLinearOperator(train_train_covar.evaluate_kernel(), observed.reshape(-1),
-                                          observed.reshape(-1))
-            mean_cache[..., observed] = kernel.solve(train_labels_offset[..., observed, :]).squeeze(-1)
+            kernel = MaskedLinearOperator(
+                train_train_covar.evaluate_kernel(),
+                observed.reshape(-1),
+                observed.reshape(-1),
+            )
+            mean_cache[..., observed] = kernel.solve(
+                train_labels_offset[..., observed, :]
+            ).squeeze(-1)
         else:  # 'fill'
             # Fill all rows and columns in the kernel matrix
             # corresponding to the missing observations with 0. Don't
@@ -48,10 +58,16 @@ class DefaultPredictionStrategyFill(DefaultPredictionStrategy):
             kernel_mask = kernel_mask[..., None] * kernel_mask[..., None, :]
             torch.diagonal(kernel_mask, dim1=-2, dim2=-1)[...] = 1
             kernel = kernel * kernel_mask  # makes kernel dense atm :(
-            torch.diagonal(kernel_mask, dim1=-2, dim2=-1)[...] = 1 / (2 * torch.pi)  # TODO
-            train_labels_offset = settings.observation_nan_policy._fill_tensor(train_labels_offset)  # TODO
+            torch.diagonal(kernel_mask, dim1=-2, dim2=-1)[...] = 1 / (
+                2 * torch.pi
+            )  # TODO
+            train_labels_offset = settings.observation_nan_policy._fill_tensor(
+                train_labels_offset
+            )  # TODO
             mean_cache = kernel.solve(train_labels_offset).squeeze(-1)
-            mean_cache[missing] = torch.nan  # Ensure nobody expects these values to be valid.
+            mean_cache[missing] = (
+                torch.nan
+            )  # Ensure nobody expects these values to be valid.
         if settings.detach_test_caches.on():
             mean_cache = mean_cache.detach()
 
@@ -62,8 +78,9 @@ class DefaultPredictionStrategyFill(DefaultPredictionStrategy):
 
         return mean_cache
 
-    def exact_predictive_mean(self, test_mean: Tensor,
-                              test_train_covar: LinearOperator) -> Union[Tensor, LinearOperator]:
+    def exact_predictive_mean(
+        self, test_mean: Tensor, test_train_covar: LinearOperator
+    ) -> Union[Tensor, LinearOperator]:
         """
         Computes the posterior predictive covariance of a GP
 
@@ -82,11 +99,18 @@ class DefaultPredictionStrategyFill(DefaultPredictionStrategy):
             res = (test_train_covar @ mean_cache.unsqueeze(-1)).squeeze(-1)
         elif nan_policy == "mask":
             # Restrict train dimension to observed values
-            observed = settings.observation_nan_policy._get_observed(mean_cache, torch.Size((mean_cache.shape[-1], )))
-            full_mask = torch.ones(test_mean.shape[-1], dtype=torch.bool, device=test_mean.device)
-            test_train_covar = MaskedLinearOperator(to_linear_operator(test_train_covar), full_mask,
-                                                    observed.reshape(-1))
-            res = (test_train_covar @ mean_cache[..., observed].unsqueeze(-1)).squeeze(-1)
+            observed = settings.observation_nan_policy._get_observed(
+                mean_cache, torch.Size((mean_cache.shape[-1],))
+            )
+            full_mask = torch.ones(
+                test_mean.shape[-1], dtype=torch.bool, device=test_mean.device
+            )
+            test_train_covar = MaskedLinearOperator(
+                to_linear_operator(test_train_covar), full_mask, observed.reshape(-1)
+            )
+            res = (test_train_covar @ mean_cache[..., observed].unsqueeze(-1)).squeeze(
+                -1
+            )
         else:  # 'fill'
             # Set the columns corresponding to missing observations to 0
             # to ignore them during matmul.

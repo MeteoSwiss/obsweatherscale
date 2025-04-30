@@ -26,9 +26,7 @@ def apply_random_masking(data: torch.Tensor, p: float = 0.5) -> torch.Tensor:
     return data
 
 
-def set_active_dims(
-        active_dims: list[int] | None = None
-    ) -> Union[torch.Tensor, slice]:
+def set_active_dims(active_dims: list[int] | None = None) -> Union[torch.Tensor, slice]:
     if active_dims is None:
         return slice(None)
     return torch.tensor(active_dims, requires_grad=False)
@@ -39,8 +37,7 @@ def sample_batch_idx(length: int, batch_size: int) -> list[int]:
 
 
 def init_device(
-    gpu: Union[list[int], int] | None = None,
-    use_gpu: bool = True
+    gpu: Union[list[int], int] | None = None, use_gpu: bool = True
 ) -> torch.device:
     """Initialize device based on cpu/gpu and number of gpu
     Parameters
@@ -48,7 +45,7 @@ def init_device(
     gpu: list of int
         List of gpus that should be used
     use_gpu: bool
-        If gpu should be used at all. If false, use cpu 
+        If gpu should be used at all. If false, use cpu
 
     Returns
     -------
@@ -58,21 +55,25 @@ def init_device(
         if gpu is None:
             device = torch.device("cuda")
         else:
-            device = torch.device(f"cuda:{gpu[0]}" if isinstance(gpu, list) else f"cuda:{gpu}")
+            device = torch.device(
+                f"cuda:{gpu[0]}" if isinstance(gpu, list) else f"cuda:{gpu}"
+            )
     else:
         device = torch.device("cpu")
 
     return device
 
 
-def wrap_tensor(pred: torch.Tensor,
-                dims: tuple[str, ...],
-                coords: dict[str, Union[torch.Tensor, xr.DataArray]],
-                name: str = "",
-                realization_name: str = "realization") -> xr.Dataset:
+def wrap_tensor(
+    pred: torch.Tensor,
+    dims: tuple[str, ...],
+    coords: dict[str, Union[torch.Tensor, xr.DataArray]],
+    name: str = "",
+    realization_name: str = "realization",
+) -> xr.Dataset:
     # Create dimensions
     if len(pred.shape) > 3:
-        dims += (realization_name, )
+        dims += (realization_name,)
 
     # Transform back to DataArray
     pred_da = xr.DataArray(pred.detach(), coords, dims, name=name)
