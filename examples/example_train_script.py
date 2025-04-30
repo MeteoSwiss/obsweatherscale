@@ -1,8 +1,6 @@
 # %%
-import argparse
 import math
 import time
-from pathlib import Path
 from typing import Union
 
 import torch
@@ -159,18 +157,4 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        '--output_dir',
-        type=str,
-        default=Path(
-            '/', 'scratch', 'mch', 'illornsj', 'data', 'experiments',
-            'spatial_deep_kernel', 'artifacts'
-        )
-    )
-
-
-    args, _ = parser.parse_known_args()
-
     main()
