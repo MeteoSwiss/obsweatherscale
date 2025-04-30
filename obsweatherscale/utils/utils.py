@@ -1,7 +1,6 @@
 import random
 from typing import Union
 import torch
-import xarray as xr
 
 
 class RandomStateContext:
@@ -9,7 +8,7 @@ class RandomStateContext:
     def __init__(self) -> None:
         self.current_state = torch.random.get_rng_state()
 
-    def __enter__(self) -> None:
+    def __enter__(self):
         self.current_state = torch.random.get_rng_state()
         torch.manual_seed(torch.seed())
         return self
@@ -18,15 +17,9 @@ class RandomStateContext:
         torch.random.set_rng_state(self.current_state)
 
 
-def apply_random_masking(data: torch.Tensor, p: float = 0.5) -> torch.Tensor:
-    mask_shape = (1, *data.shape[1:])
-    with RandomStateContext():
-        random_mask = torch.bernoulli(torch.ones(mask_shape) * p).bool().expand_as(data)
-        data[random_mask] = torch.nan
-    return data
-
-
-def set_active_dims(active_dims: list[int] | None = None) -> Union[torch.Tensor, slice]:
+def set_active_dims(
+    active_dims: list[int] | None = None
+) -> Union[torch.Tensor, slice]:
     if active_dims is None:
         return slice(None)
     return torch.tensor(active_dims, requires_grad=False)
@@ -62,20 +55,3 @@ def init_device(
         device = torch.device("cpu")
 
     return device
-
-
-def wrap_tensor(
-    pred: torch.Tensor,
-    dims: tuple[str, ...],
-    coords: dict[str, Union[torch.Tensor, xr.DataArray]],
-    name: str = "",
-    realization_name: str = "realization",
-) -> xr.Dataset:
-    # Create dimensions
-    if len(pred.shape) > 3:
-        dims += (realization_name,)
-
-    # Transform back to DataArray
-    pred_da = xr.DataArray(pred.detach(), coords, dims, name=name)
-
-    return pred_da.to_dataset()
