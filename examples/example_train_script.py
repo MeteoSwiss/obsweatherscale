@@ -1,16 +1,13 @@
 # %%
 import argparse
-import pickle
+import math
 import time
 from pathlib import Path
+from typing import Union
 
-import numpy as np
 import torch
 from torch.optim.adam import Adam
 
-from examples.example_data_processing import (
-    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, get_training_data
-)
 from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods import (
     TransformedGaussianLikelihood, ExactMarginalLogLikelihoodFill
@@ -19,137 +16,137 @@ from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoi
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.training import (
-    crps_normal_loss_fct, mll_loss_fct, train_model
+    crps_normal_loss_fct, mll_loss_fct, Trainer
 )
-from obsweatherscale.transformations import QuantileFittedTransformer
-from obsweatherscale.utils import init_device
+from obsweatherscale.transformations import (
+    QuantileFittedTransformer, Standardizer
+)
+from obsweatherscale.utils import init_device, GPDataset
 
 
-def main(config):
-    output_dir = config.output_dir
-    output_dir.mkdir(parents=True, exist_ok=True)
-    model_filename = "model"
-
+def main():
+    seed = 123
     start = time.time()
-    torch.manual_seed(config.seed)
 
-    # Get data
-    dataset_train, dataset_val_c, dataset_val_t = get_training_data(
-        config.data_dir,
-        config.x_train_filename,
-        config.y_train_filename,
-        config.x_val_c_filename,
-        config.y_val_c_filename,
-        config.x_val_t_filename,
-        config.y_val_t_filename,
-        config.inputs,
-        config.targets
+    # 1. Input data
+    nx, ny, nt = 30, 20, 10  # e.g.: 30 x points, 20 y points, 10 timesteps
+    x_coords = torch.linspace(0, 1, nx)
+    y_coords = torch.linspace(0, 1, ny)
+    timesteps = torch.linspace(0, 1, nt)
+
+    time_grid, x_grid, y_grid = torch.meshgrid(
+        timesteps, x_coords, y_coords, indexing='ij'
     )
-    train_x, train_y = dataset_train.get_dataset()
+
+    # train_x contains all predictors, here: x, y, and t grids (3 predictors)
+    # shape: (nx, ny, nt, 3)
+    ds_x = torch.stack([time_grid, x_grid, y_grid])
+    npred = ds_x.shape[-1] # number of predictors
+
+    # True function: a simplified weather surface (sin variation in space/time)
+    # shape: (nx, ny, nt)
+    ds_y = (
+        torch.sin(x_grid * (2 * math.pi)) *
+        torch.cos(y_grid * (2 * math.pi)) +
+        torch.sin(time_grid * (2 * math.pi)) +
+        torch.randn(time_grid.size()) * math.sqrt(0.04)
+    )
+
+    # Reshape x and y to shape: (nt, ns, ...) where ns is the number
+    # of spatial points
+    ns = nx * ny
+    ds_x = ds_x.reshape(nt, ns, 3)  # shape: (nt, ns, npred)
+    ds_y = ds_y.reshape(nt, ns)     # shape: (nt, ns)
+
+    # Split into train and validation
+    # TODO: split correctly
+    ns_train = int(0.8 * ns) 
+    ns_val = ns - ns_train
+
+    train_x = ds_x[:, :ns_train, :]  # shape: (nt, ns_train, npred)
+    train_y = ds_y[:, :ns_train]     # shape: (nt, ns_train)
+    val_x = ds_x[:, ns_train:, :]    # shape: (nt, ns_val, npred)
+    val_y = ds_y[:, ns_train:]       # shape: (nt, ns_val)
+
+    # Normalize data
+    standardizer = Standardizer(train_x)
+    y_transformer = QuantileFittedTransformer()
+
+    train_x = standardizer.transform(train_x)
+    train_y = y_transformer.transform(train_y)
+    val_x = standardizer.transform(val_x)
+    val_y = y_transformer.transform(val_y)
+
+    # Create dataset
+    class MyDataset(GPDataset):
+        def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor):
+            self.x = ds_x
+            self.y = ds_y
+            self.n_samples = ds_x.shape[0]
+
+        def to(self, device: torch.device):
+            self.x = self.x.to(device)
+            self.y = self.y.to(device)
+
+        def __len__(self):
+            return self.n_samples
+
+        def __getitem__(
+            self,
+            idx: Union[int, list[int], slice]
+        ) -> tuple[torch.Tensor, ...]:
+            return self.x[idx, ...], self.y[idx, ...]
+
+        def get_dataset(self) -> tuple[torch.Tensor, ...]:
+            return self.x, self.y
+
+    dataset_train = MyDataset(train_x, train_y)
+    dataset_val = MyDataset(val_x, val_y)
 
     # Initialize device
-    device = init_device(config.gpu, config.use_gpu)
+    device = init_device(gpu=None, use_gpu=True)
 
     # Initialize likelihood
-    transformer = QuantileFittedTransformer()
-    noise_model = TransformedFixedGaussianNoise(
-        transformer, obs_noise_var=torch.tensor(1.0)
-    )
+    # Noise model chosen to have a non-trainable constant variance of 1
+    # across all data points
+    noise_model = TransformedFixedGaussianNoise(y_transformer, obs_noise_var=1)
     likelihood = TransformedGaussianLikelihood(noise_model)
 
     # Initialize model
-    torch.manual_seed(config.seed)
-    mean_function = NeuralMean(
-        net=MLP(
-            dimensions=[len(MF_INPUTS), 32, 32, 1],
-            active_dims=[INPUTS.index(v) for v in MF_INPUTS]
-        )
-    )
-    # optim lengthscale: [0.25992706, 0.1681214, 0.08974447]
-    spatial_kernel = ScaledRBFKernel(
-        lengthscale=torch.tensor([0.25992706, 0.1681214, 0.08974447]),
-        active_dims=tuple(INPUTS.index(v) for v in SPATIAL_INPUTS),
-        train_lengthscale=False
-    )
-    torch.manual_seed(config.seed)
-    neural_kernel = NeuralKernel(
-        net=MLP(
-            dimensions=[len(K_INPUTS), 32, 32, 4],
-            active_dims=[INPUTS.index(v) for v in K_INPUTS]
-        ),
+    torch.manual_seed(seed)
+    mean_function = NeuralMean(net=MLP(dimensions=[3, 32, 32, 1]))
+
+    torch.manual_seed(seed)
+    kernel = NeuralKernel(
+        net=MLP(dimensions=[3, 32, 32, 4]),
         kernel=ScaledRBFKernel()
     )
-    kernel = spatial_kernel * neural_kernel
-    model = GPModel(
-        train_x, train_y, likelihood,
-        modules={'mean_module': mean_function, 'covar_module': kernel}
-    )
 
-    # Initialize optimizer and loss
+    model = GPModel(train_x, train_y, likelihood, mean_function, kernel)
+
+    # Initialize optimizer and loss functions
     optimizer = Adam(
-        [{'params': model.parameters()},
-         {'params': likelihood.parameters()}],
-        lr=config.learning_rate
+        [{'params': model.parameters()}, {'params': likelihood.parameters()}],
+        lr=0.005
     )
     mll = ExactMarginalLogLikelihoodFill(likelihood, model)
     train_loss_fct = mll_loss_fct(mll)
     val_loss_fct = crps_normal_loss_fct(likelihood)
 
     # Train
-    model, train_progress = train_model(
+    trainer = Trainer(
+        model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
+    )
+    model, train_progress = trainer.fit(
         dataset_train,
         dataset_val_c,
         dataset_val_t,
-        model,
-        likelihood,
-        train_loss_fct=train_loss_fct,
-        val_loss_fct=val_loss_fct,
-        device=device,
-        optimizer=optimizer,
-        batch_size=config.batch_size,
-        output_dir=output_dir,
-        model_filename=model_filename,
-        n_iter=config.n_iter,
-        random_masking=config.random_masking,
-        seed=config.seed,
-        nan_policy=config.nan_policy,
-        prec_size=config.prec_size
+        batch_size=2,
+        n_iter=100,
+        random_masking=True,
+        seed=seed,
+        verbose=True
     )
-
-    # Identify and label the best performing model
-    best_model_idx = np.argmin(train_progress["val loss"])
-    best_val_loss = np.min(train_progress["val loss"])
-    print(
-        f"Best model idx: {best_model_idx}, best val loss: {best_val_loss}",
-        flush=True
-    )
-    best_model_filename = f"{model_filename}_iter_{best_model_idx}"
-    model.load_state_dict(
-        torch.load(config.output_dir / best_model_filename, weights_only=True)
-    )
-
-    # Save
-    torch.save(model.state_dict(), output_dir / "best_model")
-    with open(
-        output_dir / "train_progress.pkl", 'wb'
-    ) as train_progress_path:
-        pickle.dump(train_progress, train_progress_path)
-    with open(
-        output_dir / config.standardizer_filename, 'wb'
-    ) as standardizer_path:
-        pickle.dump(
-            dataset_train.standardizer,
-            standardizer_path,
-            pickle.HIGHEST_PROTOCOL
-        )
-    with open(
-        output_dir / config.y_transformer_filename, 'wb'
-    ) as y_transformer_path:
-        pickle.dump(
-            dataset_train.y_transformer,
-            y_transformer_path,
-            pickle.HIGHEST_PROTOCOL
-        )
 
     # Free GPU
     torch.cuda.empty_cache()
@@ -163,11 +160,7 @@ def main(config):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--data_dir',
-        type=str,
-        default=Path('/', 'scratch', 'mch', 'illornsj', 'data', 'cosmo-1e')
-    )
+
     parser.add_argument(
         '--output_dir',
         type=str,
@@ -176,40 +169,8 @@ if __name__ == "__main__":
             'spatial_deep_kernel', 'artifacts'
         )
     )
-    parser.add_argument('--x_train_filename', type=str, default="x_train.zarr")
-    parser.add_argument('--y_train_filename', type=str, default="y_train.zarr")
-    parser.add_argument(
-        '--x_val_c_filename', type=str, default="x_val_context.zarr"
-    )
-    parser.add_argument(
-        '--y_val_c_filename', type=str, default="y_val_context.zarr"
-    )
-    parser.add_argument(
-        '--x_val_t_filename', type=str, default="x_val_target.zarr"
-    )
-    parser.add_argument(
-        '--y_val_t_filename', type=str, default="y_val_target.zarr"
-    )
-    parser.add_argument(
-        '--standardizer_filename', type=str, default="standardizer.pkl"
-    )
-    parser.add_argument(
-        '--y_transformer_filename', type=str, default="y_transformer.pkl"
-    )
-    parser.add_argument('--inputs', type=list, default=INPUTS)
-    parser.add_argument(
-        '--targets', type=list, default=["weather:wind_speed_of_gust"]
-    )
-    parser.add_argument('--random_masking', type=bool, default=True)
-    parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--n_iter', type=int, default=500)
-    parser.add_argument('--learning_rate', type=float, default=0.025)
-    parser.add_argument('--gpu', type=list, default=None)
-    parser.add_argument('--use_gpu', type=bool, default=True)
-    parser.add_argument('--seed', type=int, default=123)
-    parser.add_argument('--prec_size', type=int, default=1000)
-    parser.add_argument('--nan_policy', type=str, default='fill')
+
 
     args, _ = parser.parse_known_args()
 
-    main(args)
+    main()
