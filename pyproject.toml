@@ -43,6 +43,7 @@ sphinx = "^8.0.2"
 sphinx-autoapi = "^3.1.0"
 yapf = "^0.40.2"
 ipykernel = "^6.29.5"
+mchbuild = "^0.6.1"
 
 [tool.yapf]
 based_on_style = "pep8"
