@@ -1,6 +1,7 @@
 import abc
 import torch
 
+
 class Transformer():
     @abc.abstractmethod
     def __init__(self):

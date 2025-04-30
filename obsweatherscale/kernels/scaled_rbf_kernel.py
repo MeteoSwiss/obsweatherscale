@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import torch
 from gpytorch.constraints import Interval
@@ -17,15 +17,15 @@ class ScaledRBFKernel(Kernel):
     """
     def __init__(
         self,
-        variance: Optional[torch.Tensor] = None,
-        lengthscale: Optional[torch.Tensor] = None,
-        ard_num_dims: Optional[int] = None,
-        batch_shape: Optional[torch.Size] = None,
-        active_dims: Optional[tuple[int, ...]] = None,
-        lengthscale_prior: Optional[Prior] = None,
-        lengthscale_constraint: Optional[Interval] = None,
-        outputscale_prior: Optional[Prior] = None,
-        outputscale_constraint: Optional[Interval] = None,
+        variance: torch.Tensor | None = None,
+        lengthscale: torch.Tensor | None = None,
+        ard_num_dims: int | None = None,
+        batch_shape: torch.Size | None = None,
+        active_dims: tuple[int, ...] | None = None,
+        lengthscale_prior: Prior | None = None,
+        lengthscale_constraint: Interval | None = None,
+        outputscale_prior: Prior | None = None,
+        outputscale_constraint: Interval | None = None,
         train_lengthscale: bool = True,
         train_variance: bool = True,
         eps: float = 1e-06,
@@ -102,7 +102,9 @@ class ScaledRBFKernel(Kernel):
         # Set lengthscale
         if lengthscale is not None:
             rbf_kernel.raw_lengthscale = nn.Parameter(
-                rbf_kernel.raw_lengthscale_constraint.inverse_transform(lengthscale),
+                rbf_kernel.raw_lengthscale_constraint.inverse_transform(
+                    lengthscale
+                ),
                 requires_grad=train_lengthscale
             )
         rbf_kernel.raw_lengthscale.requires_grad = train_lengthscale
@@ -116,7 +118,9 @@ class ScaledRBFKernel(Kernel):
         # Set variance
         if variance is not None:
             self.kernel.raw_outputscale = nn.Parameter(
-                self.kernel.raw_outputscale_constraint.inverse_transform(variance),
+                self.kernel.raw_outputscale_constraint.inverse_transform(
+                    variance
+                ),
                 requires_grad=train_variance
             )
         self.kernel.raw_outputscale.requires_grad = train_variance

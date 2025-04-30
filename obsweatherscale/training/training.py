@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 import torch
 from gpytorch import settings
@@ -20,7 +20,7 @@ def train_step(
     loss_fct: Callable
 ) -> float:
     """Perform a training step on the model.
-    
+
     Parameters
     ----------
     model : ExactGP
@@ -33,6 +33,11 @@ def train_step(
         The target data for the training step.
     loss_fct : Callable
         The loss function to use for training.
+
+    Returns
+    -------
+    float
+        The value of the loss function for this training step.
     """
     model.train()
     likelihood.train()
@@ -77,6 +82,11 @@ def val_step(
         The target data for the validation step (target).
     loss_fct : Callable
         The loss function to use for validation.
+
+    Returns
+    -------
+    float
+        The value of the loss function for this validation step.
     """
     model.eval()
     likelihood.eval()
@@ -103,12 +113,12 @@ def train_model(
     model_filename: str,
     n_iter: int,
     random_masking: bool = True,
-    seed: Optional[int] = None,
+    seed: int | None = None,
     nan_policy: str = 'fill',
     prec_size: int = 100,
 ) -> tuple[ExactGP, dict[str, list]]:
     """ Train the Gaussian Process model.
-    
+
     Parameters
     ----------
     dataset_train : GPDataset
@@ -145,6 +155,16 @@ def train_model(
         The policy for handling NaN values in the data.
     prec_size : int, default=100
         The size of the preconditioner for the optimizer.
+    
+    Returns
+    -------
+    model : ExactGP
+        The trained Gaussian Process model.
+    train_progression : dict[str, list]
+        Dictionary containing training progression metrics with keys:
+        - 'iter': List of iteration numbers
+        - 'train loss': List of training loss values
+        - 'val loss': List of validation loss values
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
