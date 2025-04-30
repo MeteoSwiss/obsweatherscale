@@ -19,6 +19,21 @@ def train_step(
     batch_y: torch.Tensor,
     loss_fct: Callable
 ) -> float:
+    """Perform a training step on the model.
+    
+    Parameters
+    ----------
+    model : ExactGP
+        The Gaussian Process model.
+    likelihood : _GaussianLikelihoodBase
+        The likelihood function for the model.
+    batch_x : torch.Tensor
+        The input data for the training step.
+    batch_y : torch.Tensor
+        The target data for the training step.
+    loss_fct : Callable
+        The loss function to use for training.
+    """
     model.train()
     likelihood.train()
 
@@ -40,6 +55,29 @@ def val_step(
     batch_y_t: torch.Tensor,
     loss_fct: Callable
 ) -> float:
+    """Perform a validation step on the model.
+
+    The validation loss is computed on target xxx_t data
+    conditioned on the context xxx_c data. It can be used to 
+    diagnose the model's generalization performance.
+
+    Parameters
+    ----------
+    model : ExactGP
+        The Gaussian Process model.
+    likelihood : _GaussianLikelihoodBase
+        The likelihood function for the model.
+    batch_x_c : torch.Tensor
+        The input data for the validation step (conditional).
+    batch_y_c : torch.Tensor
+        The target data for the validation step (conditional).
+    batch_x_t : torch.Tensor
+        The input data for the validation step (target).
+    batch_y_t : torch.Tensor
+        The target data for the validation step (target).
+    loss_fct : Callable
+        The loss function to use for validation.
+    """
     model.eval()
     likelihood.eval()
 
@@ -69,6 +107,45 @@ def train_model(
     nan_policy: str = 'fill',
     prec_size: int = 100,
 ) -> tuple[ExactGP, dict[str, list]]:
+    """ Train the Gaussian Process model.
+    
+    Parameters
+    ----------
+    dataset_train : GPDataset
+        The training dataset.
+    dataset_val_c : GPDataset
+        The validation dataset (context).
+    dataset_val_t : GPDataset
+        The validation dataset (target).
+    model : ExactGP
+        The Gaussian Process model.
+    likelihood : _GaussianLikelihoodBase
+        The likelihood function for the model.
+    train_loss_fct : Callable
+        The loss function to use for training.
+    val_loss_fct : Callable
+        The loss function to use for validation.
+    device : torch.device
+        The device to use for training (CPU or GPU).
+    optimizer : Optimizer
+        The optimizer to use for training the model.
+    batch_size : int
+        The size of the batches for training.
+    output_dir : Path
+        The directory to save the model checkpoints.
+    model_filename : str
+        The filename for saving the model checkpoints.
+    n_iter : int
+        The number of iterations for training.
+    random_masking : bool, default=True
+        Whether to apply random masking to the training data.
+    seed : Optional[int], default=None
+        The random seed for reproducibility.
+    nan_policy : str, default='fill'
+        The policy for handling NaN values in the data.
+    prec_size : int, default=100
+        The size of the preconditioner for the optimizer.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
 
     dataset_length = len(dataset_train)

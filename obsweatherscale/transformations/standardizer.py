@@ -2,11 +2,24 @@ from typing import Optional
 import torch
 
 class Standardizer():
+    """Standardization transformation class."""
+
     def __init__(
         self,
         data: torch.Tensor,
         variables: Optional[tuple[int, ...]] = None
     ):
+        """Initialize the Standardizer.
+
+        Parameters
+        ----------
+        data : torch.Tensor
+            The data to be standardized.
+        variables : tuple[int, ...], optional
+            The dimensions to be used for standardization.
+            If None, all dimensions will be used.
+
+        """
         self.fit(data, variables)
     
     def description(self):
@@ -19,7 +32,18 @@ class Standardizer():
         self,
         data: torch.Tensor,
         variables: Optional[tuple[int, ...]] = None
-    ):
+    ):  
+        """Fit the standardization transformation to the data.
+        
+        Parameters
+        ----------
+        data : torch.Tensor
+            The data to be standardized.
+        variables : tuple[int, ...], optional
+            The dimensions to be used for standardization.
+            If None, all dimensions will be used.
+
+        """
         self.mean = data.mean(dim=variables).squeeze()
         self.std = data.std(dim=variables).squeeze()
 
@@ -28,6 +52,7 @@ class Standardizer():
         y: torch.Tensor,
         copy: bool = False
     ) -> torch.Tensor:
+        """Apply the standardization transformation to the input data."""
         if copy:
             y = y.detach().clone()
         return (y - self.mean) / self.std
@@ -37,6 +62,7 @@ class Standardizer():
         z: torch.Tensor,
         copy: bool = False
     ) -> torch.Tensor:
+        """Apply the inverse standardization transformation to the input data."""
         if copy:
             z = z.detach().clone()
         return z*self.std + self.mean

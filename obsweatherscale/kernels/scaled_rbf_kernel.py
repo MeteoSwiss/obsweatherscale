@@ -9,6 +9,12 @@ from torch import nn
 
 
 class ScaledRBFKernel(Kernel):
+    """Scaled RBF Kernel class.
+
+    This class implements a scaled radial basis function (RBF) kernel
+    with the option to set the lengthscale and variance parameters.
+
+    """
     def __init__(
         self,
         variance: Optional[torch.Tensor] = None,
@@ -25,6 +31,37 @@ class ScaledRBFKernel(Kernel):
         eps: float = 1e-06,
         **kwargs: Any
     ) -> None:
+        """Initialize the ScaledRBFKernel.
+
+        Parameters
+        ----------
+        variance : torch.Tensor, optional
+            The variance parameter for the kernel.
+        lengthscale : torch.Tensor, optional
+            The lengthscale parameter for the kernel.
+        ard_num_dims : int, optional
+            The number of dimensions for the lengthscale parameter.
+        batch_shape : torch.Size, optional
+            The batch shape of the kernel.
+        active_dims : tuple[int, ...], optional
+            The active dimensions for the kernel.
+        lengthscale_prior : Prior, optional
+            The prior for the lengthscale parameter.
+        lengthscale_constraint : Interval, optional
+            The constraint for the lengthscale parameter.
+        outputscale_prior : Prior, optional
+            The prior for the outputscale parameter.
+        outputscale_constraint : Interval, optional
+            The constraint for the outputscale parameter.
+        train_lengthscale : bool, default=True
+            Whether to train the lengthscale parameter.
+        train_variance : bool, default=True
+            Whether to train the variance parameter.
+        eps : float, default=1e-06
+            A small value to prevent numerical instability.
+        **kwargs : Any
+            Additional keyword arguments for the kernel.
+        """
         super().__init__()
 
         if (
