@@ -74,27 +74,3 @@ class GPDataset(Dataset, ABC):
             Typically contains input features and target values.
         """
         pass
-
-    @property
-    @abstractmethod
-    def standardizer(self) -> Any:
-        """Get the standardizer used for feature normalization.
-
-        Returns
-        -------
-        Any
-            The standardizer object used to normalize input features.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def y_transformer(self) -> Any:
-        """Get the transformer used for target variable transformation.
-
-        Returns
-        -------
-        Any
-            The transformer object used to transform target variables.
-        """
-        pass
