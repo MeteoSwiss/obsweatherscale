@@ -414,7 +414,7 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
             a tensor of shape (N,), or a tensor matching the shape of
             the input data.
         """
-        obs_noise_var = torch.tensor(obs_noise_var)
+        obs_noise_var = torch.tensor(obs_noise_var).float()
         super().__init__(transformer)
         FixedGaussianNoise.__init__(self, obs_noise_var)
 
