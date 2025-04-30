@@ -2,6 +2,7 @@ import torch
 
 from .transformer import Transformer
 
+
 class QuantileFittedTransformer(Transformer):
     """QuantileFittedTransformer class.
 
@@ -12,12 +13,8 @@ class QuantileFittedTransformer(Transformer):
     transformation is defined by the formula: f^-1(z) = a / (c + exp(-b * z)).
 
     """
-    def __init__(
-        self,
-        a: float = 4.66628594,
-        b: float = 0.73680252,
-        c: float = 0.07385268
-    ) -> None:
+
+    def __init__(self, a: float = 4.66628594, b: float = 0.73680252, c: float = 0.07385268) -> None:
         """Initialize the QuantileFittedTransformer.
 
         Parameters
@@ -33,12 +30,10 @@ class QuantileFittedTransformer(Transformer):
         self.a = a
         self.b = b
         self.c = c
-    
+
     def description(self) -> str:
-        return (
-            f"Continuous function approximating quantile transform: "
-            f"f(y) = log(a / y - c) / b"
-        )
+        return (f"Continuous function approximating quantile transform: "
+                f"f(y) = log(a / y - c) / b")
 
     def transform(self, y: torch.Tensor) -> torch.Tensor:
         """Apply the quantile fitted transformation to the input data."""
@@ -49,14 +44,14 @@ class QuantileFittedTransformer(Transformer):
         """Apply the inverse quantile fitted transformation to the input data."""
         return self.a / (self.c + torch.exp(-self.b * z))
 
-    def transform_derivative(self, y: torch.Tensor ) -> torch.Tensor:
+    def transform_derivative(self, y: torch.Tensor) -> torch.Tensor:
         """Compute the derivative of the quantile fitted transformation."""
         return self.a / (self.b * y * (self.a - self.c * y))
 
     def inv_transform_derivative(self, z: torch.Tensor) -> torch.Tensor:
         """Compute the derivative of the inverse quantile fitted transformation."""
         exp_neg_bz = torch.exp(-self.b * z)
-        return (self.a * self.b * exp_neg_bz) / ((self.c + exp_neg_bz) ** 2)
+        return (self.a * self.b * exp_neg_bz) / ((self.c + exp_neg_bz)**2)
 
     def noise_transform(self, data: torch.Tensor) -> torch.Tensor:
         """Apply the noise transformation to the input data."""

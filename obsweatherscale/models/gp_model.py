@@ -9,6 +9,7 @@ class GPModel(ExactGP):
     """Gaussian Process Model class.
     
     """
+
     def __init__(
         self,
         train_x: torch.Tensor,
