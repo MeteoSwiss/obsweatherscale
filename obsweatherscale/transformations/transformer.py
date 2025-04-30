@@ -7,6 +7,10 @@ class Transformer():
         pass
 
     @abc.abstractmethod
+    def description(self) -> str:
+        pass
+
+    @abc.abstractmethod
     def transform(self, y: torch.Tensor) -> torch.Tensor:
         pass
 

@@ -14,6 +14,12 @@ class QuantileFittedTransformer(Transformer):
         self.a = a
         self.b = b
         self.c = c
+    
+    def description(self) -> str:
+        return (
+            f"Continuous function approximating quantile transform: "
+            f"f(y) = log(a / y - c) / b"
+        )
 
     def transform(self, y: torch.Tensor) -> torch.Tensor:
         y = torch.clip(y, 1e-3, 70.0)
