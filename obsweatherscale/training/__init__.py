@@ -1,2 +1,2 @@
-from .training import train_model
+from .training import Trainer
 from .loss_functions import *
