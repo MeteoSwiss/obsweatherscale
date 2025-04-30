@@ -37,7 +37,7 @@ def main():
     )
 
     # train_x contains all predictors, here: x, y, and t grids (3 predictors)
-    # shape: (nx, ny, nt, 3)
+    # shape: (nx, ny, nt, npred)
     ds_x = torch.stack([time_grid, x_grid, y_grid])
     npred = ds_x.shape[-1] # number of predictors
 
@@ -57,7 +57,6 @@ def main():
     ds_y = ds_y.reshape(nt, ns)     # shape: (nt, ns)
 
     # Split into train and validation
-    # TODO: split correctly
     points_idx = torch.randperm(ns)
     train_frac_times = 0.7
     train_frac_points = 0.8
