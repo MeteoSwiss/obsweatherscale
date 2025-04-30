@@ -1,5 +1,5 @@
 import random
-from typing import Optional, Union
+from typing import Union
 import torch
 import xarray as xr
 
@@ -28,7 +28,7 @@ def apply_random_masking(data: torch.Tensor, p: float = 0.5) -> torch.Tensor:
 
 
 def set_active_dims(
-        active_dims: Optional[list[int]] = None
+        active_dims: list[int] | None = None
     ) -> Union[torch.Tensor, slice]:
     if active_dims is None:
         return slice(None)
@@ -43,7 +43,7 @@ def sample_batch_idx(
 
 
 def init_device(
-    gpu: Optional[Union[list[int], int]] = None,
+    gpu: Union[list[int], int] | None = None,
     use_gpu: bool = True
 ) -> torch.device:
     """Initialize device based on cpu/gpu and number of gpu
