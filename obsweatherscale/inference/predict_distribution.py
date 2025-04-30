@@ -8,13 +8,8 @@ from torch.distributions import Normal
 from obsweatherscale.likelihoods import TransformedGaussianLikelihood
 
 
-def predict_posterior(
-    model: ExactGP,
-    likelihood: TransformedGaussianLikelihood,
-    context_x: torch.Tensor,
-    context_y: torch.Tensor,
-    target_x: torch.Tensor
-) -> MultivariateNormal:
+def predict_posterior(model: ExactGP, likelihood: TransformedGaussianLikelihood, context_x: torch.Tensor,
+                      context_y: torch.Tensor, target_x: torch.Tensor) -> MultivariateNormal:
     model.eval()
     likelihood.eval()
 
@@ -24,12 +19,8 @@ def predict_posterior(
     return cast(MultivariateNormal, likelihood(post_distribution))
 
 
-def predict_prior(
-    model: ExactGP,
-    likelihood: TransformedGaussianLikelihood,
-    target_x: torch.Tensor,
-    target_y: torch.Tensor
-) -> MultivariateNormal:
+def predict_prior(model: ExactGP, likelihood: TransformedGaussianLikelihood, target_x: torch.Tensor,
+                  target_y: torch.Tensor) -> MultivariateNormal:
     model.train()
     likelihood.train()
 

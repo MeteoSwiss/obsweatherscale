@@ -12,6 +12,7 @@ class MLP(nn.Module):
     This class implements a simple multi-layer perceptron with ReLU 
     activation functions and an optional output activation function.
     """
+
     def __init__(
         self,
         dimensions: list[int],
@@ -21,8 +22,8 @@ class MLP(nn.Module):
         super().__init__()
 
         layers = []
-        for i in range(len(dimensions)-2):
-            layers.append(nn.Linear(dimensions[i], dimensions[i+1]))
+        for i in range(len(dimensions) - 2):
+            layers.append(nn.Linear(dimensions[i], dimensions[i + 1]))
             layers.append(nn.ReLU())
         layers.append(nn.Linear(dimensions[-2], dimensions[-1]))
 

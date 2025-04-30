@@ -9,6 +9,7 @@ class NeuralMean(Mean):
     starting from the input data.
 
     """
+
     def __init__(self, net: torch.nn.Module) -> None:
         """Initialize the NeuralMean.
 

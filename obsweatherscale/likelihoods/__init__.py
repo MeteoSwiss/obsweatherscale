@@ -1,3 +1,1 @@
-from .transformed_likelihood import (
-    TransformedGaussianLikelihood, ExactMarginalLogLikelihoodFill
-)
+from .transformed_likelihood import (TransformedGaussianLikelihood, ExactMarginalLogLikelihoodFill)
