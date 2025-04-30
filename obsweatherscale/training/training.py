@@ -41,6 +41,7 @@ class Trainer:
             The optimizer to use for training the model.
         """
         self.model = model
+        self.best_model = None
         self.likelihood = likelihood
         self.train_loss_fct = train_loss_fct
         self.val_loss_fct = val_loss_fct
@@ -136,13 +137,12 @@ class Trainer:
         val_context: GPDataset,
         val_target: GPDataset,
         batch_size: int,
-        output_dir: Path,
-        model_filename: str,
         n_iter: int,
         random_masking: bool = True,
         seed: int | None = None,
         nan_policy: str = "fill",
         prec_size: int = 100,
+        output_dir: Path | None = None,
         verbose: bool = True,
     ) -> tuple[ExactGP, dict[str, list]]:
         """Train the Gaussian Process model.
@@ -157,10 +157,6 @@ class Trainer:
             The validation dataset (target).
         batch_size : int
             The size of the batches for training.
-        output_dir : Path
-            The directory to save the model checkpoints.
-        model_filename : str
-            The filename for saving the model checkpoints.
         n_iter : int
             The number of iterations for training.
         random_masking : bool, default=True
@@ -171,7 +167,12 @@ class Trainer:
             The policy for handling NaN values in the data.
         prec_size : int, default=100
             The size of the preconditioner for the optimizer.
-
+        output_dir : Path, optional, default=None
+            The directory to save the model checkpoints. If None, the
+            model does not get saved during training.
+        verbose : bool, default=True
+            If True, prints training status (loss function values, iter,
+            time)
         Returns
         -------
         model : ExactGP
@@ -182,7 +183,8 @@ class Trainer:
             - 'train loss': List of training loss values
             - 'val loss': List of validation loss values
         """
-        output_dir.mkdir(parents=True, exist_ok=True)
+        if output_dir is not None:
+            output_dir.mkdir(parents=True, exist_ok=True)
 
         length = len(train)
         val_length = len(val_context)
@@ -196,6 +198,8 @@ class Trainer:
         train.to(self.device)
         val_context.to(self.device)
         val_target.to(self.device)
+
+        best_val_loss = torch.finfo.max
 
         for i in range(n_iter):
             start = time.time()
@@ -232,12 +236,13 @@ class Trainer:
                     )
 
             ### Logging ###
-            # Save model at each iteration 
-            # TODO: save only best val loss model
-            torch.save(
-                self.model.state_dict(),
-                output_dir / f"{model_filename}_iter_{i}"
-            )
+            # Save best model so far
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                self.best_model = self.model
+
+                if output_dir is not None:
+                    torch.save(self.model.state_dict(), output_dir / "model")
 
             # Save training log
             train_progression["iter"].append(i + 1)
@@ -256,4 +261,4 @@ class Trainer:
                     flush=True,
                 )
 
-        return self.model, train_progression
+        return self.best_model, train_progression # type: ignore
