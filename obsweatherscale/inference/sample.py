@@ -9,12 +9,10 @@ Distribution = Union[MultivariateNormal, Normal]
 
 def sample(distribution: Distribution, n_samples: int) -> torch.Tensor:
     if distribution.mean.dim() < 2 or distribution.mean.dim() > 3:
-        raise ValueError(
-            "Data should be of shape [batch_size, n_points]"
-            " or [batch_size, n_points, n_vars]"
-        )
+        raise ValueError("Data should be of shape [batch_size, n_points]"
+                         " or [batch_size, n_points, n_vars]")
 
-    sample_size = torch.Size((n_samples,))
+    sample_size = torch.Size((n_samples, ))
     samples = distribution.sample(sample_size)
 
     # Add "variable" dimension to make it robust for multitask
