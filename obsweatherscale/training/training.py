@@ -8,7 +8,7 @@ from gpytorch.likelihoods import _GaussianLikelihoodBase
 from gpytorch.models import ExactGP
 from torch.optim.optimizer import Optimizer
 
-from ..utils import apply_random_masking, sample_batch_idx
+from ..utils import RandomStateContext, sample_batch_idx
 from ..utils.dataset import GPDataset
 
 class Trainer:
@@ -24,7 +24,7 @@ class Trainer:
         optimizer: Optimizer,
     ):
         """Initialize the Trainer class.
-        
+
         Parameters
         ----------
         model : ExactGP
@@ -46,7 +46,6 @@ class Trainer:
         self.val_loss_fct = val_loss_fct
         self.device = device
         self.optimizer = optimizer
-
 
     def train_step(
         self,
@@ -78,7 +77,6 @@ class Trainer:
 
         return loss.item()
 
-
     def val_step(
         self,
         batch_x_context: torch.Tensor,
@@ -88,8 +86,8 @@ class Trainer:
     ) -> float:
         """Perform a validation step on the model.
 
-        The validation loss is computed on target xxx_target data
-        conditioned on the context xxx_context data. It can be used to
+        The validation loss is computed on target {}_target data
+        conditioned on the context {}_context data. It can be used to
         diagnose the model's generalization performance.
 
         Parameters
@@ -117,6 +115,20 @@ class Trainer:
 
         return loss.item()
 
+    def apply_random_masking(
+        self,
+        data: torch.Tensor,
+        p: float = 0.5
+    ) -> torch.Tensor:
+        mask_shape = (1, *data.shape[1:])
+
+        with RandomStateContext():
+            random_mask = torch.bernoulli(
+                torch.ones(mask_shape) * p
+            ).bool().expand_as(data)
+            data[random_mask] = torch.nan
+
+        return data
 
     def fit(
         self,
@@ -131,6 +143,7 @@ class Trainer:
         seed: int | None = None,
         nan_policy: str = "fill",
         prec_size: int = 100,
+        verbose: bool = True,
     ) -> tuple[ExactGP, dict[str, list]]:
         """Train the Gaussian Process model.
 
@@ -196,12 +209,10 @@ class Trainer:
                 batch_x, batch_y = train[batch_idx]
 
                 if random_masking:
-                    batch_y = apply_random_masking(batch_y)
+                    batch_y = self.apply_random_masking(batch_y)
 
                 with settings.observation_nan_policy(nan_policy):
-                    train_loss = self.train_step(
-                        self.model, self.likelihood, batch_x, batch_y, self.train_loss_fct
-                    )
+                    train_loss = self.train_step(batch_x, batch_y)
 
                 self.optimizer.step()
                 stop_targetrain = time.time()
@@ -214,18 +225,19 @@ class Trainer:
 
                 with torch.no_grad(), settings.observation_nan_policy(nan_policy):
                     val_loss = self.val_step(
-                        self.model,
-                        self.likelihood,
                         batch_x_context,
                         batch_y_context,
                         batch_x_target,
-                        batch_y_target,
-                        self.val_loss_fct,
+                        batch_y_target
                     )
 
             ### Logging ###
-            # Save model at each iteration
-            torch.save(self.model.state_dict(), output_dir / f"{model_filename}_iter_{i}")
+            # Save model at each iteration 
+            # TODO: save only best val loss model
+            torch.save(
+                self.model.state_dict(),
+                output_dir / f"{model_filename}_iter_{i}"
+            )
 
             # Save training log
             train_progression["iter"].append(i + 1)
@@ -234,14 +246,14 @@ class Trainer:
 
             stop = time.time()
 
-            # Print training log
-            print(
-                f"Iter {i + 1}/{n_iter} - "
-                f"Loss: {train_loss:.3f}   "
-                f"Val loss: {val_loss:.3f}   "
-                f"train time: {stop_targetrain - start:.3f}   "
-                f"time: {stop - start:.3f}",
-                flush=True,
-            )
+            if verbose:  # print training log
+                print(
+                    f"Iter {i + 1}/{n_iter} - "
+                    f"Loss: {train_loss:.3f}   "
+                    f"Val loss: {val_loss:.3f}   "
+                    f"train time: {stop_targetrain - start:.3f}   "
+                    f"time: {stop - start:.3f}",
+                    flush=True,
+                )
 
         return self.model, train_progression
