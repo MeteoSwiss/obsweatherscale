@@ -199,7 +199,7 @@ class Trainer:
         val_context.to(self.device)
         val_target.to(self.device)
 
-        best_val_loss = torch.finfo.max
+        best_val_loss = torch.inf
 
         for i in range(n_iter):
             start = time.time()

@@ -64,10 +64,10 @@ def main():
     train_points = points_idx[:int(train_frac_points * ns)]
     val_points = points_idx[int(train_frac_points * ns):]
 
-    train_x = ds_x[:int(train_frac_times * ns), train_points]  # shape: (nt, ns_train, npred)
-    train_y = ds_y[:int(train_frac_times * ns), train_points]     # shape: (nt, ns_train)
-    val_x = ds_x[int(train_frac_times * ns):]    # shape: (nt, ns_val, npred)
-    val_y = ds_y[int(train_frac_times * ns):]       # shape: (nt, ns_val)
+    train_x = ds_x[:int(train_frac_times * nt), train_points]  # shape: (nt, ns_train, npred)
+    train_y = ds_y[:int(train_frac_times * nt), train_points]     # shape: (nt, ns_train)
+    val_x = ds_x[int(train_frac_times * nt):]    # shape: (nt, ns_val, npred)
+    val_y = ds_y[int(train_frac_times * nt):]       # shape: (nt, ns_val)
 
     # Normalize data
     standardizer = Standardizer(train_x)
