@@ -8,6 +8,12 @@ class Standardizer():
         variables: Optional[tuple[int, ...]] = None
     ):
         self.fit(data, variables)
+    
+    def description(self):
+        return (
+            f"Standard normalization: "
+            f"f(y) = (y - mean(y) / stddev(y))"
+        )
 
     def fit(
         self,

@@ -110,6 +110,9 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         obs_noise_var = torch.tensor(obs_noise_var)
         super().__init__(transformer)
         FixedGaussianNoise.__init__(self, obs_noise_var)
+    
+    def extra_repr(self):
+        return f"\n  (obs_noise_var): {self.noise}"
 
     def forward(
         self,

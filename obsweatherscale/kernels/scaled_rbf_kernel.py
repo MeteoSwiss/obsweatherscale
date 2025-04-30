@@ -5,6 +5,7 @@ from gpytorch.constraints import Interval
 from gpytorch.kernels import Kernel, RBFKernel, ScaleKernel
 from gpytorch.priors import Prior
 from linear_operator.operators import LinearOperator
+from torch import nn
 
 
 class ScaledRBFKernel(Kernel):
@@ -51,7 +52,7 @@ class ScaledRBFKernel(Kernel):
                 "if variance is not trainable"
             )
 
-        self.rbf_kernel = RBFKernel(
+        rbf_kernel = RBFKernel(
             ard_num_dims=ard_num_dims,
             batch_shape=batch_shape,
             active_dims=active_dims,
@@ -63,19 +64,34 @@ class ScaledRBFKernel(Kernel):
 
         # Set lengthscale
         if lengthscale is not None:
-            self.rbf_kernel.lengthscale = lengthscale
-        self.rbf_kernel.raw_lengthscale.requires_grad = train_lengthscale
+            rbf_kernel.raw_lengthscale = nn.Parameter(
+                rbf_kernel.raw_lengthscale_constraint.inverse_transform(lengthscale),
+                requires_grad=train_lengthscale
+            )
+        rbf_kernel.raw_lengthscale.requires_grad = train_lengthscale
 
         self.kernel = ScaleKernel(
-            self.rbf_kernel,
+            rbf_kernel,
             outputscale_prior=outputscale_prior,
             outputscale_constraint=outputscale_constraint
         )
 
         # Set variance
         if variance is not None:
-            self.kernel.outputscale = variance
+            self.kernel.raw_outputscale = nn.Parameter(
+                self.kernel.raw_outputscale_constraint.inverse_transform(variance),
+                requires_grad=train_variance
+            )
         self.kernel.raw_outputscale.requires_grad = train_variance
+    
+    def extra_repr(self):
+        return '\n'.join(
+            [
+                f"(lengthscale): {self.kernel.base_kernel.lengthscale}",
+                f"(variance): {self.kernel.outputscale}",
+                f"(num_dims): {self.kernel.base_kernel.ard_num_dims}"
+            ]
+        )
 
     def forward(
         self,
