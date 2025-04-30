@@ -36,7 +36,7 @@ class TransformedNoise(Noise):
     forward(*args, **kwargs)
         Abstract method to be implemented by subclasses.
     """
-    def __init__(self, transformer: Transformer):
+    def __init__(self, transformer: Transformer) -> None:
         """Initialize the TransformedNoise model with a data transformer.
 
         Parameters
@@ -152,7 +152,7 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
         noise_prior: Prior | None = None,
         noise_constraint: torch.nn.Module | None = None,
         batch_shape: torch.Size = torch.Size()
-    ):
+    ) -> None:
         """Initializes the TransformedHomoskedasticNoise model.
 
         Sets up both the trainable constant noise module and the
@@ -225,7 +225,6 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
         return self.transform_noise(pure_noise_var=pure_noise_var, y=y)
 
 
-
 class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
     """A heteroskedastic noise model that accounts for target
     transformations.
@@ -272,7 +271,7 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
         noise_model,
         noise_indices: list[int] | None = None,
         noise_constraint: torch.nn.Module | None = None
-    ):
+    ) -> None:
         """Initializes the TransformedHeteroskedasticNoise model.
 
         Sets up both the heteroskedastic noise module and the
@@ -387,7 +386,7 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         self,
         transformer: Transformer,
         obs_noise_var: torch.Tensor | int | float = torch.tensor(1.0)
-    ):
+    ) -> None:
         """Initializes the TransformedFixedGaussianNoise model.
 
         Sets up both the fixed constant noise module and the

@@ -2,6 +2,7 @@ import torch
 
 from .transformer import Transformer
 
+
 class QuantileFittedTransformer(Transformer):
     """QuantileFittedTransformer class.
 
@@ -9,8 +10,8 @@ class QuantileFittedTransformer(Transformer):
     functions. It approximates the quantile transform using a continuous
     function defined by the formula: f(y) = log(a / y - c) / b, where
     a, b, and c are parameters of the transformation. The inverse
-    transformation is defined by the formula: f^-1(z) = a / (c + exp(-b * z)).
-
+    transformation is defined by the formula:
+    f^-1(z) = a / (c + exp(-b * z)).
     """
     def __init__(
         self,
@@ -18,7 +19,7 @@ class QuantileFittedTransformer(Transformer):
         b: float = 0.73680252,
         c: float = 0.07385268
     ) -> None:
-        """Initialize the QuantileFittedTransformer.
+        """Initializes the QuantileFittedTransformer.
 
         Parameters
         ----------
@@ -46,7 +47,9 @@ class QuantileFittedTransformer(Transformer):
         return -torch.log(self.a / y - self.c) / self.b
 
     def inverse_transform(self, z: torch.Tensor) -> torch.Tensor:
-        """Apply the inverse quantile fitted transformation to the input data."""
+        """Apply the inverse quantile fitted transformation to the
+        input data.
+        """
         return self.a / (self.c + torch.exp(-self.b * z))
 
     def transform_derivative(self, y: torch.Tensor ) -> torch.Tensor:
@@ -54,7 +57,9 @@ class QuantileFittedTransformer(Transformer):
         return self.a / (self.b * y * (self.a - self.c * y))
 
     def inv_transform_derivative(self, z: torch.Tensor) -> torch.Tensor:
-        """Compute the derivative of the inverse quantile fitted transformation."""
+        """Compute the derivative of the inverse quantile fitted
+        transformation.
+        """
         exp_neg_bz = torch.exp(-self.b * z)
         return (self.a * self.b * exp_neg_bz) / ((self.c + exp_neg_bz) ** 2)
 

@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable
 
 import torch
 from torch import nn
@@ -15,9 +15,30 @@ class MLP(nn.Module):
     def __init__(
         self,
         dimensions: list[int],
-        output_activation_fct: Optional[Callable] = None,
-        active_dims: Optional[list[int]] = None,
+        output_activation_fct: Callable | None = None,
+        active_dims: list[int] | None = None,
     ) -> None:
+        """Initialize the MLP model.
+        
+        Parameters
+        ----------
+        dimensions : list of int
+            List of integers representing the dimensions of each layer.
+            The first element is the input dimension, the last element
+            is the output dimension, and the intermediate elements are
+            hidden layer dimensions.
+        output_activation_fct : callable, optional
+            Activation function to apply to the output.
+            If None, no activation function is applied.
+        active_dims : list of int, optional
+            List of indices specifying which dimensions of the input to
+            use. If None, all dimensions are used.
+            
+        Examples
+        --------
+        # 10D input, 1D output with sigmoid
+        >>> mlp = MLP([10, 64, 32, 1], torch.sigmoid)
+        """
         super().__init__()
 
         layers = []

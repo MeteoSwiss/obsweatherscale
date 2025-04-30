@@ -1,5 +1,5 @@
-from typing import Optional
 import torch
+
 
 class Standardizer():
     """Standardization transformation class."""
@@ -7,7 +7,7 @@ class Standardizer():
     def __init__(
         self,
         data: torch.Tensor,
-        variables: Optional[tuple[int, ...]] = None
+        variables: tuple[int, ...] | None = None
     ):
         """Initialize the Standardizer.
 
@@ -18,20 +18,18 @@ class Standardizer():
         variables : tuple[int, ...], optional
             The dimensions to be used for standardization.
             If None, all dimensions will be used.
-
         """
         self.fit(data, variables)
     
     def description(self):
         return (
-            f"Standard normalization: "
-            f"f(y) = (y - mean(y) / stddev(y))"
+            "Standard normalization: f(y) = (y - mean(y) / stddev(y))"
         )
 
     def fit(
         self,
         data: torch.Tensor,
-        variables: Optional[tuple[int, ...]] = None
+        variables: tuple[int, ...] | None = None
     ):  
         """Fit the standardization transformation to the data.
         
@@ -42,7 +40,6 @@ class Standardizer():
         variables : tuple[int, ...], optional
             The dimensions to be used for standardization.
             If None, all dimensions will be used.
-
         """
         self.mean = data.mean(dim=variables).squeeze()
         self.std = data.std(dim=variables).squeeze()
@@ -62,7 +59,9 @@ class Standardizer():
         z: torch.Tensor,
         copy: bool = False
     ) -> torch.Tensor:
-        """Apply the inverse standardization transformation to the input data."""
+        """Apply the inverse standardization transformation to the
+        input data.
+        """
         if copy:
             z = z.detach().clone()
         return z*self.std + self.mean
