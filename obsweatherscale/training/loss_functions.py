@@ -40,8 +40,12 @@ def crps_normal(
 
 
 def crps_normal_loss_fct(
-    likelihood: Optional[_GaussianLikelihoodBase]
+    likelihood: _GaussianLikelihoodBase | None = None
 ) -> Callable:
+    """Create a CRPS loss function for normal distributions that
+    handles missing values and optionally transforms the distribution.
+    
+    """
     def loss_fct(
         distribution: MultivariateNormal,
         obs: torch.Tensor
@@ -61,6 +65,11 @@ def crps_normal_loss_fct(
 
 
 def mll_loss_fct(mll: ExactMarginalLogLikelihood):
+    """Return a loss function that computes the negative log-likelihood
+    of a multivariate normal distribution, optionally transformed by a
+    likelihood function.
+    
+    """
     def loss_fct(
         distribution: MultivariateNormal,
         obs: torch.Tensor

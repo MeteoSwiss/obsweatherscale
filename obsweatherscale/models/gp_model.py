@@ -6,6 +6,9 @@ from gpytorch.models import ExactGP
 
 
 class GPModel(ExactGP):
+    """Gaussian Process Model class.
+    
+    """
     def __init__(
         self,
         train_x: torch.Tensor,
@@ -13,6 +16,20 @@ class GPModel(ExactGP):
         likelihood: _GaussianLikelihoodBase,
         modules: dict,
     ) -> None:
+        """Initialize the GPModel.
+
+        Parameters
+        ----------
+        train_x : torch.Tensor
+            The training input data.
+        train_y : torch.Tensor
+            The training output data.
+        likelihood : _GaussianLikelihoodBase
+            The likelihood function for the model.
+        modules : dict
+            A dictionary containing the mean and covariance modules.
+
+        """
         super().__init__(train_x, train_y, likelihood)
         self.mean_module = modules['mean_module']
         self.covar_module = modules['covar_module']

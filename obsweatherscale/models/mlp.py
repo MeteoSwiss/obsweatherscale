@@ -7,6 +7,11 @@ from ..utils import set_active_dims
 
 
 class MLP(nn.Module):
+    """Multi-Layer Perceptron (MLP) class.
+
+    This class implements a simple multi-layer perceptron with ReLU 
+    activation functions and an optional output activation function.
+    """
     def __init__(
         self,
         dimensions: list[int],
