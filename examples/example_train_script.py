@@ -55,18 +55,21 @@ def main():
     # Reshape x and y to shape: (nt, ns, ...) where ns is the number
     # of spatial points
     ns = nx * ny
-    ds_x = ds_x.reshape(nt, ns, 3)  # shape: (nt, ns, npred)
+    ds_x = ds_x.reshape(nt, ns, 3)  # shape: (n_times, ns, npred)
     ds_y = ds_y.reshape(nt, ns)     # shape: (nt, ns)
 
     # Split into train and validation
     # TODO: split correctly
-    ns_train = int(0.8 * ns) 
-    ns_val = ns - ns_train
+    points_idx = torch.randperm(ns)
+    train_frac_times = 0.7
+    train_frac_points = 0.8
+    train_points = points_idx[:int(train_frac_points * ns)]
+    val_points = points_idx[int(train_frac_points * ns):]
 
-    train_x = ds_x[:, :ns_train, :]  # shape: (nt, ns_train, npred)
-    train_y = ds_y[:, :ns_train]     # shape: (nt, ns_train)
-    val_x = ds_x[:, ns_train:, :]    # shape: (nt, ns_val, npred)
-    val_y = ds_y[:, ns_train:]       # shape: (nt, ns_val)
+    train_x = ds_x[:int(train_frac_times * ns), train_points]  # shape: (nt, ns_train, npred)
+    train_y = ds_y[:int(train_frac_times * ns), train_points]     # shape: (nt, ns_train)
+    val_x = ds_x[int(train_frac_times * ns):]    # shape: (nt, ns_val, npred)
+    val_y = ds_y[int(train_frac_times * ns):]       # shape: (nt, ns_val)
 
     # Normalize data
     standardizer = Standardizer(train_x)
@@ -101,7 +104,8 @@ def main():
             return self.x, self.y
 
     dataset_train = MyDataset(train_x, train_y)
-    dataset_val = MyDataset(val_x, val_y)
+    dataset_val_c = MyDataset(val_x[:, train_points], val_y[:, train_points])
+    dataset_val_t = MyDataset(val_x[:, val_points], val_y[:, val_points])
 
     # Initialize device
     device = init_device(gpu=None, use_gpu=True)
@@ -159,18 +163,4 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        '--output_dir',
-        type=str,
-        default=Path(
-            '/', 'scratch', 'mch', 'illornsj', 'data', 'experiments',
-            'spatial_deep_kernel', 'artifacts'
-        )
-    )
-
-
-    args, _ = parser.parse_known_args()
-
     main()
