@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 import xarray as xr
 import zarr
@@ -7,7 +6,7 @@ import zarr
 
 def open_zarr_file(
     filename: Path,
-    data_key: Optional[list[str]] = None,
+    data_key: list[str] | None = None,
     time_slice: slice = slice(None),
 ) -> xr.Dataset:
     data = xr.open_zarr(filename)
@@ -19,7 +18,7 @@ def to_zarr_with_compressor(
     data: xr.Dataset,
     filename: Path,
     compressor: zarr.Blosc,
-    chunk_size: Optional[dict] = None,
+    chunk_size: dict | None = None,
 ) -> None:
     if chunk_size is None:
         chunk_size = dict(data.sizes)
