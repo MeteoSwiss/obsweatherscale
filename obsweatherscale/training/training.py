@@ -161,7 +161,7 @@ class Trainer:
             The number of iterations for training.
         random_masking : bool, default=True
             Whether to apply random masking to the training data.
-        seed : Optional[int], default=None
+        seed : int, optional, default=None
             The random seed for reproducibility.
         nan_policy : str, default='fill'
             The policy for handling NaN values in the data.

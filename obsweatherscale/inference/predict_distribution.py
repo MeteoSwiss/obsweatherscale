@@ -3,7 +3,6 @@ from typing import cast
 import torch
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.models import ExactGP
-from torch.distributions import Normal
 
 from obsweatherscale.likelihoods import TransformedGaussianLikelihood
 
@@ -37,7 +36,3 @@ def predict_prior(
     prior_distribution = model(target_x)
 
     return cast(MultivariateNormal, likelihood(prior_distribution))
-
-
-def marginal(distribution: MultivariateNormal) -> Normal:
-    return Normal(distribution.mean, distribution.stddev)

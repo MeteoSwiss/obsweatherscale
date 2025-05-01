@@ -26,47 +26,41 @@ def main():
     seed = 123
     start = time.time()
 
-    # 1. Input data
-    nx, ny, nt = 30, 20, 10  # e.g.: 30 x points, 20 y points, 10 timesteps
-    x_coords = torch.linspace(0, 1, nx)
-    y_coords = torch.linspace(0, 1, ny)
-    timesteps = torch.linspace(0, 1, nt)
+    ##### Data ####
+    # e.g. 100 stations, 10 timesteps, on a [0, 1] x [0, 1] x-y grid
 
-    time_grid, x_grid, y_grid = torch.meshgrid(
-        timesteps, x_coords, y_coords, indexing='ij'
-    )
+    def true_signal(x, y, t): # simulated weather signal
+        return (
+            torch.sin(math.pi * x) *
+            torch.cos(math.pi * y) *
+            torch.sin(2 * math.pi * t / t.shape[0])
+        )
 
-    # train_x contains all predictors, here: x, y, and t grids (3 predictors)
-    # shape: (nx, ny, nt, npred)
-    ds_x = torch.stack([time_grid, x_grid, y_grid])
-    npred = ds_x.shape[-1] # number of predictors
+    n_points, n_times, noise_var = 100, 10, 0.1
+    t = torch.linspace(0, n_times - 1, n_times)
+    x_coords, y_coords = torch.rand(n_points), torch.rand(n_points)
 
-    # True function: a simplified weather surface (sin variation in space/time)
-    # shape: (nx, ny, nt)
-    ds_y = (
-        torch.sin(x_grid * (2 * math.pi)) *
-        torch.cos(y_grid * (2 * math.pi)) +
-        torch.sin(time_grid * (2 * math.pi)) +
-        torch.randn(time_grid.size()) * math.sqrt(0.04)
-    )
+    x_coords = x_coords.unsqueeze(0).expand(n_times, -1) # [n_times, n_points]
+    y_coords = y_coords.unsqueeze(0).expand(n_times, -1) # [n_times, n_points]
+    t = t.unsqueeze(-1).expand(-1, n_points)             # [n_times, n_points]
 
-    # Reshape x and y to shape: (nt, ns, ...) where ns is the number
-    # of spatial points
-    ns = nx * ny
-    ds_x = ds_x.reshape(nt, ns, 3)  # shape: (n_times, ns, npred)
-    ds_y = ds_y.reshape(nt, ns)     # shape: (nt, ns)
+    ds_x = torch.stack([x_coords, y_coords, t], dim=-1)
+    ds_y = true_signal \
+        + math.sqrt(noise_var) * torch.randn_like(x_coords)
 
     # Split into train and validation
-    points_idx = torch.randperm(ns)
-    train_frac_times = 0.7
-    train_frac_points = 0.8
-    train_points = points_idx[:int(train_frac_points * ns)]
-    val_points = points_idx[int(train_frac_points * ns):]
+    frac_t_train = 0.7
+    frac_p_train = 0.8
+    nt_train, np_train = int(frac_t_train*n_times), int(frac_p_train*n_points)
 
-    train_x = ds_x[:int(train_frac_times * nt), train_points]  # shape: (nt_train, ns_train, npred)
-    train_y = ds_y[:int(train_frac_times * nt), train_points]     # shape: (nt_train, ns_train)
-    val_x = ds_x[int(train_frac_times * nt):]    # shape: (nt_val, ns, npred)
-    val_y = ds_y[int(train_frac_times * nt):]       # shape: (nt_val, ns)
+    points_idx = torch.randperm(n_points)
+    train_points = points_idx[:np_train]
+    val_points = points_idx[np_train:]
+
+    train_x = ds_x[:nt_train, train_points] # [nt_train, np_train, n_preds]
+    train_y = ds_y[:nt_train, train_points] # [nt_train, np_train]
+    val_x = ds_x[nt_train:]     # [nt_val, n_points, n_preds]
+    val_y = ds_y[nt_train:]     # [nt_val, n_points]
 
     # Normalize data
     standardizer = Standardizer(train_x)
@@ -104,16 +98,14 @@ def main():
     dataset_val_c = MyDataset(val_x[:, train_points], val_y[:, train_points])
     dataset_val_t = MyDataset(val_x[:, val_points], val_y[:, val_points])
 
-    # Initialize device
-    device = init_device(gpu=None, use_gpu=True)
+    #### Initialize model ####
 
-    # Initialize likelihood
-    # Noise model chosen to have a non-trainable constant variance of 1
-    # across all data points
-    noise_model = TransformedFixedGaussianNoise(y_transformer, obs_noise_var=1)
+    # Likelihood and noise model
+    # Non-trainable constant variance across all data points
+    noise_model = TransformedFixedGaussianNoise(y_transformer, noise_var)
     likelihood = TransformedGaussianLikelihood(noise_model)
 
-    # Initialize model
+    # GP model
     torch.manual_seed(seed)
     mean_function = NeuralMean(net=MLP(dimensions=[3, 32, 32, 1]))
 
@@ -125,16 +117,19 @@ def main():
 
     model = GPModel(train_x, train_y, likelihood, mean_function, kernel)
 
-    # Initialize optimizer and loss functions
-    optimizer = Adam(
-        [{'params': model.parameters()}, {'params': likelihood.parameters()}],
-        lr=0.005
-    )
+    #### Loss functions ####
     mll = ExactMarginalLogLikelihoodFill(likelihood, model)
     train_loss_fct = mll_loss_fct(mll)
     val_loss_fct = crps_normal_loss_fct(likelihood)
 
-    # Train
+    #### Train ####
+    optimizer = Adam(
+        [{'params': model.parameters()}, {'params': likelihood.parameters()}],
+        lr=0.005
+    )
+    
+    device = init_device(gpu=None, use_gpu=True)
+
     trainer = Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
     )
@@ -149,9 +144,10 @@ def main():
         verbose=True
     )
 
-    # Free GPU
+    #### Free GPU ####
     torch.cuda.empty_cache()
 
+    #### Log ####
     stop = time.time()
     print(
         f"Total time: {stop - start:.3f} s / {(stop - start)/60:.3f} min",

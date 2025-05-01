@@ -1,10 +1,9 @@
-from typing import Optional
 import xarray as xr
 
 
 def to_dataarray(
     dataset: xr.Dataset,
-    variable_name: Optional[str] = None,
+    variable_name: str | None = None,
 ) -> xr.DataArray:
     if variable_name is None:
         return dataset.to_dataarray("").squeeze("")
