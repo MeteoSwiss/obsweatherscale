@@ -1,219 +1,111 @@
 # %%
-import argparse
-import pickle
-from pathlib import Path
-
+import math
 import torch
-import zarr
 from gpytorch import settings
 
-from examples.example_data_processing import (
-    INPUTS, K_INPUTS, MF_INPUTS, SPATIAL_INPUTS, get_dataset
-)
-from obsweatherscale.data_io import to_zarr_with_compressor
-from obsweatherscale.inference import (
-    marginal, predict_posterior, predict_prior, sample
-)
+from obsweatherscale.inference import predict_posterior, predict_prior, sample
 from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods import TransformedGaussianLikelihood
 from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.transformations import QuantileFittedTransformer
-from obsweatherscale.utils import init_device, wrap_tensor
+from obsweatherscale.transformations.standardizer import Standardizer
+from obsweatherscale.utils import init_device
 
 
-def main(config):
-    artifacts_dir = config.artifacts_dir
-    output_dir = config.output_dir
-    model_path = artifacts_dir / config.model_filename
+def main():
+    #### Data ####
+    def true_signal(x, y, t):
+        return (
+            torch.sin(math.pi * x) *
+            torch.cos(math.pi * y) *
+            torch.sin(2 * math.pi * t / t.shape[0])
+        )
 
-    # Load normalizers with training params
-    with open(
-        artifacts_dir / config.standardizer_filename, 'rb'
-    ) as standardizer_path:
-        standardizer = pickle.load(standardizer_path)
-    with open(
-        artifacts_dir / config.y_transformer_filename, 'rb'
-    ) as y_transformer_path:
-        y_transformer = pickle.load(y_transformer_path)
+    n_stations, n_x, n_y, n_times, noise_var = 100, 30, 20, 10, 0.1
+    n_points = n_x * n_y
+    t = torch.linspace(0, n_times - 1, n_times)
 
-    # Load and normalize test data
-    dataset_context = get_dataset(
-        x_filename=config.data_dir / config.x_context_filename,
-        y_filename=config.data_dir / config.y_context_filename,
-        inputs=config.inputs,
-        targets=config.targets,
-        standardizer=standardizer,
-        y_transformer=y_transformer
+    # Target data: the desired grid
+    t_grid, x_grid, y_grid = torch.meshgrid(
+        t, torch.linspace(0, 1, n_x), torch.linspace(0, 1, n_y), indexing='ij'
     )
-    dataset_target = get_dataset(
-        x_filename=config.data_dir / config.x_target_filename,
-        y_filename=config.data_dir / config.y_target_filename,
-        inputs=config.inputs,
-        targets=config.targets,
-        standardizer=standardizer,
-        y_transformer=y_transformer
-    )
+    
+    target_x = torch.stack([t_grid, x_grid, y_grid])
+    target_y = true_signal(x_grid, y_grid, t_grid) + \
+        math.sqrt(noise_var) * torch.randn_like(x_grid)
+    
+    target_x = target_x.reshape(n_times, n_points, 3) # [n_times, n_points, 3]
+    target_y = target_y.reshape(n_times, n_points)    # [n_times, n_points]
 
-    context_x, context_y = dataset_context.get_dataset()
-    target_x, target_y = dataset_target.get_dataset()
-    context_y, target_y = context_y.squeeze(-1), target_y.squeeze(-1)
+    # Context data: the stations (used for training)
+    x_coords, y_coords = torch.rand(1, n_stations), torch.rand(1, n_stations)
+    x_coords = x_coords.expand(n_times, -1)    # [n_times, n_stations]
+    y_coords = y_coords.expand(n_times, -1)    # [n_times, n_stations]
+    t = t.unsqueeze(-1).expand(-1, n_stations) # [n_times, n_stations]
+
+    context_x = torch.stack([x_coords, y_coords, t], dim=-1)
+    context_y = true_signal(x_coords, y_coords, t) + \
+        math.sqrt(noise_var) * torch.randn_like(x_coords)
+
+    # Load artifacts and normalize
+    # Note: here we instantiate them untrained, but they should be loaded
+    standardizer = Standardizer(context_x)
+    y_transformer = QuantileFittedTransformer()
+
+    context_x = standardizer.transform(context_x)
+    context_y = y_transformer.transform(context_y)
+    target_x = standardizer.transform(target_x)
+    target_y = y_transformer.transform(target_y)
 
     # Initialize device
-    device = init_device(config.gpu, config.use_gpu)
+    device = init_device(gpu=None, use_gpu=True)
 
     # Initialize likelihood
-    transformer = QuantileFittedTransformer()
-    noise_model = TransformedFixedGaussianNoise(
-        transformer, obs_noise_var=torch.tensor(1.0)
-    )
+    noise_model = TransformedFixedGaussianNoise(y_transformer, obs_noise_var=1)
     likelihood = TransformedGaussianLikelihood(noise_model)
 
     # Initialize model
-    mean_function = NeuralMean(
-        net=MLP(
-            dimensions=[len(MF_INPUTS), 32, 32, 1],
-            active_dims=[INPUTS.index(v) for v in MF_INPUTS]
-        )
-    )
-    spatial_kernel = ScaledRBFKernel(
-        lengthscale=torch.tensor([0.25992706, 0.1681214, 0.08974447]),
-        active_dims=tuple(INPUTS.index(v) for v in SPATIAL_INPUTS),
-        train_lengthscale=False
-    )
-    neural_kernel = NeuralKernel(
-        net=MLP(
-            dimensions=[len(K_INPUTS), 32, 32, 4],
-            active_dims=[INPUTS.index(v) for v in K_INPUTS]
-        ),
+    mean_function = NeuralMean(net=MLP(dimensions=[3, 32, 32, 1]))
+    kernel = NeuralKernel(
+        net=MLP(dimensions=[3, 32, 32, 4]),
         kernel=ScaledRBFKernel()
     )
-    kernel = spatial_kernel * neural_kernel
-    model = GPModel(
-        context_x, context_y, likelihood,
-        modules={'mean_module': mean_function, 'covar_module': kernel}
-    )
-    model.load_state_dict(
-        torch.load(
-            model_path,
-            map_location=torch.device('cpu'),
-            weights_only=True
-        )
-    )
+    # Load the trained model (here we instantiate it but it should be loaded)
+    model = GPModel(context_x, context_y, likelihood, mean_function, kernel)
 
     ## Evaluate
     model.to(device)
     likelihood.to(device)
-    dataset_context.to(device)
-    dataset_target.to(device)
 
     # 1. Predict distributions
-    with settings.observation_nan_policy(config.nan_policy):
-         # Evaluate posterior on target stations
-         # using context stations ("context")
-        context_distr = marginal(
-            predict_posterior(
-                model, likelihood, context_x, context_y, target_x
-            )
+    with (
+        torch.no_grad(),
+        settings.memory_efficient(True),
+        settings.observation_nan_policy("fill")
+    ):
+        posterior = predict_posterior(
+            model, likelihood, context_x, context_y, target_x
         )
-
-        # Evaluate posterior on target stations
-        # using target stations ("hyperlocal")
-        hyperloc_distr = marginal(
-            predict_posterior(
-                model, likelihood, target_x, target_y, target_x
-            )
-        )
-
-        # Evaluate prior on target stations ("prior")
-        prior_distr = marginal(
-            predict_prior(model, likelihood, target_x, target_y)
-        )
+        prior = predict_prior(model, likelihood, target_x, target_y)
 
     # 2. Sample from distributions
-    torch.manual_seed(config.seed)
-    samples_context = sample(context_distr, config.n_samples)
-    torch.manual_seed(config.seed)
-    samples_hyperloc = sample(hyperloc_distr, config.n_samples)
-    torch.manual_seed(config.seed)
-    samples_prior = sample(prior_distr, config.n_samples)
+    # shape: (n_times, n_points, n_variables, n_samples)
+    seed = 123
+    n_samples = 101
+    torch.manual_seed(seed)
+    samples_posterior = sample(posterior, n_samples=n_samples)
+    samples_prior = sample(prior, n_samples=n_samples)
 
-    # 3. Denormalize and wrap into xr.Dataset
-    name = config.targets[0]
-    dims = dataset_target.dims
-    coords = dataset_target.coords
+    # 3. Reshape samples
+    # Only one variable was predicted (true_signal), so we can squeeze it
+    samples_posterior = samples_posterior.squeeze()
+    samples_prior = samples_prior.squeeze()
 
-    samples_ds = []
-    for tensor in (samples_context, samples_hyperloc, samples_prior):
-        tensor = y_transformer.inverse_transform(tensor)
-        tensor = wrap_tensor(tensor, dims, coords, name=name)
-        samples_ds.append(tensor)
-
-    # 4. Save
-    compressor = zarr.Blosc(cname='zstd', clevel=3, shuffle=zarr.Blosc.SHUFFLE)
-    for samples, case in zip(samples_ds, ("context", "hyperlocal", "prior")):
-        directory = output_dir / case
-
-        to_zarr_with_compressor(
-            samples,
-            filename=directory / "samples.zarr",
-            compressor=compressor
-        )
+    samples_posterior = samples_posterior.reshape(n_times, n_x, n_y, n_samples)
+    samples_prior = samples_prior.reshape(n_times, n_x, n_y, n_samples)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--data_dir',
-        type=str,
-        default=Path('/', 'scratch', 'mch', 'illornsj', 'data', 'cosmo-1e')
-    )
-    parser.add_argument(
-        '--artifacts_dir',
-        type=str,
-        default=Path(
-            '/', 'scratch', 'mch', 'illornsj', 'data', 'experiments',
-            'spatial_deep_kernel', 'artifacts'
-        )
-    )
-    parser.add_argument(
-        '--output_dir',
-        type=str,
-        default=Path(
-            '/', 'scratch', 'mch', 'illornsj', 'data', 'experiments',
-            'spatial_deep_kernel', 'results'
-        )
-    )
-    parser.add_argument(
-        '--x_target_filename', type=str, default="x_test_target.zarr"
-    )
-    parser.add_argument(
-        '--x_context_filename', type=str, default= "x_test_context.zarr"
-    )
-    parser.add_argument(
-        '--y_target_filename', type=str, default="y_test_target.zarr"
-    )
-    parser.add_argument(
-        '--y_context_filename', type=str, default="y_test_context.zarr"
-    )
-    parser.add_argument('--model_filename', type=str, default="best_model")
-
-    parser.add_argument(
-        '--standardizer_filename', type=str, default="standardizer.pkl")
-    parser.add_argument(
-        '--y_transformer_filename', type=str, default="y_transformer.pkl"
-    )
-    parser.add_argument(
-        '--targets', type=list, default=["weather:wind_speed_of_gust"]
-    )
-    parser.add_argument('--inputs', type=list, default=INPUTS)
-    parser.add_argument('--n_samples', type=int, default=101)
-    parser.add_argument('--gpu', type=list, default=None)
-    parser.add_argument('--use_gpu', type=bool, default=False)
-    parser.add_argument('--seed', type=int, default=123)
-    parser.add_argument('--nan_policy', type=str, default='fill')
-
-    args, _ = parser.parse_known_args()
-
-    main(args)
+    main()
