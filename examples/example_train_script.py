@@ -57,10 +57,10 @@ def main():
     train_points = points_idx[:np_train]
     val_points = points_idx[np_train:]
 
-    train_x = ds_x[:nt_train, train_points] # [n_times, np_train, n_preds]
-    train_y = ds_y[:nt_train, train_points] # [n_times, np_train]
-    val_x = ds_x[nt_train:]     # [n_times, np_val, n_preds]
-    val_y = ds_y[nt_train:]     # [n_times, np_val]
+    train_x = ds_x[:nt_train, train_points] # [nt_train, np_train, n_preds]
+    train_y = ds_y[:nt_train, train_points] # [nt_train, np_train]
+    val_x = ds_x[nt_train:]     # [nt_val, n_points, n_preds]
+    val_y = ds_y[nt_train:]     # [nt_val, n_points]
 
     # Normalize data
     standardizer = Standardizer(train_x)
