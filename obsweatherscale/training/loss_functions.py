@@ -36,7 +36,8 @@ def crps_normal(
     distribution and the empirical CDF of the observation.
 
     For a normal distribution, the CRPS has the closed form:
-    CRPS(N(μ, σ), y) = σ * [y_norm * (2*Φ(y_norm) - 1) + 2*φ(y_norm) - 1/√π]
+    CRPS(N(μ, σ), y) = 
+        σ * [y_norm * (2*Φ(y_norm) - 1) + 2*φ(y_norm) - 1/√π]
     where y_norm = (y - μ)/σ, Φ is the CDF and φ is the PDF of the
     standard normal.
     """
@@ -55,7 +56,9 @@ def crps_normal(
     return crps.mean()
 
 
-def crps_normal_loss_fct(likelihood: _GaussianLikelihoodBase | None = None) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
+def crps_normal_loss_fct(
+    likelihood: _GaussianLikelihoodBase | None = None
+) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
     """Wrapper to create a CRPS loss function for normal distributions
     that handles missing values and optionally transforms the
     distribution.
@@ -80,7 +83,10 @@ def crps_normal_loss_fct(likelihood: _GaussianLikelihoodBase | None = None) -> C
     the parameters are set to produce a neutral contribution to the loss.
     """
 
-    def loss_fct(distribution: MultivariateNormal, obs: torch.Tensor) -> torch.Tensor:
+    def loss_fct(
+        distribution: MultivariateNormal,
+        obs: torch.Tensor
+    ) -> torch.Tensor:
         mask = torch.isnan(obs)
         obs = torch.where(mask, 0.0, obs)
 
@@ -96,7 +102,9 @@ def crps_normal_loss_fct(likelihood: _GaussianLikelihoodBase | None = None) -> C
     return loss_fct
 
 
-def mll_loss_fct(mll: ExactMarginalLogLikelihood) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
+def mll_loss_fct(
+    mll: ExactMarginalLogLikelihood
+) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
     """Wrapper to create a negative log-likelihood loss function
     of a multivariate normal distribution, optionally transformed by a
     likelihood function.
@@ -124,13 +132,17 @@ def mll_loss_fct(mll: ExactMarginalLogLikelihood) -> Callable[[MultivariateNorma
         If the mll doesn't return a torch.Tensor.
     """
 
-    def loss_fct(distribution: MultivariateNormal, obs: torch.Tensor) -> torch.Tensor:
+    def loss_fct(
+        distribution: MultivariateNormal,
+        obs: torch.Tensor
+    ) -> torch.Tensor:
         log_likelihood = mll(distribution, obs)
         if isinstance(log_likelihood, torch.Tensor):
             return -log_likelihood.mean()
 
         raise TypeError(
-            f"Expected mll to return a torch.Tensor, " f"got {type(log_likelihood)}"
+            "Expected mll to return a torch.Tensor, "
+            f"got {type(log_likelihood)}"
         )
 
     return loss_fct

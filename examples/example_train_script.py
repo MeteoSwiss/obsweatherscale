@@ -10,7 +10,9 @@ from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods import (
     TransformedGaussianLikelihood, ExactMarginalLogLikelihoodFill
 )
-from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
+from obsweatherscale.likelihoods.noise_models import (
+    TransformedFixedGaussianNoise
+)
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.training import (
@@ -127,7 +129,7 @@ def main():
         [{'params': model.parameters()}, {'params': likelihood.parameters()}],
         lr=0.005
     )
-    
+
     device = torch.device("cuda")
 
     trainer = Trainer(

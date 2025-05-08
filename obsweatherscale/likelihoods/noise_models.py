@@ -43,7 +43,7 @@ class TransformedNoise(Noise):
     """
 
     def __init__(self, transformer: Transformer) -> None:
-        """Initialize the TransformedNoise model with a data transformer.
+        """Initialize the TransformedNoise model with data transformer.
 
         Parameters
         ----------
@@ -59,7 +59,8 @@ class TransformedNoise(Noise):
         pure_noise_var: torch.Tensor,
         y: torch.Tensor | None = None,
     ) -> DiagLinearOperator:
-        """Transform noise variance to reflect target data transformation.
+        """Transform noise variance to reflect target data
+        transformation.
 
         Applies the square of the local derivative of the inverse
         transformation to the predicted noise variance. This ensures
@@ -113,7 +114,6 @@ class TransformedNoise(Noise):
         NotImplementedError
             To be raised if the method is not implemented in a subclass.
         """
-        pass
 
 
 class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
@@ -173,7 +173,7 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
             to the target variable (e.g., logarithmic, standardization).
 
         noise_prior : Prior, optional
-            A prior distribution placed over the constant noise variance.
+            Prior distribution placed over the constant noise variance.
 
         noise_constraint : nn.Module, optional
             Optional constraint to ensure valid noise variance
@@ -198,9 +198,9 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
         shape: torch.Size | None = None,
         **kwargs: Any,
     ) -> DiagLinearOperator:
-        """Computes transformed homoskedastic noise as a linear operator.
+        """Computes transformed homoskedastic noise as linear operator.
 
-        Produces a constant diagonal noise covariance matrix, and applies
+        Produces a constant diagonal noise covariance matrix and applies
         a correction based on the transformation of the target variable.
 
         Parameters
@@ -221,9 +221,9 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
         Returns
         -------
         DiagLinearOperator
-            A diagonal linear operator representing the transformed noise
-            covariance matrix. This is useful in Gaussian process models
-            where efficient matrix representations are needed.
+            A diagonal linear operator representing the transformed
+            noise covariance matrix. This is useful in Gaussian process
+            models where efficient matrix representations are needed.
         """
         pure_noise_var = (
             super(HomoskedasticNoise, self)
@@ -240,9 +240,9 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
 
     Heteroskedastic noise is data-dependent: it allows for a different
     noise variance for each data point. This model combines
-    heteroskedastic noise modeling with a transformation-aware mechanism,
-    allowing it to model noise in the transformed target space rather
-    than the original.
+    heteroskedastic noise modeling with a transformation-aware
+    mechanism, allowing it to model noise in the transformed target
+    space rather than the original.
 
     Heteroskedastic noise is useful when the variability of observations
     depends on the input, such as in sensor readings, financial data, or
@@ -352,14 +352,14 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
         Returns
         -------
         DiagLinearOperator
-            A diagonal linear operator representing the transformed noise
-            covariance matrix. This is useful in Gaussian process models
-            where efficient matrix representations are needed.
+            A diagonal linear operator representing the transformed
+            noise covariance matrix. This is useful in Gaussian process
+            models where efficient matrix representations are needed.
         """
         pure_noise_var = (
-            super(HeteroskedasticNoise, self)
-            .forward(*params, batch_shape=batch_shape, shape=shape, noise=noise)
-            .diagonal() # type: ignore
+            super(HeteroskedasticNoise, self).forward(
+                *params, batch_shape=batch_shape, shape=shape, noise=noise
+            ).diagonal() # type: ignore
         )
 
         return self.transform_noise(pure_noise_var=pure_noise_var, y=y)
@@ -436,7 +436,8 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         noise: torch.Tensor | None = None,
         **kwargs: Any,
     ) -> DiagLinearOperator:
-        """Computes transformed fixed Gaussian noise as a linear operator.
+        """Computes transformed fixed Gaussian noise as a linear
+        operator.
 
         Parameters
         ----------
@@ -458,15 +459,17 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         Returns
         -------
         DiagLinearOperator
-            A diagonal linear operator representing the transformed noise
-            covariance matrix. This is useful in Gaussian process models
-            where efficient matrix representations are needed.
+            A diagonal linear operator representing the transformed
+            noise covariance matrix. This is useful in Gaussian process
+            models where efficient matrix representations are needed.
         """
         # Determine shape
         if shape is None:
             p = params[0] if torch.is_tensor(params[0]) else params[0][0]
             shape = (
-                torch.Size(p.shape) if len(p.shape) == 1 else torch.Size(p.shape[:-1])
+                torch.Size(p.shape)
+                if len(p.shape) == 1
+                else torch.Size(p.shape[:-1])
             )
         batch_shape, n = shape
 

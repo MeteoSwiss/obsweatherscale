@@ -1,6 +1,8 @@
 import torch
 
-from obsweatherscale.transformations import Standardizer, QuantileFittedTransformer
+from obsweatherscale.transformations import (
+    Standardizer, QuantileFittedTransformer
+)
 
 
 def test_standardizer():
@@ -20,7 +22,9 @@ def test_standardizer():
     # Inverse transform the data
     inverse_transformed_x = standardizer.inverse_transform(transformed_x)
 
-    assert torch.allclose(x, inverse_transformed_x), "Inverse transform mismatch"
+    assert torch.allclose(
+        x, inverse_transformed_x
+    ), "Inverse transform mismatch"
     assert standardizer.mean.shape == (3,), "Mean shape mismatch"
     assert standardizer.std.shape == (3,), "Std shape mismatch"
     assert standardizer.mean.dtype == torch.float32, "Mean dtype mismatch"
@@ -42,6 +46,10 @@ def test_quantile_fitted_transformer():
     assert transformed_x.dtype == torch.float32, "Transformed dtype mismatch"
 
     # Inverse transform the data
-    inverse_transformed_x = quantile_transformer.inverse_transform(transformed_x)
+    inverse_transformed_x = quantile_transformer.inverse_transform(
+        transformed_x
+    )
 
-    assert torch.allclose(x, inverse_transformed_x), "Inverse transform mismatch"
+    assert torch.allclose(
+        x, inverse_transformed_x
+    ), "Inverse transform mismatch"

@@ -1,11 +1,9 @@
-import pytest
 import torch
 
 from obsweatherscale.means import NeuralMean
 
 
 def test_neural_mean():
-
     # Create a simple neural network
     net = torch.nn.Sequential(
         torch.nn.Linear(3, 10),
@@ -22,6 +20,6 @@ def test_neural_mean():
     # Compute the mean output
     output = neural_mean(x)
 
-    assert output.shape == (5, 2), "Output shape mismatch"
+    assert output.shape == (5, 2), "Output shape mismatch"  # type: ignore
     assert isinstance(output, torch.Tensor), "Output type mismatch"
     assert output.dtype == torch.float32, "Output dtype mismatch"

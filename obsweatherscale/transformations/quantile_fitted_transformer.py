@@ -15,7 +15,9 @@ class QuantileFittedTransformer(Transformer):
     """
 
     def __init__(
-        self, a: float = 4.66628594, b: float = 0.73680252, c: float = 0.07385268
+        self, a: float = 4.66628594,
+        b: float = 0.73680252,
+        c: float = 0.07385268
     ) -> None:
         """Initializes the QuantileFittedTransformer.
 
@@ -35,12 +37,13 @@ class QuantileFittedTransformer(Transformer):
 
     def description(self) -> str:
         return (
-            f"Continuous function approximating quantile transform: "
-            f"f(y) = log(a / y - c) / b"
+            "Continuous function approximating quantile transform: "
+            "f(y) = log(a / y - c) / b"
         )
 
     def transform(self, y: torch.Tensor) -> torch.Tensor:
-        """Apply the quantile fitted transformation to the input data."""
+        """Apply the quantile fitted transformation to the input data.
+        """
         y = torch.clip(y, 1e-3, 70.0)
         return -torch.log(self.a / y - self.c) / self.b
 
@@ -51,7 +54,8 @@ class QuantileFittedTransformer(Transformer):
         return self.a / (self.c + torch.exp(-self.b * z))
 
     def transform_derivative(self, y: torch.Tensor) -> torch.Tensor:
-        """Compute the derivative of the quantile fitted transformation."""
+        """Compute the derivative of the quantile fitted transformation.
+        """
         return self.a / (self.b * y * (self.a - self.c * y))
 
     def inv_transform_derivative(self, z: torch.Tensor) -> torch.Tensor:

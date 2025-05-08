@@ -3,7 +3,9 @@ import math
 import pytest
 import torch
 
-from obsweatherscale.transformations import Standardizer, QuantileFittedTransformer
+from obsweatherscale.transformations import (
+    Standardizer, QuantileFittedTransformer
+)
 from obsweatherscale.utils import GPDataset
 
 
@@ -29,11 +31,11 @@ class MyDataset(GPDataset):
 
     def get_dataset(self) -> tuple[torch.Tensor, ...]:
         return self.x, self.y
-    
+
 
 def create_test_data():
     # 1. Input data
-    nx, ny, nt = 30, 20, 20  # e.g.: 30 x points, 20 y points, 10 timesteps
+    nx, ny, nt = 30, 20, 20  # e.g.: 30 x pts, 20 y pts, 10 timesteps
     x_coords = torch.linspace(0, 1, nx)
     y_coords = torch.linspace(0, 1, ny)
     timesteps = torch.linspace(0, 1, nt)
@@ -42,12 +44,12 @@ def create_test_data():
         timesteps, x_coords, y_coords, indexing='ij'
     )
 
-    # train_x contains all predictors, here: x, y, and t grids (3 predictors)
-    # shape: (nx, ny, nt, npred)
+    # train_x contains all predictors, here: x, y, and t grids (3 preds)
+    # shape: (nx, ny, nt, npreds)
     ds_x = torch.stack([time_grid, x_grid, y_grid])
-    npred = ds_x.shape[-1] # number of predictors
 
-    # True function: a simplified weather surface (sin variation in space/time)
+    # True function: a simplified weather surface
+    # (sin variation in space/time)
     # shape: (nx, ny, nt)
     ds_y = (
         torch.sin(x_grid * (2 * math.pi)) *
@@ -69,10 +71,10 @@ def create_test_data():
     train_points = points_idx[:int(train_frac_points * ns)]
     val_points = points_idx[int(train_frac_points * ns):]
 
-    train_x = ds_x[:int(train_frac_times * nt), train_points]  # shape: (nt_train, ns_train, npred)
-    train_y = ds_y[:int(train_frac_times * nt), train_points]     # shape: (nt_train, ns_train)
-    val_x = ds_x[int(train_frac_times * nt):]    # shape: (nt_val, ns, npred)
-    val_y = ds_y[int(train_frac_times * nt):]       # shape: (nt_val, ns)
+    train_x = ds_x[:int(train_frac_times * nt), train_points]
+    train_y = ds_y[:int(train_frac_times * nt), train_points]
+    val_x = ds_x[int(train_frac_times * nt):]
+    val_y = ds_y[int(train_frac_times * nt):]
 
     # Normalize data
     standardizer = Standardizer(train_x)
@@ -83,17 +85,18 @@ def create_test_data():
     val_x = standardizer.transform(val_x)
     val_y = y_transformer.transform(val_y)
 
-    dataset_train = MyDataset(train_x, train_y)
-    dataset_val_c = MyDataset(val_x[:, train_points], val_y[:, train_points])
-    dataset_val_t = MyDataset(val_x[:, val_points], val_y[:, val_points])
+    ds_train = MyDataset(train_x, train_y)
+    ds_val_c = MyDataset(val_x[:, train_points], val_y[:, train_points])
+    ds_val_t = MyDataset(val_x[:, val_points], val_y[:, val_points])
 
     res = {}
-    res["train"] = dataset_train
-    res["val_context"] = dataset_val_c
-    res["val_target"] = dataset_val_t
+    res["train"] = ds_train
+    res["val_context"] = ds_val_c
+    res["val_target"] = ds_val_t
     return res
 
 test_data = create_test_data()
+
 
 @pytest.fixture
 def dataset_train():
@@ -104,8 +107,7 @@ def dataset_train():
 def dataset_val_c():
     return test_data["val_context"]
 
+
 @pytest.fixture
 def dataset_val_t():
     return test_data["val_target"]
-
-

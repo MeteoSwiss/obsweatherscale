@@ -1,10 +1,12 @@
-import torch
-from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch import ExactMarginalLogLikelihood
 import gpytorch
+import torch
+from gpytorch import ExactMarginalLogLikelihood
 from gpytorch.distributions import MultivariateNormal
+from gpytorch.likelihoods import GaussianLikelihood
 
-from obsweatherscale.training.loss_functions import crps_normal, crps_normal_loss_fct, mll_loss_fct
+from obsweatherscale.training.loss_functions import (
+    crps_normal, crps_normal_loss_fct, mll_loss_fct
+)
 
 def test_crps_normal():
     # Test the CRPS normal function
@@ -34,7 +36,6 @@ def test_crps_normal_loss_fct():
 
 
 def test_mll_loss_fct():
-
     # Prepare training data
     train_x = torch.randn(10, 3)
     train_y = torch.randn(10, 1)
@@ -42,15 +43,19 @@ def test_mll_loss_fct():
     # Define a simple Exact GP model
     class ExactGPModel(gpytorch.models.ExactGP):
         def __init__(self, train_x, train_y, likelihood):
-            super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+            super().__init__(train_x, train_y, likelihood)
             self.mean_module = gpytorch.means.ConstantMean()
-            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+            self.covar_module = gpytorch.kernels.ScaleKernel(
+                gpytorch.kernels.RBFKernel()
+            )
 
-        def forward(self, x):
+        def forward(self, x, **kwargs):
             mean_x = self.mean_module(x)
             covar_x = self.covar_module(x)
-            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-    
+            return gpytorch.distributions.MultivariateNormal(
+                mean_x, covar_x  # type: ignore
+            )
+
     # Instantiate GP model, likelihood and the loss, then wrap it
     likelihood = GaussianLikelihood()
     model = ExactGPModel(train_x, train_y, likelihood)

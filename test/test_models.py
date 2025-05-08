@@ -17,18 +17,25 @@ def test_gp_model():
 
     model = GPModel(train_x, train_y, likelihood, mean, kernel)
 
-    assert isinstance(model, GPModel), "Model is not of type GPModel"
-    assert model.train_inputs[0].shape == train_x.shape, "Train x shape mismatch"
-    assert model.train_targets.shape == train_y.shape, "Train y shape mismatch"
+    train_x_shape = model.train_inputs[0].shape # type: ignore
+    train_y_shape = model.train_targets.shape
 
+    assert isinstance(model, GPModel), "Model is not of type GPModel"
+    assert train_x_shape == train_x.shape, "Train x shape mismatch"
+    assert train_y_shape == train_y.shape, "Train y shape mismatch"
 
     # Check if the model can be called
     test_x = torch.randn(5, 3)
     model.eval()
     output = model(test_x)
-    assert output.mean.shape == (5,), "Output mean shape mismatch"
-    assert output.covariance_matrix.shape == (5, 5), "Output covariance shape mismatch"
-    assert isinstance(output, torch.distributions.MultivariateNormal), "Output type mismatch"
+
+    mean_shape = output.mean.shape # type: ignore
+    cov_shape = output.covariance_matrix.shape # type: ignore
+
+    assert mean_shape == (5,), "Output mean shape mismatch"
+    assert cov_shape == (5, 5), "Output covariance shape mismatch"
+    assert isinstance(output, torch.distributions.MultivariateNormal), \
+        "Output type mismatch"
 
 
 def test_mlp():

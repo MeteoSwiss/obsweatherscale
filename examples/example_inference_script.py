@@ -6,7 +6,9 @@ from gpytorch import settings
 from obsweatherscale.inference import predict_posterior, predict_prior, sample
 from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 from obsweatherscale.likelihoods import TransformedGaussianLikelihood
-from obsweatherscale.likelihoods.noise_models import TransformedFixedGaussianNoise
+from obsweatherscale.likelihoods.noise_models import (
+    TransformedFixedGaussianNoise
+)
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.transformations import QuantileFittedTransformer
@@ -30,11 +32,11 @@ def main():
     t_grid, x_grid, y_grid = torch.meshgrid(
         t, torch.linspace(0, 1, n_x), torch.linspace(0, 1, n_y), indexing='ij'
     )
-    
+
     target_x = torch.stack([t_grid, x_grid, y_grid])
     target_y = true_signal(x_grid, y_grid, t_grid) + \
         math.sqrt(noise_var) * torch.randn_like(x_grid)
-    
+
     target_x = target_x.reshape(n_times, n_points, 3) # [n_times, n_points, 3]
     target_y = target_y.reshape(n_times, n_points)    # [n_times, n_points]
 
