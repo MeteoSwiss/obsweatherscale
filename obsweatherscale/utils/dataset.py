@@ -34,7 +34,6 @@ class GPDataset(Dataset, ABC):
         Any
             The sample at the specified index.
         """
-        pass
 
     @abstractmethod
     def __len__(self) -> int:
@@ -45,7 +44,6 @@ class GPDataset(Dataset, ABC):
         int
             Number of samples in the dataset.
         """
-        pass
 
     @abstractmethod
     def to(self, device: torch.device):
@@ -61,7 +59,6 @@ class GPDataset(Dataset, ABC):
         self
             The dataset instance moved to the specified device.
         """
-        pass
 
     @abstractmethod
     def get_dataset(self) -> tuple[torch.Tensor, ...]:
@@ -73,4 +70,3 @@ class GPDataset(Dataset, ABC):
             A tuple of tensors representing the entire dataset.
             Typically contains input features and target values.
         """
-        pass

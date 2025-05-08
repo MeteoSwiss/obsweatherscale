@@ -41,8 +41,9 @@ class RandomStateContext:
         """Enter the runtime context and prepare for deterministic
         computation.
 
-        Saves the current RNG state again (to ensure up-to-date state) and reseeds 
-        the RNG with a new seed using `torch.seed()` to create a fresh random state.
+        Saves the current RNG state again (to ensure up-to-date state)
+        and reseeds the RNG with a new seed using `torch.seed()` to
+        create a fresh random state.
 
         Returns
         -------
@@ -93,7 +94,7 @@ class Trainer:
         self.val_loss_fct = val_loss_fct
         self.device = device
         self.optimizer = optimizer
-    
+
     def sample_batch_idx(self, length: int, batch_size: int) -> list[int]:
         """Randomly sample a batch of unique indices.
 
@@ -134,7 +135,9 @@ class Trainer:
         self.model.train()
         self.likelihood.train()
 
-        self.model.set_train_data(inputs=batch_x, targets=batch_y, strict=False)
+        self.model.set_train_data(
+            inputs=batch_x, targets=batch_y, strict=False
+        )
         distribution = self.model(batch_x)
         loss = self.train_loss_fct(distribution, batch_y)
 
@@ -174,7 +177,9 @@ class Trainer:
         self.model.eval()
         self.likelihood.eval()
 
-        self.model.set_train_data(batch_x_context, batch_y_context, strict=False)
+        self.model.set_train_data(
+            batch_x_context, batch_y_context, strict=False
+        )
         distribution_val = self.model(batch_x_target)
         loss = self.val_loss_fct(distribution_val, batch_y_target)
 
@@ -242,7 +247,7 @@ class Trainer:
         model : ExactGP
             The trained Gaussian Process model.
         train_progression : dict[str, list]
-            Dictionary containing training progression metrics with keys:
+            Dictionary with training progression metrics with keys:
             - 'iter': List of iteration numbers
             - 'train loss': List of training loss values
             - 'val loss': List of validation loss values
@@ -291,7 +296,10 @@ class Trainer:
                 batch_x_context, batch_y_context = val_context[batch_idx]
                 batch_x_target, batch_y_target = val_target[batch_idx]
 
-                with torch.no_grad(), settings.observation_nan_policy(nan_policy):
+                with (
+                    torch.no_grad(),
+                    settings.observation_nan_policy(nan_policy)
+                ):
                     val_loss = self.val_step(
                         batch_x_context,
                         batch_y_context,
@@ -315,7 +323,7 @@ class Trainer:
 
             stop = time.time()
 
-            if verbose:  # print training log
+            if verbose:
                 print(
                     f"Iter {i + 1}/{n_iter} - "
                     f"Loss: {train_loss:.3f}   "

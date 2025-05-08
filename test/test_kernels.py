@@ -1,4 +1,3 @@
-import pytest 
 import torch
 from gpytorch.kernels import RBFKernel
 
@@ -21,7 +20,7 @@ def test_neural_kernel():
     x2 = torch.randn(5, 3)
 
     # Compute the kernel output
-    output = neural_kernel(x1, x2).evaluate()
+    output = neural_kernel(x1, x2).evaluate() # type: ignore
 
     assert output.shape == (5, 5), "Output shape mismatch"
     assert isinstance(output, torch.Tensor), "Output type mismatch"
@@ -30,14 +29,14 @@ def test_neural_kernel():
 
 def test_scaled_rbf_kernel():
     # Create a scaled RBF kernel
-    scaled_kernel = ScaledRBFKernel(torch.tensor(1.5), torch.tensor([2.0, 0.5]))
+    scaled_kernel = ScaledRBFKernel(torch.tensor(1.5), torch.tensor([2., 0.5]))
 
     # Generate some random input data
     x1 = torch.randn(5, 2)
     x2 = torch.randn(5, 2)
 
     # Compute the kernel output
-    output = scaled_kernel(x1, x2).evaluate()
+    output = scaled_kernel(x1, x2).evaluate() # type: ignore
 
     assert output.shape == (5, 5), "Output shape mismatch"
     assert isinstance(output, torch.Tensor), "Output type mismatch"

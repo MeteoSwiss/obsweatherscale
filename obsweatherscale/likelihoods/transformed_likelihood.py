@@ -3,9 +3,13 @@ from typing import Any, Union
 
 import torch
 from gpytorch import ExactMarginalLogLikelihood, settings
-from gpytorch.distributions import base_distributions, MultivariateNormal
+from gpytorch.distributions import (
+    base_distributions, MultivariateNormal
+)
 from gpytorch.likelihoods import _GaussianLikelihoodBase
-from linear_operator.operators import LinearOperator, MaskedLinearOperator
+from linear_operator.operators import (
+    LinearOperator, MaskedLinearOperator
+)
 
 from .noise_models import TransformedNoise
 
@@ -238,7 +242,9 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
             function's covariance and the noise covariance.
         """
         mean, covar = function_dist.mean, function_dist.lazy_covariance_matrix
-        noise_covar = self._shaped_noise_covar(mean.shape, *params, y=mean, **kwargs)
+        noise_covar = self._shaped_noise_covar(
+            mean.shape, *params, y=mean, **kwargs
+        )
         full_covar = covar + noise_covar  # type: ignore
         return function_dist.__class__(mean, full_covar)
 

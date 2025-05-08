@@ -13,7 +13,6 @@ class ScaledRBFKernel(Kernel):
 
     This class implements a scaled radial basis function (RBF) kernel
     with the option to set the lengthscale and variance parameters.
-
     """
 
     def __init__(
@@ -71,7 +70,8 @@ class ScaledRBFKernel(Kernel):
             and len(lengthscale) != len(active_dims)
         ):
             raise ValueError(
-                "The length of 'lengthscale' must match" " the length of 'active_dims'"
+                "The length of 'lengthscale' must match the length "
+                "of 'active_dims'"
             )
 
         if lengthscale is not None:
@@ -85,7 +85,8 @@ class ScaledRBFKernel(Kernel):
 
         if not train_variance and variance is None:
             raise ValueError(
-                "A variance value must be provided " "if variance is not trainable"
+                "A variance value must be provided "
+                "if variance is not trainable"
             )
 
         rbf_kernel = RBFKernel(
@@ -101,7 +102,9 @@ class ScaledRBFKernel(Kernel):
         # Set lengthscale
         if lengthscale is not None:
             rbf_kernel.raw_lengthscale = nn.Parameter(
-                rbf_kernel.raw_lengthscale_constraint.inverse_transform(lengthscale),
+                rbf_kernel.raw_lengthscale_constraint.inverse_transform(
+                    lengthscale
+                ),
                 requires_grad=train_lengthscale,
             )
         rbf_kernel.raw_lengthscale.requires_grad = train_lengthscale
@@ -115,7 +118,9 @@ class ScaledRBFKernel(Kernel):
         # Set variance
         if variance is not None:
             self.kernel.raw_outputscale = nn.Parameter(
-                self.kernel.raw_outputscale_constraint.inverse_transform(variance),
+                self.kernel.raw_outputscale_constraint.inverse_transform(
+                    variance
+                ),
                 requires_grad=train_variance,
             )
         self.kernel.raw_outputscale.requires_grad = train_variance
