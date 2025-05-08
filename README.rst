@@ -2,9 +2,7 @@
 obsweatherscale
 =============================
 
-.. warning::
-
-   **This project is in BETA and under active development. Interfaces and functionality are subject to change.**
+**⚠️ WARNING:** This project is in BETA and under active development. Interfaces and functionality are subject to change.
 
 **obsweatherscale** is a GPyTorch-based Python library for ML probabilistic interpolation and regression using Gaussian Processes (GPs), with a focus on meteorological applications. It provides an extensible framework for building GP models that incorporate neural networks, designed for tasks involving spatial and temporal surface weather analysis fields.
 
