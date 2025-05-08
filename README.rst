@@ -40,6 +40,7 @@ To install the latest release from PyPI:
 For development
 ~~~~~~~~~~~~~~~
 To set up the project for local development, clone the repository and use the provided Poetry setup script:
+
 .. code-block::  bash
 
     git clone git@github.com:MeteoSwiss/obsweatherscale.git
@@ -85,7 +86,7 @@ If you use obsweatherscale in your work, please cite both this library and GPyTo
 
 **obsweatherscale**
 
-Icíar Lloréns Jover\* and Francesco Zanetta\*.  
+Lloréns Jover, Icíar and Zanetta, Francesco.  
 *obswetherscale: observation-conditioned ML downscaling of surface weather fields.*  
 GitHub repository: https://github.com/MeteoSwiss/obsweatherscale ,
 2025.
@@ -93,7 +94,7 @@ GitHub repository: https://github.com/MeteoSwiss/obsweatherscale ,
 .. code-block:: bibtex
 
     @misc{mch2025yourlib,
-      author       = {Icíar Lloréns Jover and Francesco Zanetta},
+      author       = {Lloréns Jover, Icíar and Zanetta, Francesco},
       title        = {obsweatherscale: observation-conditioned ML downscaling of surface weather fields},
       year         = {2025},
       howpublished = {\url{https://github.com/MeteoSwiss/obsweatherscale}},
