@@ -19,7 +19,7 @@ from obsweatherscale.training import (
 from obsweatherscale.transformations import (
     QuantileFittedTransformer, Standardizer
 )
-from obsweatherscale.utils import init_device, GPDataset
+from obsweatherscale.utils import GPDataset
 
 
 def main():
@@ -128,7 +128,7 @@ def main():
         lr=0.005
     )
     
-    device = init_device(gpu=None, use_gpu=True)
+    device = torch.device("cuda")
 
     trainer = Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer

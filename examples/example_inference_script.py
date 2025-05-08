@@ -11,7 +11,6 @@ from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.transformations import QuantileFittedTransformer
 from obsweatherscale.transformations.standardizer import Standardizer
-from obsweatherscale.utils import init_device
 
 
 def main():
@@ -60,7 +59,7 @@ def main():
     target_y = y_transformer.transform(target_y)
 
     # Initialize device
-    device = init_device(gpu=None, use_gpu=True)
+    device = torch.device("cuda")
 
     # Initialize likelihood
     noise_model = TransformedFixedGaussianNoise(y_transformer, obs_noise_var=1)
