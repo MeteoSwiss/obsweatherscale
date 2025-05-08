@@ -1,3 +1,4 @@
+import random
 import time
 from pathlib import Path
 from typing import Callable
@@ -8,8 +9,53 @@ from gpytorch.likelihoods import _GaussianLikelihoodBase
 from gpytorch.models import ExactGP
 from torch.optim.optimizer import Optimizer
 
-from ..utils import RandomStateContext, sample_batch_idx
-from ..utils.dataset import GPDataset
+from obsweatherscale.utils import GPDataset
+
+
+class RandomStateContext:
+    """Context manager for preserving and restoring PyTorch's RNG state.
+
+    This context manager saves the current random number generator (RNG)
+    state upon entering and restores it upon exiting. This is useful to
+    ensure deterministic behavior when randomness is used within a
+    controlled block of code, without affecting the global RNG state
+    outside the block.
+
+    Notes
+    -----
+    - The RNG state is retrieved and stored using
+    `torch.random.get_rng_state()` and `torch.random.set_rng_state()`.
+    - A new seed is set upon entering the context using
+    `torch.manual_seed(torch.seed())`.
+    """
+
+    def __init__(self) -> None:
+        """Initialize RandomStateContext by capturing current RNG state.
+
+        This stores the RNG state so it can be restored later when the
+        context exits.
+        """
+        self.current_state = torch.random.get_rng_state()
+
+    def __enter__(self):
+        """Enter the runtime context and prepare for deterministic
+        computation.
+
+        Saves the current RNG state again (to ensure up-to-date state) and reseeds 
+        the RNG with a new seed using `torch.seed()` to create a fresh random state.
+
+        Returns
+        -------
+        RandomStateContext
+            The context manager instance itself.
+        """
+        self.current_state = torch.random.get_rng_state()
+        torch.manual_seed(torch.seed())
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        torch.random.set_rng_state(self.current_state)
+
 
 class Trainer:
     """Trainer class for Gaussian Process models."""
@@ -47,6 +93,24 @@ class Trainer:
         self.val_loss_fct = val_loss_fct
         self.device = device
         self.optimizer = optimizer
+    
+    def sample_batch_idx(self, length: int, batch_size: int) -> list[int]:
+        """Randomly sample a batch of unique indices.
+
+        Parameters
+        ----------
+        length : int
+            The total number of available items to sample from.
+        batch_size : int
+            The number of unique indices to sample.
+
+        Returns
+        -------
+        list of int
+            A list of `batch_size` unique indices randomly sampled from
+            the range [0, length).
+        """
+        return random.sample(range(length), batch_size)
 
     def train_step(
         self,
@@ -209,7 +273,7 @@ class Trainer:
 
                 ### Training ###
                 # Get iter data
-                batch_idx = sample_batch_idx(length, batch_size)
+                batch_idx = self.sample_batch_idx(length, batch_size)
                 batch_x, batch_y = train[batch_idx]
 
                 if random_masking:
@@ -223,7 +287,7 @@ class Trainer:
 
                 ### Validation ###
                 # Get iter data
-                batch_idx = sample_batch_idx(val_length, batch_size)
+                batch_idx = self.sample_batch_idx(val_length, batch_size)
                 batch_x_context, batch_y_context = val_context[batch_idx]
                 batch_x_target, batch_y_target = val_target[batch_idx]
 

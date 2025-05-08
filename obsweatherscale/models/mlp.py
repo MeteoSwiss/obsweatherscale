@@ -3,8 +3,6 @@ from typing import Callable
 import torch
 from torch import nn
 
-from ..utils import set_active_dims
-
 
 class MLP(nn.Module):
     """Multi-Layer Perceptron (MLP) class.
@@ -50,7 +48,11 @@ class MLP(nn.Module):
 
         self.mlp = nn.Sequential(*layers)
         self.output_activation_fct = output_activation_fct
-        self.active_dims = set_active_dims(active_dims)
+
+        if active_dims is None:
+            self.active_dims = slice(None)
+        else:
+            self.active_dims = torch.tensor(active_dims, requires_grad=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.mlp(x[..., self.active_dims])
