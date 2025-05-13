@@ -33,7 +33,7 @@ def main():
         t, torch.linspace(0, 1, n_x), torch.linspace(0, 1, n_y), indexing='ij'
     )
 
-    target_x = torch.stack([t_grid, x_grid, y_grid])
+    target_x = torch.stack([t_grid, x_grid, y_grid], dim=-1)
     target_y = true_signal(x_grid, y_grid, t_grid) + \
         math.sqrt(noise_var) * torch.randn_like(x_grid)
 
@@ -61,7 +61,11 @@ def main():
     target_y = y_transformer.transform(target_y)
 
     # Initialize device
-    device = torch.device("cuda")
+    if torch.cuda.is_available():
+        torch.cuda.init()
+        device = torch.device("cuda") 
+    else:
+        device = torch.device("cpu")
 
     # Initialize likelihood
     noise_model = TransformedFixedGaussianNoise(y_transformer, obs_noise_var=1)
@@ -79,6 +83,10 @@ def main():
     ## Evaluate
     model.to(device)
     likelihood.to(device)
+    context_x = context_x.to(device)
+    context_y = context_y.to(device)
+    target_x = target_x.to(device)
+    target_y = target_y.to(device)
 
     # 1. Predict distributions
     with (

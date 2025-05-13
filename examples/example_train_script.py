@@ -47,7 +47,7 @@ def main():
     t = t.unsqueeze(-1).expand(-1, n_points)             # [n_times, n_points]
 
     ds_x = torch.stack([x_coords, y_coords, t], dim=-1)
-    ds_y = true_signal \
+    ds_y = true_signal(x_coords, y_coords, t) \
         + math.sqrt(noise_var) * torch.randn_like(x_coords)
 
     # Split into train and validation
@@ -61,8 +61,8 @@ def main():
 
     train_x = ds_x[:nt_train, train_points] # [nt_train, np_train, n_preds]
     train_y = ds_y[:nt_train, train_points] # [nt_train, np_train]
-    val_x = ds_x[nt_train:]     # [nt_val, n_points, n_preds]
-    val_y = ds_y[nt_train:]     # [nt_val, n_points]
+    val_x = ds_x[nt_train:]                 # [nt_val, n_points, n_preds]
+    val_y = ds_y[nt_train:]                 # [nt_val, n_points]
 
     # Normalize data
     standardizer = Standardizer(train_x)
@@ -130,7 +130,11 @@ def main():
         lr=0.005
     )
 
-    device = torch.device("cuda")
+    if torch.cuda.is_available():
+        torch.cuda.init()
+        device = torch.device("cuda") 
+    else:
+        device = torch.device("cpu")
 
     trainer = Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
