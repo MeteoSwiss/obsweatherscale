@@ -3,6 +3,7 @@ import math
 import time
 from typing import Union
 
+import numpy as np
 import torch
 from torch.optim.adam import Adam
 
@@ -24,47 +25,86 @@ from obsweatherscale.transformations import (
 from obsweatherscale.utils import GPDataset
 
 
-def main():
-    seed = 123
-    start = time.time()
+# Custom dataset inheriting from GPDataset
+class MyDataset(GPDataset):
+    def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor):
+        self.x = ds_x
+        self.y = ds_y
+        self.n_samples = ds_x.shape[0]
 
-    ##### Data ####
-    # e.g. 100 stations, 10 timesteps, on a [0, 1] x [0, 1] x-y grid
+    def to(self, device: torch.device):
+        self.x = self.x.to(device)
+        self.y = self.y.to(device)
 
-    def true_signal(x, y, t): # simulated weather signal
+    def __len__(self):
+        return self.n_samples
+
+    def __getitem__(
+        self,
+        idx: Union[int, list[int], slice]
+    ) -> tuple[torch.Tensor, ...]:
+        return self.x[idx, ...], self.y[idx, ...]
+
+    def get_dataset(self) -> tuple[torch.Tensor, ...]:
+        return self.x, self.y
+
+
+def generate_toy_data(n_stations, n_times, noise_var):
+    # Simulated true weather signal
+    def true_signal(x, y, t):
         return (
             torch.sin(math.pi * x) *
             torch.cos(math.pi * y) *
             torch.sin(2 * math.pi * t / t.shape[0])
         )
 
-    n_points, n_times, noise_var = 100, 10, 0.1
     t = torch.linspace(0, n_times - 1, n_times)
-    x_coords, y_coords = torch.rand(n_points), torch.rand(n_points)
+    x_coords, y_coords = torch.rand(n_stations), torch.rand(n_stations)
 
-    x_coords = x_coords.unsqueeze(0).expand(n_times, -1) # [n_times, n_points]
-    y_coords = y_coords.unsqueeze(0).expand(n_times, -1) # [n_times, n_points]
-    t = t.unsqueeze(-1).expand(-1, n_points)             # [n_times, n_points]
+    x_coords = x_coords.unsqueeze(0).expand(n_times, -1) # [n_t, n_stations]
+    y_coords = y_coords.unsqueeze(0).expand(n_times, -1) # [n_t, n_stations]
+    t = t.unsqueeze(-1).expand(-1, n_stations)           # [n_t, n_stations]
 
     ds_x = torch.stack([x_coords, y_coords, t], dim=-1)
     ds_y = true_signal(x_coords, y_coords, t) \
         + math.sqrt(noise_var) * torch.randn_like(x_coords)
 
+    return ds_x, ds_y
+
+
+def get_split_idx(n_stations, n_times, frac_t_train=0.7, frac_s_train=0.8):
+    nt_train = int(frac_t_train * n_times)
+    ns_train = int(frac_s_train * n_stations)
+
+    stations_idx = torch.randperm(n_stations)
+    times_idx = np.arange(n_times)
+
+    train_stations = stations_idx[:ns_train]
+    val_stations = stations_idx[ns_train:]
+    train_times = times_idx[:nt_train]
+    val_times = times_idx[nt_train:]
+
+    return train_stations, val_stations, train_times, val_times
+
+
+def main():
+    seed = 123
+    start = time.time()
+
+    ##### Data ####
+    # e.g. 100 stations, 10 timesteps, on a [0, 1] x [0, 1] x-y grid
+    n_stations, n_times, noise_var = 100, 10, 0.1
+
+    ds_x, ds_y = generate_toy_data(n_stations, n_times, noise_var)
+
     # Split into train and validation
-    frac_t_train = 0.7
-    frac_p_train = 0.8
-    nt_train, np_train = int(frac_t_train*n_times), int(frac_p_train*n_points)
+    train_st, val_st, train_t, val_t = get_split_idx(n_stations, n_times)
+    train_x = ds_x[train_t, train_st]  # [nt_train, ns_train, n_preds]
+    train_y = ds_y[train_t, train_st]  # [nt_train, ns_train]
+    val_x = ds_x[val_t]                # [nt_val, n_stations, n_preds]
+    val_y = ds_y[val_t]                # [nt_val, n_stations]
 
-    points_idx = torch.randperm(n_points)
-    train_points = points_idx[:np_train]
-    val_points = points_idx[np_train:]
-
-    train_x = ds_x[:nt_train, train_points] # [nt_train, np_train, n_preds]
-    train_y = ds_y[:nt_train, train_points] # [nt_train, np_train]
-    val_x = ds_x[nt_train:]                 # [nt_val, n_points, n_preds]
-    val_y = ds_y[nt_train:]                 # [nt_val, n_points]
-
-    # Normalize data
+    # Normalize
     standardizer = Standardizer(train_x)
     y_transformer = QuantileFittedTransformer()
 
@@ -73,35 +113,13 @@ def main():
     val_x = standardizer.transform(val_x)
     val_y = y_transformer.transform(val_y)
 
-    # Create dataset
-    class MyDataset(GPDataset):
-        def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor):
-            self.x = ds_x
-            self.y = ds_y
-            self.n_samples = ds_x.shape[0]
-
-        def to(self, device: torch.device):
-            self.x = self.x.to(device)
-            self.y = self.y.to(device)
-
-        def __len__(self):
-            return self.n_samples
-
-        def __getitem__(
-            self,
-            idx: Union[int, list[int], slice]
-        ) -> tuple[torch.Tensor, ...]:
-            return self.x[idx, ...], self.y[idx, ...]
-
-        def get_dataset(self) -> tuple[torch.Tensor, ...]:
-            return self.x, self.y
-
+    # Initialize datasets and further split val into context and target
     dataset_train = MyDataset(train_x, train_y)
-    dataset_val_c = MyDataset(val_x[:, train_points], val_y[:, train_points])
-    dataset_val_t = MyDataset(val_x[:, val_points], val_y[:, val_points])
+    dataset_val_c = MyDataset(val_x[:, train_st], val_y[:, train_st])
+    dataset_val_t = MyDataset(val_x[:, val_st], val_y[:, val_st])
+
 
     #### Initialize model ####
-
     # Likelihood and noise model
     # Non-trainable constant variance across all data points
     noise_model = TransformedFixedGaussianNoise(y_transformer, noise_var)
@@ -132,7 +150,7 @@ def main():
 
     if torch.cuda.is_available():
         torch.cuda.init()
-        device = torch.device("cuda") 
+        device = torch.device("cuda")
     else:
         device = torch.device("cpu")
 
