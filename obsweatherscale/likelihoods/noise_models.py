@@ -395,7 +395,7 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
     def __init__(
         self,
         transformer: Transformer,
-        obs_noise_var: torch.Tensor | int | float = torch.tensor(1.0),
+        obs_noise_var: torch.Tensor | int | float = 1.0,
     ) -> None:
         """Initializes the TransformedFixedGaussianNoise model.
 
@@ -414,7 +414,11 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
             a tensor of shape (N,), or a tensor matching the shape of
             the input data.
         """
-        obs_noise_var = torch.tensor(obs_noise_var).float()
+        if isinstance(obs_noise_var, torch.Tensor):
+            obs_noise_var = obs_noise_var.clone().detach().float()
+        else: # for scalars (int or float)
+            obs_noise_var = torch.tensor(obs_noise_var, dtype=torch.float)
+
         super().__init__(transformer)
         FixedGaussianNoise.__init__(self, obs_noise_var)
 
