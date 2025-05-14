@@ -22,3 +22,19 @@ you through the process.
 
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
+
+
+For development
+--------------
+
+To set up the project for local development, clone the repository and use the 
+provided Poetry setup script:
+
+.. code-block:: console
+
+    $ git clone git@github.com:MeteoSwiss/obsweatherscale.git
+    $ cd obsweatherscale
+    $ ./scripts/setup_poetry.sh
+
+This will install Poetry (if not already available), set up the virtual 
+environment, and install all dependencies with extras.
