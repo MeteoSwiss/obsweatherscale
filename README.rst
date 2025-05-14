@@ -20,8 +20,7 @@ Possible applications:
 - **Bias correction** of model outputs to better match station observations.
 - **Probabilistic interpolation** of observational datasets across space.
 
-Features
---------
+Features:
 
 - Neural-augmented GP models leveraging trainable mean and kernel functions.
 - Plug-and-play data transformations, including normal standardization and quantile fitting.
