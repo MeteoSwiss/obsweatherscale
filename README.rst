@@ -32,31 +32,44 @@ Features
 
 Installation
 ------------
-For users
-~~~~~~~~~
-To install the latest release from PyPI:
+Stable release
+~~~~~~~~~~~~~~~
+To install obsweatherscale, run this command in your terminal:
 
-.. code-block:: bash
+.. code-block:: console
 
-   pip install obsweatherscale
+    $ pip install obsweatherscale
+
+This is the preferred method to install obsweatherscale, as it
+will always install the most recent stable release.
+
+If you don't have `pip`_ installed, this `Python installation guide`_ can guide
+you through the process.
+
+.. _pip: https://pip.pypa.io
+.. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
 
 
 For development
 ~~~~~~~~~~~~~~~
 To set up the project for local development, clone the repository and use the provided Poetry setup script:
 
-.. code-block::  bash
+.. code-block:: console
 
-    git clone git@github.com:MeteoSwiss/obsweatherscale.git
-    
-    cd obsweatherscale
-    
-    ./scripts/setup_poetry.sh
+    $ git clone git@github.com:MeteoSwiss/obsweatherscale.git
+    $ cd obsweatherscale
+    $ ./scripts/setup_poetry.sh
 
 This will install Poetry (if not already available), set up the virtual environment, and install all dependencies with extras.
 
-Use
-----
+Usage
+-----
+
+To use obsweatherscale in a project::
+
+    import obsweatherscale
+
+
 To get started, check out the example scripts in the repository:
 
 * ``example_train_script.py``: Demonstrates how to preprocess data, build a dataset, construct a model with customized mean and kernel functions, and train a GP model using toy data.
@@ -85,14 +98,14 @@ Suggestions of developments and bug reports should use the `Issues page of the g
 Citation
 --------
 
-This library is built upon `GPyTorch <https://github.com/cornellius-gp/gpytorch>`_, which provides the core functionality for Gaussian process modeling and training.  
+This library is built upon `GPyTorch <https://gpytorch.ai/>`_, which provides the core functionality for Gaussian process modeling and training.  
 If you use obsweatherscale in your work, please cite both this library and GPyTorch.
 
 **obsweatherscale**
 
 Lloréns Jover, Icíar and Zanetta, Francesco.  
 *obswetherscale: observation-conditioned ML downscaling of surface weather fields.*  
-GitHub repository: https://github.com/MeteoSwiss/obsweatherscale ,
+GitHub repository: https://github.com/MeteoSwiss/obsweatherscale,
 2025.
 
 .. code-block:: bibtex
