@@ -103,25 +103,15 @@ If you use obsweatherscale in your work, please cite both this library and GPyTo
 
 **obsweatherscale**
 
-Lloréns Jover, Icíar and Zanetta, Francesco.  
-*obswetherscale: observation-conditioned ML downscaling of surface weather fields.*  
-GitHub repository: https://github.com/MeteoSwiss/obsweatherscale,
-2025.
-
-.. code-block:: bibtex
-
-    @misc{mch2025yourlib,
-      author       = {Lloréns Jover, Icíar and Zanetta, Francesco},
-      title        = {obsweatherscale: observation-conditioned ML downscaling of surface weather fields},
-      year         = {2025},
-      howpublished = {\url{https://github.com/MeteoSwiss/obsweatherscale}},
-    }
+Lloréns Jover, I., & Zanetta, F (2024).  
+obswetherscale: observation-conditioned ML downscaling of surface weather fields. 
+*GitHub repository: https://github.com/MeteoSwiss/obsweatherscale.*
 
 **GPyTorch**
 
-Gardner, Jacob R., Geoff Pleiss, David Bindel, Kilian Q. Weinberger, and Andrew Gordon Wilson.  
-*GPyTorch: Blackbox Matrix-Matrix Gaussian Process Inference with GPU Acceleration.*  
-In Advances in Neural Information Processing Systems, 2018.
+Gardner, J. R., Pleiss, G., Bindel, D., Weinberger, K. Q., & Gordon Wilson, A (2018).  
+GPyTorch: Blackbox Matrix-Matrix Gaussian Process Inference with GPU Acceleration. 
+*Advances in Neural Information Processing Systems, 2018.*
 
 .. code-block:: bibtex
 
@@ -132,15 +122,21 @@ In Advances in Neural Information Processing Systems, 2018.
       year={2018}
     }
 
-
 Acknowledgements
 ----------------
 
-This work benefited from previous research in Gaussian Process modeling for weather data as described in 
+This work benefited from previous research in Gaussian Process modeling for 
+weather data as described in:
+
+Zanetta, F., Nerini, D., Buzzi, M., & Moss, H. (2025). 
+Efficient modeling of sub-kilometer surface wind with Gaussian processes and neural networks. 
+*Artificial Intelligence for the Earth Systems.*
 
 License
 -------
 
-This project is licensed under the BSD 3-Clause License - see the `LICENSE <https://github.com/MeteoSwiss/obsweatherscale/blob/main/LICENSE>`_ file for details.
+This project is licensed under the BSD 3-Clause License - see the 
+`LICENSE <https://github.com/MeteoSwiss/obsweatherscale/blob/main/LICENSE>`_ 
+file for details.
 
 Copyright (c) 2024, MeteoSwiss
