@@ -8,11 +8,6 @@ Welcome to obsweatherscale
    readme
    installation
    usage
-   documentation
-   development
-   citation
-   acknowledgements
-   license
    history
 
 Indices and tables

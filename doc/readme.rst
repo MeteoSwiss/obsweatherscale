@@ -30,3 +30,64 @@ Features:
 - Training routines with support for random masking and batching.
 - Inference routines.
 - Built on PyTorch for GPU acceleration and automatic differentiation.
+
+Documentation
+-------------
+The official documentation is available `here <https://meteoswiss.github.io/obsweatherscale/>`_.
+
+For local development, you can build the documentation using:
+
+.. code-block:: bash
+
+    poetry run sphinx-build doc doc/_build
+
+Then open ``doc/_build/index.html`` in your browser to view the documentation.
+
+Development
+-----------
+We welcome contributions, suggestions of developments, and bug reports.
+
+Suggestions of developments and bug reports should use the `Issues page of the github repository <https://github.com/MeteoSwiss/obsweatherscale/issues>`_.
+
+Citation
+--------
+This library is built upon `GPyTorch <https://gpytorch.ai/>`_, which provides the core functionality for Gaussian process modeling and training.  
+If you use obsweatherscale in your work, please cite both this library and GPyTorch.
+
+**obsweatherscale**
+
+Lloréns Jover, I., & Zanetta, F (2024).  
+obswetherscale: observation-conditioned ML downscaling of surface weather fields. 
+*GitHub repository: https://github.com/MeteoSwiss/obsweatherscale.*
+
+**GPyTorch**
+
+Gardner, J. R., Pleiss, G., Bindel, D., Weinberger, K. Q., & Gordon Wilson, A (2018).  
+GPyTorch: Blackbox Matrix-Matrix Gaussian Process Inference with GPU Acceleration. 
+*Advances in Neural Information Processing Systems, 2018.*
+
+.. code-block:: bibtex
+
+    @inproceedings{gardner2018gpytorch,
+      title={GPyTorch: Blackbox Matrix-Matrix Gaussian Process Inference with GPU Acceleration},
+      author={Gardner, Jacob R and Pleiss, Geoff and Bindel, David and Weinberger, Kilian Q and Wilson, Andrew Gordon},
+      booktitle={Advances in Neural Information Processing Systems},
+      year={2018}
+    }
+
+Acknowledgements
+----------------
+This work benefited from previous research in Gaussian Process modeling for 
+weather data as described in:
+
+Zanetta, F., Nerini, D., Buzzi, M., & Moss, H. (2025). 
+Efficient modeling of sub-kilometer surface wind with Gaussian processes and neural networks. 
+*Artificial Intelligence for the Earth Systems.*
+
+License
+-------
+This project is licensed under the BSD 3-Clause License - see the 
+`LICENSE <https://github.com/MeteoSwiss/obsweatherscale/blob/main/LICENSE>`_ 
+file for details.
+
+Copyright (c) 2024, MeteoSwiss
