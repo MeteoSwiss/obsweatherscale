@@ -19,9 +19,15 @@
 # absolute, like shown here.
 #
 import os
+import subprocess
 import sys
 
 from importlib.metadata import version
+
+split_script_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "split_readme.py")
+)
+subprocess.run(["python", split_script_path], check=True)
 
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -50,7 +56,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'obsweatherscale'
 copyright = u"2024, MeteoSwiss"
-author = u"Francesco Zanetta and Icíar Lloréns Jovar"
+author = u"Icíar Lloréns Jover and Francesco Zanetta"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
