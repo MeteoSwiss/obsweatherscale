@@ -1,13 +1,9 @@
-.. highlight:: shell
+.. This file is auto-generated. Do not edit.
 
-============
 Installation
 ============
-
-
 Stable release
---------------
-
+~~~~~~~~~~~~~~~
 To install obsweatherscale, run this command in your terminal:
 
 .. code-block:: console
@@ -25,10 +21,8 @@ you through the process.
 
 
 For development
---------------
-
-To set up the project for local development, clone the repository and use the 
-provided Poetry setup script:
+~~~~~~~~~~~~~~~
+To set up the project for local development, clone the repository and use the provided Poetry setup script:
 
 .. code-block:: console
 
@@ -36,5 +30,4 @@ provided Poetry setup script:
     $ cd obsweatherscale
     $ ./scripts/setup_poetry.sh
 
-This will install Poetry (if not already available), set up the virtual 
-environment, and install all dependencies with extras.
+This will install Poetry (if not already available), set up the virtual environment, and install all dependencies with extras.
