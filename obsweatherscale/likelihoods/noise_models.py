@@ -95,7 +95,7 @@ class TransformedNoise(Noise):
         return DiagLinearOperator(noise_diag)
 
     @abc.abstractmethod
-    def forward(self, *args, **kwargs):
+    def forward(self, *args: Any, **kwargs: Any) -> DiagLinearOperator:
         """Abstract method for the forward pass.
 
         Must be implemented in subclasses to define how the noise model
@@ -225,11 +225,9 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
             noise covariance matrix. This is useful in Gaussian process
             models where efficient matrix representations are needed.
         """
-        pure_noise_var = (
-            super(HomoskedasticNoise, self)
-            .forward(*params, shape=shape, **kwargs)
-            .diagonal()
-        )
+        pure_noise_var = HomoskedasticNoise.forward(
+            *params, shape=shape, **kwargs
+        ).diagonal()
 
         return self.transform_noise(pure_noise_var=pure_noise_var, y=y)
 
@@ -277,7 +275,7 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
     def __init__(
         self,
         transformer: Transformer,
-        noise_model,
+        noise_model: torch.nn.Module,
         noise_indices: list[int] | None = None,
         noise_constraint: torch.nn.Module | None = None,
     ) -> None:
@@ -356,11 +354,9 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
             noise covariance matrix. This is useful in Gaussian process
             models where efficient matrix representations are needed.
         """
-        pure_noise_var = (
-            super(HeteroskedasticNoise, self).forward(
-                *params, batch_shape=batch_shape, shape=shape, noise=noise
-            ).diagonal() # type: ignore
-        )
+        pure_noise_var = HeteroskedasticNoise.forward(
+            *params, batch_shape=batch_shape, shape=shape, noise=noise
+        ).diagonal()
 
         return self.transform_noise(pure_noise_var=pure_noise_var, y=y)
 
@@ -422,7 +418,7 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         super().__init__(transformer)
         FixedGaussianNoise.__init__(self, obs_noise_var)
 
-    def extra_repr(self):
+    def extra_repr(self) -> str:
         """Returns a string representation of the noise value.
 
         Returns

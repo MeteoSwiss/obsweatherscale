@@ -3,7 +3,7 @@ import torch
 from obsweatherscale.means import NeuralMean
 
 
-def test_neural_mean():
+def test_neural_mean() -> None:
     # Create a simple neural network
     net = torch.nn.Sequential(
         torch.nn.Linear(3, 10),

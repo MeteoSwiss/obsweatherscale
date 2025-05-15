@@ -21,12 +21,12 @@ class GPDataset(Dataset, ABC):
     """
 
     @abstractmethod
-    def __getitem__(self, index) -> Any:
+    def __getitem__(self, index: int | list | slice) -> Any:
         """Get a sample from the dataset at the specified index.
 
         Parameters
         ----------
-        index : int
+        index : int | list | slice
             Index of the sample to retrieve.
 
         Returns
@@ -46,7 +46,7 @@ class GPDataset(Dataset, ABC):
         """
 
     @abstractmethod
-    def to(self, device: torch.device):
+    def to(self, device: torch.device) -> None:
         """Move the dataset to the specified device.
 
         Parameters

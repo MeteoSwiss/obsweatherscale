@@ -211,7 +211,7 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
             function samples.
         """
         noise = self._shaped_noise_covar(
-            function_samples.mean.shape,
+            function_samples.mean.shape,  # type: ignore
             *params,
             y=function_samples.mean,  # type: ignore
             **kwargs,

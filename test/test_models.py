@@ -6,7 +6,7 @@ from gpytorch.kernels import RBFKernel
 
 from obsweatherscale.models import GPModel, MLP
 
-def test_gp_model():
+def test_gp_model() -> None:
 
     train_x = torch.randn(20, 3)
     train_y = torch.randn(20)
@@ -38,7 +38,7 @@ def test_gp_model():
         "Output type mismatch"
 
 
-def test_mlp():
+def test_mlp() -> None:
     # Test the MLP class
     mlp = MLP([2,8,1], active_dims=[0,1])
 

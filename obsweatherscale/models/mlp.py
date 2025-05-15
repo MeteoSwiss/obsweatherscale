@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Union
 
 import torch
 from torch import nn
@@ -40,7 +40,7 @@ class MLP(nn.Module):
         """
         super().__init__()
 
-        layers = []
+        layers: list[Union[nn.Linear, nn.ReLU]] = []
         for i in range(len(dimensions) - 2):
             layers.append(nn.Linear(dimensions[i], dimensions[i + 1]))
             layers.append(nn.ReLU())
@@ -50,7 +50,7 @@ class MLP(nn.Module):
         self.output_activation_fct = output_activation_fct
 
         if active_dims is None:
-            self.active_dims = slice(None)
+            self.active_dims: Union[slice, torch.Tensor] = slice(None)
         else:
             self.active_dims = torch.tensor(active_dims, requires_grad=False)
 

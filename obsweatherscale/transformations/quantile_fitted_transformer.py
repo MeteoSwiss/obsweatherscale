@@ -30,7 +30,6 @@ class QuantileFittedTransformer(Transformer):
         c : float, default=0.07385268
             The parameter c for the transformation.
         """
-        super().__init__()
         self.a = a
         self.b = b
         self.c = c

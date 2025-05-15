@@ -21,14 +21,14 @@ class Standardizer:
         """
         self.fit(data, variables)
 
-    def description(self):
+    def description(self) -> str:
         return "Standard normalization: f(y) = (y - mean(y) / stddev(y))"
 
     def fit(
         self,
         data: torch.Tensor,
         variables: tuple[int, ...] | int | None = None
-    ):
+    ) -> None:
         """Fit the standardization transformation to the data.
 
         Parameters

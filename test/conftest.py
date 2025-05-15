@@ -11,16 +11,16 @@ from obsweatherscale.utils import GPDataset
 
 # Create dataset
 class MyDataset(GPDataset):
-    def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor):
+    def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor) -> None:
         self.x = ds_x
         self.y = ds_y
         self.n_samples = ds_x.shape[0]
 
-    def to(self, device: torch.device):
+    def to(self, device: torch.device) -> None:
         self.x = self.x.to(device)
         self.y = self.y.to(device)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_samples
 
     def __getitem__(
@@ -33,7 +33,7 @@ class MyDataset(GPDataset):
         return self.x, self.y
 
 
-def create_test_data():
+def create_test_data() -> dict[str, MyDataset]:
     # 1. Input data
     nx, ny, nt = 30, 20, 20  # e.g.: 30 x pts, 20 y pts, 10 timesteps
     x_coords = torch.linspace(0, 1, nx)
@@ -99,15 +99,15 @@ test_data = create_test_data()
 
 
 @pytest.fixture
-def dataset_train():
+def dataset_train() -> MyDataset:
     return test_data["train"]
 
 
 @pytest.fixture
-def dataset_val_c():
+def dataset_val_c() -> MyDataset:
     return test_data["val_context"]
 
 
 @pytest.fixture
-def dataset_val_t():
+def dataset_val_t() -> MyDataset:
     return test_data["val_target"]
