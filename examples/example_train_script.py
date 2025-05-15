@@ -3,7 +3,6 @@ import math
 import time
 from typing import Union
 
-import numpy as np
 import torch
 from torch.optim.adam import Adam
 
@@ -72,19 +71,31 @@ def generate_toy_data(n_stations, n_times, noise_var):
     return ds_x, ds_y
 
 
-def get_split_idx(n_stations, n_times, frac_t_train=0.7, frac_s_train=0.8):
+def split_data(
+    ds_x: torch.Tensor,
+    ds_y: torch.Tensor,
+    frac_t_train: float = 0.7,
+    frac_s_train: float = 0.8
+) -> dict[str, dict[str, torch.Tensor]]:
+    n_times, n_stations = ds_x.shape
+
     nt_train = int(frac_t_train * n_times)
     ns_train = int(frac_s_train * n_stations)
 
     stations_idx = torch.randperm(n_stations)
-    times_idx = np.arange(n_times)
-
     train_stations = stations_idx[:ns_train]
     val_stations = stations_idx[ns_train:]
-    train_times = times_idx[:nt_train]
-    val_times = times_idx[nt_train:]
 
-    return train_stations, val_stations, train_times, val_times
+    data: dict[str, dict] = {'train': {}, 'val_c': {}, 'val_t': {}}
+
+    data['train']['x'] = ds_x[:nt_train, train_stations, ...]
+    data['train']['y'] = ds_y[:nt_train, train_stations]
+    data['val_c']['x'] = ds_x[nt_train:, train_stations, ...]
+    data['val_c']['y'] = ds_y[nt_train:, train_stations]
+    data['val_t']['x'] = ds_x[nt_train:, val_stations, ...]
+    data['val_t']['y'] = ds_y[nt_train:, val_stations]
+
+    return data
 
 
 def main():
@@ -97,26 +108,24 @@ def main():
 
     ds_x, ds_y = generate_toy_data(n_stations, n_times, noise_var)
 
-    # Split into train and validation
-    train_st, val_st, train_t, val_t = get_split_idx(n_stations, n_times)
-    train_x = ds_x[train_t, train_st]  # [nt_train, ns_train, n_preds]
-    train_y = ds_y[train_t, train_st]  # [nt_train, ns_train]
-    val_x = ds_x[val_t]                # [nt_val, n_stations, n_preds]
-    val_y = ds_y[val_t]                # [nt_val, n_stations]
+    # Split into train and validation (context and target)
+    data = split_data(ds_x, ds_y)
 
     # Normalize
-    standardizer = Standardizer(train_x)
+    standardizer = Standardizer(data['train']['x'])
     y_transformer = QuantileFittedTransformer()
 
-    train_x = standardizer.transform(train_x)
-    train_y = y_transformer.transform(train_y)
-    val_x = standardizer.transform(val_x)
-    val_y = y_transformer.transform(val_y)
+    data['train']['x'] = standardizer.transform(data['train']['x'])
+    data['train']['y'] = y_transformer.transform(data['train']['y'])
+    data['val_c']['x'] = standardizer.transform(data['val_c']['x'])
+    data['val_c']['y'] = y_transformer.transform(data['val_c']['y'])
+    data['val_t']['x'] = standardizer.transform(data['val_t']['x'])
+    data['val_t']['y'] = y_transformer.transform(data['val_t']['y'])
 
     # Initialize datasets and further split val into context and target
-    dataset_train = MyDataset(train_x, train_y)
-    dataset_val_c = MyDataset(val_x[:, train_st], val_y[:, train_st])
-    dataset_val_t = MyDataset(val_x[:, val_st], val_y[:, val_st])
+    dataset_train = MyDataset(data['train']['x'], data['train']['y'])
+    dataset_val_c = MyDataset(data['val_c']['x'], data['val_c']['y'])
+    dataset_val_t = MyDataset(data['val_t']['x'], data['val_t']['y'])
 
 
     #### Initialize model ####
@@ -135,7 +144,10 @@ def main():
         kernel=ScaledRBFKernel()
     )
 
-    model = GPModel(train_x, train_y, likelihood, mean_function, kernel)
+    model = GPModel(
+        data['train']['x'], data['train']['y'],
+        likelihood, mean_function, kernel
+    )
 
     #### Loss functions ####
     mll = ExactMarginalLogLikelihoodFill(likelihood, model)
