@@ -125,7 +125,7 @@ class ScaledRBFKernel(Kernel):
             )
         self.kernel.raw_outputscale.requires_grad = train_variance
 
-    def extra_repr(self):
+    def extra_repr(self) -> str:
         return "\n".join(
             [
                 f"(lengthscale): {self.kernel.base_kernel.lengthscale}",

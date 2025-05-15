@@ -1,6 +1,5 @@
 # %%
 import math
-import time
 from typing import Union
 
 import torch
@@ -24,18 +23,24 @@ from obsweatherscale.transformations import (
 from obsweatherscale.utils import GPDataset
 
 
+def get_device() -> torch.device:
+    if torch.cuda.is_available():
+        torch.cuda.init()
+        return torch.device("cuda")
+    return torch.device("cpu")
+
 # Custom dataset inheriting from GPDataset
 class MyDataset(GPDataset):
-    def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor):
+    def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor) -> None:
         self.x = ds_x
         self.y = ds_y
         self.n_samples = ds_x.shape[0]
 
-    def to(self, device: torch.device):
+    def to(self, device: torch.device) -> None:
         self.x = self.x.to(device)
         self.y = self.y.to(device)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_samples
 
     def __getitem__(
@@ -48,9 +53,17 @@ class MyDataset(GPDataset):
         return self.x, self.y
 
 
-def generate_toy_data(n_stations, n_times, noise_var):
+def generate_toy_data(
+    n_stations: int,
+    n_times: int,
+    noise_var: float
+) -> tuple[torch.Tensor, torch.Tensor]:
     # Simulated true weather signal
-    def true_signal(x, y, t):
+    def true_signal(
+        x: torch.Tensor,
+        y: torch.Tensor,
+        t: torch.Tensor
+    ) -> torch.Tensor:
         return (
             torch.sin(math.pi * x) *
             torch.cos(math.pi * y) *
@@ -98,14 +111,12 @@ def split_data(
     return data
 
 
-def main():
+def main() -> None:
     seed = 123
-    start = time.time()
 
     ##### Data ####
-    # e.g. 100 stations, 10 timesteps, on a [0, 1] x [0, 1] x-y grid
+    # Generate toy data, e.g. 100 stations, 10 timesteps on a [0,1]x[0,1] grid
     n_stations, n_times, noise_var = 100, 10, 0.1
-
     ds_x, ds_y = generate_toy_data(n_stations, n_times, noise_var)
 
     # Split into train and validation (context and target)
@@ -127,12 +138,12 @@ def main():
     dataset_val_c = MyDataset(data['val_c']['x'], data['val_c']['y'])
     dataset_val_t = MyDataset(data['val_t']['x'], data['val_t']['y'])
 
-
     #### Initialize model ####
     # Likelihood and noise model
     # Non-trainable constant variance across all data points
-    noise_model = TransformedFixedGaussianNoise(y_transformer, noise_var)
-    likelihood = TransformedGaussianLikelihood(noise_model)
+    likelihood = TransformedGaussianLikelihood(
+        noise_covar=TransformedFixedGaussianNoise(y_transformer, noise_var)
+    )
 
     # GP model
     torch.manual_seed(seed)
@@ -160,11 +171,7 @@ def main():
         lr=0.005
     )
 
-    if torch.cuda.is_available():
-        torch.cuda.init()
-        device = torch.device("cuda")
-    else:
-        device = torch.device("cpu")
+    device = get_device()
 
     trainer = Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
@@ -180,15 +187,18 @@ def main():
         verbose=True
     )
 
+    # Get the iteration of best model
+    best_val_loss_idx = train_progress["val loss"].index(
+        min(train_progress["val loss"])
+    )
+    print(
+        f"Best model found at "
+        f"iteration {train_progress["iter"][best_val_loss_idx]} with "
+        f"validation loss: {train_progress["val loss"][best_val_loss_idx]:.4f}"
+    )
+
     #### Free GPU ####
     torch.cuda.empty_cache()
-
-    #### Log ####
-    stop = time.time()
-    print(
-        f"Total time: {stop - start:.3f} s / {(stop - start)/60:.3f} min",
-        flush=True
-    )
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ from gpytorch.kernels import RBFKernel
 from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
 
 
-def test_neural_kernel():
+def test_neural_kernel() -> None:
     # Create a simple neural network
     net = torch.nn.Sequential(
         torch.nn.Linear(3, 10),
@@ -27,7 +27,7 @@ def test_neural_kernel():
     assert output.dtype == torch.float32, "Output dtype mismatch"
 
 
-def test_scaled_rbf_kernel():
+def test_scaled_rbf_kernel() -> None:
     # Create a scaled RBF kernel
     scaled_kernel = ScaledRBFKernel(torch.tensor(1.5), torch.tensor([2., 0.5]))
 

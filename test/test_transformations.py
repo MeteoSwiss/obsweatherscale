@@ -5,7 +5,7 @@ from obsweatherscale.transformations import (
 )
 
 
-def test_standardizer():
+def test_standardizer() -> None:
     # Generate some random input data
     x = torch.randn(5, 3)
 
@@ -31,7 +31,7 @@ def test_standardizer():
     assert standardizer.std.dtype == torch.float32, "Std dtype mismatch"
 
 
-def test_quantile_fitted_transformer():
+def test_quantile_fitted_transformer() -> None:
     # Generate some random input data (must be positive)
     x = torch.exp(torch.randn(5, 3))
 

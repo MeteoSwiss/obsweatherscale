@@ -15,14 +15,31 @@ from obsweatherscale.transformations import QuantileFittedTransformer
 from obsweatherscale.transformations.standardizer import Standardizer
 
 
-def true_signal(x, y, t):
+def get_device() -> torch.device:
+    if torch.cuda.is_available():
+        torch.cuda.init()
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+
+def true_signal(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    t: torch.Tensor,
+) -> torch.Tensor:
     return (
         torch.sin(math.pi * x) *
         torch.cos(math.pi * y) *
         torch.sin(2 * math.pi * t / t.shape[0])
     )
 
-def generate_toy_grid_data(n_x, n_y, n_times, noise_var):
+
+def generate_toy_grid_data(
+    n_x: int,
+    n_y: int,
+    n_times: int,
+    noise_var: float,
+) -> tuple[torch.Tensor, torch.Tensor]:
     n_points = n_x * n_y
     t = torch.linspace(0, n_times - 1, n_times)
 
@@ -40,7 +57,11 @@ def generate_toy_grid_data(n_x, n_y, n_times, noise_var):
     return ds_x, ds_y
 
 
-def generate_toy_point_data(n_stations, n_times, noise_var):
+def generate_toy_point_data(
+    n_stations: int,
+    n_times: int,
+    noise_var: float,
+) -> tuple[torch.Tensor, torch.Tensor]:
     t = torch.linspace(0, n_times - 1, n_times)
 
     x_coords, y_coords = torch.rand(1, n_stations), torch.rand(1, n_stations)
@@ -55,7 +76,7 @@ def generate_toy_point_data(n_stations, n_times, noise_var):
     return ds_x, ds_y
 
 
-def main():
+def main() -> None:
     #### Data ####
     n_stations, n_x, n_y, n_times, noise_var = 100, 30, 20, 10, 0.1
 
@@ -83,15 +104,12 @@ def main():
     target_y = y_transformer.transform(target_y)
 
     # Initialize device
-    if torch.cuda.is_available():
-        torch.cuda.init()
-        device = torch.device("cuda")
-    else:
-        device = torch.device("cpu")
+    device = get_device()
 
     # Initialize likelihood
-    noise_model = TransformedFixedGaussianNoise(y_transformer, noise_var)
-    likelihood = TransformedGaussianLikelihood(noise_model)
+    likelihood = TransformedGaussianLikelihood(
+        noise_covar=TransformedFixedGaussianNoise(y_transformer, noise_var)
+    )
 
     # Initialize model
     mean_function = NeuralMean(net=MLP(dimensions=[3, 32, 32, 1]))
@@ -123,9 +141,8 @@ def main():
 
     # 2. Sample from distributions
     # shape: (n_times, n_points, n_variables, n_samples)
-    seed = 123
     n_samples = 101
-    torch.manual_seed(seed)
+    torch.manual_seed(123)
     samples_posterior = sample(posterior, n_samples=n_samples)
     samples_prior = sample(prior, n_samples=n_samples)
 

@@ -1,7 +1,7 @@
 import random
 import time
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Type
 
 import torch
 from gpytorch import settings
@@ -37,7 +37,7 @@ class RandomStateContext:
         """
         self.current_state = torch.random.get_rng_state()
 
-    def __enter__(self):
+    def __enter__(self) -> 'RandomStateContext':
         """Enter the runtime context and prepare for deterministic
         computation.
 
@@ -54,7 +54,13 @@ class RandomStateContext:
         torch.manual_seed(torch.seed())
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+        self,
+        exc_type: Type[BaseException | None],
+        exc_value: BaseException | None,
+        traceback: object | None,
+    ) -> None:
+        """Exit the context and restore the original RNG state."""
         torch.random.set_rng_state(self.current_state)
 
 
@@ -257,7 +263,9 @@ class Trainer:
 
         length = len(train)
         val_length = len(val_context)
-        train_progression = {"iter": [], "train loss": [], "val loss": []}
+        train_progression : dict[str, list] = {
+            "iter": [], "train loss": [], "val loss": []
+        }
 
         torch.manual_seed(seed)
 
