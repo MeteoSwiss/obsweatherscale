@@ -239,7 +239,9 @@ class Trainer:
         seed : int, optional, default=None
             The random seed for reproducibility.
         nan_policy : str, default='fill'
-            The policy for handling NaN values in the data.
+            The policy for handling NaN values in the data. Options are
+                - 'mask': removes all data points where the y is nan
+                - 'fill': replaces nan values and keeps data points
         prec_size : int, default=100
             The size of the preconditioner for the optimizer.
         output_dir : Path, optional, default=None
