@@ -104,3 +104,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Experiments
+experiments/
+
+# Miscellaneous
+_dev/
