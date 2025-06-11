@@ -1,0 +1,72 @@
+from abc import ABC, abstractmethod
+from typing import Any
+
+import torch
+from torch.utils.data import Dataset
+
+
+class GPDataset(Dataset, ABC):
+    """Abstract base class for Gaussian Process datasets.
+
+    This class extends PyTorch's Dataset class to provide a standardized
+    interface for datasets used in Gaussian Process models. It defines
+    required methods for data access, transformation, and device
+    management.
+
+    All subclasses must implement the abstract methods defined here.
+
+    See Also
+    --------
+    torch.utils.data.Dataset : PyTorch's base dataset class
+    """
+
+    @abstractmethod
+    def __getitem__(self, index: int | list | slice) -> Any:
+        """Get a sample from the dataset at the specified index.
+
+        Parameters
+        ----------
+        index : int | list | slice
+            Index of the sample to retrieve.
+
+        Returns
+        -------
+        Any
+            The sample at the specified index.
+        """
+
+    @abstractmethod
+    def __len__(self) -> int:
+        """Get the total number of samples in the dataset.
+
+        Returns
+        -------
+        int
+            Number of samples in the dataset.
+        """
+
+    @abstractmethod
+    def to(self, device: torch.device) -> None:
+        """Move the dataset to the specified device.
+
+        Parameters
+        ----------
+        device : torch.device
+            The device to move the dataset to (e.g., CPU or CUDA).
+
+        Returns
+        -------
+        self
+            The dataset instance moved to the specified device.
+        """
+
+    @abstractmethod
+    def get_dataset(self) -> tuple[torch.Tensor, ...]:
+        """Get the entire dataset as tensors.
+
+        Returns
+        -------
+        tuple[torch.Tensor, ...]
+            A tuple of tensors representing the entire dataset.
+            Typically contains input features and target values.
+        """
