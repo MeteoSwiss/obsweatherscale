@@ -50,7 +50,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'obsweatherscale'
 copyright = u"2025, MeteoSwiss"
-author = u"Icíar Lloréns Jovar, Francesco Zanetta"
+author = u"Icíar Lloréns Jover, Francesco Zanetta"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
