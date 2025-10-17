@@ -1,0 +1,929 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsweatherscale.likelihoods.noise_models &#8212; obsweatherscale  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/obsweatherscale/likelihoods/noise_models/index';</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="obsweatherscale.likelihoods.transformed_likelihood" href="../transformed_likelihood/index.html" />
+    <link rel="prev" title="obsweatherscale.likelihoods" href="../index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.1.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">obsweatherscale  documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../readme.html">
+    obsweatherscale
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../changelog.html">
+    History
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../readme.html">
+    obsweatherscale
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../changelog.html">
+    History
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../index.html">obsweatherscale</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../inference/index.html">obsweatherscale.inference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../inference/predict_distribution/index.html">obsweatherscale.inference.predict_distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../inference/sample/index.html">obsweatherscale.inference.sample</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../kernels/index.html">obsweatherscale.kernels</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../kernels/neural_kernel/index.html">obsweatherscale.kernels.neural_kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../kernels/scaled_rbf_kernel/index.html">obsweatherscale.kernels.scaled_rbf_kernel</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">obsweatherscale.likelihoods</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">obsweatherscale.likelihoods.noise_models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../transformed_likelihood/index.html">obsweatherscale.likelihoods.transformed_likelihood</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../means/index.html">obsweatherscale.means</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../means/neural_mean/index.html">obsweatherscale.means.neural_mean</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../models/index.html">obsweatherscale.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../models/gp_model/index.html">obsweatherscale.models.gp_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/mlp/index.html">obsweatherscale.models.mlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../training/index.html">obsweatherscale.training</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../training/loss_functions/index.html">obsweatherscale.training.loss_functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../training/training/index.html">obsweatherscale.training.training</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../transformations/index.html">obsweatherscale.transformations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../transformations/quantile_fitted_transformer/index.html">obsweatherscale.transformations.quantile_fitted_transformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../transformations/standardizer/index.html">obsweatherscale.transformations.standardizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../transformations/transformer/index.html">obsweatherscale.transformations.transformer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../utils/index.html">obsweatherscale.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../utils/dataset/index.html">obsweatherscale.utils.dataset</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">obsweatherscale</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">obsweatherscale.likelihoods</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">obsweatherscale.likelihoods.noise_models</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-obsweatherscale.likelihoods.noise_models">
+<span id="obsweatherscale-likelihoods-noise-models"></span><h1>obsweatherscale.likelihoods.noise_models<a class="headerlink" href="#module-obsweatherscale.likelihoods.noise_models" title="Link to this heading">#</a></h1>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise" title="obsweatherscale.likelihoods.noise_models.TransformedNoise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformedNoise</span></code></a></p></td>
+<td><p>Noise model incorporating a transformation of the target data.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise" title="obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformedHomoskedasticNoise</span></code></a></p></td>
+<td><p>A homoskedastic noise model that accounts for target</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise" title="obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformedHeteroskedasticNoise</span></code></a></p></td>
+<td><p>A heteroskedastic noise model that accounts for target</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise" title="obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformedFixedGaussianNoise</span></code></a></p></td>
+<td><p>A fixed Gaussian noise model that accounts for target</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedNoise">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TransformedNoise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../transformations/transformer/index.html#obsweatherscale.transformations.transformer.Transformer" title="obsweatherscale.transformations.transformer.Transformer"><span class="pre">obsweatherscale.transformations.transformer.Transformer</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedNoise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">gpytorch.likelihoods.noise_models.Noise</span></code></p>
+<p>Noise model incorporating a transformation of the target data.</p>
+<p>This is useful when the model is trained on transformed targets and
+the noise must be expressed in the transformed space (e.g., log).It
+ensures that the chosen noise model is scaled appropriately under
+the transformation.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedNoise.transformer">
+<span class="sig-name descname"><span class="pre">transformer</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise.transformer" title="Link to this definition">#</a></dt>
+<dd><p>Object representing the data transformation applied to the
+targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../transformations/index.html#obsweatherscale.transformations.Transformer" title="obsweatherscale.transformations.Transformer">Transformer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedNoise.transform_noise">
+<span class="sig-name descname"><span class="pre">transform_noise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pure_noise_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DiagLinearOperator</span></span></span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedNoise.transform_noise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise.transform_noise" title="Link to this definition">#</a></dt>
+<dd><p>Applies the transformation to the noise variance based on the
+target data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedNoise.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">\*\*kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedNoise.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise.forward" title="Link to this definition">#</a></dt>
+<dd><p>Abstract method to be implemented by subclasses.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">transformer</span></span><a class="headerlink" href="#id0" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">transform_noise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pure_noise_var</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">linear_operator.operators.DiagLinearOperator</span></span></span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedNoise.transform_noise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Link to this definition">#</a></dt>
+<dd><p>Transform noise variance to reflect target data
+transformation.</p>
+<p>Applies the square of the local derivative of the inverse
+transformation to the predicted noise variance. This ensures
+that the noise is properly scaled in the transformed target
+space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pure_noise_var</strong> (<em>torch.Tensor</em>) – Variance of the pure noise before transformation.</p></li>
+<li><p><strong>y</strong> (<em>torch.Tensor, optional</em>) – Target data to be used in the transformation. If not
+provided, a zero tensor is used, assuming a transformation
+that is independent of the target values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A diagonal linear operator representing the transformed
+noise variance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DiagLinearOperator</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AttributeError</strong> – If the transformer does not implement <cite>noise_transform</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id2">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">linear_operator.operators.DiagLinearOperator</span></span></span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedNoise.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id2" title="Link to this definition">#</a></dt>
+<dd><p>Abstract method for the forward pass.</p>
+<p>Must be implemented in subclasses to define how the noise model
+produces a covariance structure from input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Positional arguments for the forward pass.</p></li>
+<li><p><strong>**kwargs</strong> – Keyword arguments for the forward pass.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – To be raised if the method is not implemented in a subclass.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TransformedHomoskedasticNoise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../transformations/transformer/index.html#obsweatherscale.transformations.transformer.Transformer" title="obsweatherscale.transformations.transformer.Transformer"><span class="pre">obsweatherscale.transformations.transformer.Transformer</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_prior</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">gpytorch.priors.Prior</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_constraint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.nn.Module</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Size</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">torch.Size()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedHomoskedasticNoise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise" title="obsweatherscale.likelihoods.noise_models.TransformedNoise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformedNoise</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">gpytorch.likelihoods.noise_models.HomoskedasticNoise</span></code></p>
+<p>A homoskedastic noise model that accounts for target
+transformations.</p>
+<p>This model assumes constant noise across all inputs (homoskedastic),
+but ensures that the noise is properly transformed to reflect the
+transformed target space.</p>
+<p>Homoskedastic noise is appropriate when all observations are assumed
+to have the same level of uncertainty, such as in well-controlled
+experiments or uniformly sampled data. A transformed noise model is
+appropriate when it is trained on transformed outputs, and noise
+must be adjusted accordingly.</p>
+<p>Inherits from:
+- <cite>TransformedNoise</cite>: Applies the appropriate correction for target
+transformations.
+- <cite>HomoskedasticNoise</cite>: Represents fixed noise variance across all
+inputs.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.transformer">
+<span class="sig-name descname"><span class="pre">transformer</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.transformer" title="Link to this definition">#</a></dt>
+<dd><p>A transformation object (e.g., log, standard scaler, etc.) that
+defines the transformation applied to the target variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../transformations/index.html#obsweatherscale.transformations.Transformer" title="obsweatherscale.transformations.Transformer">Transformer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.noise_prior">
+<span class="sig-name descname"><span class="pre">noise_prior</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.noise_prior" title="Link to this definition">#</a></dt>
+<dd><p>Optional prior over the noise variance parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Prior or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.noise_constraint">
+<span class="sig-name descname"><span class="pre">noise_constraint</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.noise_constraint" title="Link to this definition">#</a></dt>
+<dd><p>Optional constraint to ensure valid noise variance
+(e.g., positivity).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nn.Module or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.batch_shape">
+<span class="sig-name descname"><span class="pre">batch_shape</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.batch_shape" title="Link to this definition">#</a></dt>
+<dd><p>The batch shape for the noise model parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Size</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Size</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">linear_operator.operators.DiagLinearOperator</span></span></span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedHomoskedasticNoise.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.forward" title="Link to this definition">#</a></dt>
+<dd><p>Computes transformed homoskedastic noise as linear operator.</p>
+<p>Produces a constant diagonal noise covariance matrix and applies
+a correction based on the transformation of the target variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*params</strong> (<em>Any</em>) – Parameters passed to the underlying noise model.</p></li>
+<li><p><strong>y</strong> (<em>torch.Tensor, optional</em>) – Target values used to transform the noise variance. Required
+if the transformation is data-dependent.</p></li>
+<li><p><strong>shape</strong> (<em>torch.Size, optional</em>) – The desired shape of the output covariance matrix.</p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Additional keyword arguments passed to internal components.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A diagonal linear operator representing the transformed
+noise covariance matrix. This is useful in Gaussian process
+models where efficient matrix representations are needed.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DiagLinearOperator</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TransformedHeteroskedasticNoise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../transformations/transformer/index.html#obsweatherscale.transformations.transformer.Transformer" title="obsweatherscale.transformations.transformer.Transformer"><span class="pre">obsweatherscale.transformations.transformer.Transformer</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.nn.Module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_indices</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_constraint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.nn.Module</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedHeteroskedasticNoise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise" title="obsweatherscale.likelihoods.noise_models.TransformedNoise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformedNoise</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">gpytorch.likelihoods.noise_models.HeteroskedasticNoise</span></code></p>
+<p>A heteroskedastic noise model that accounts for target
+transformations.</p>
+<p>Heteroskedastic noise is data-dependent: it allows for a different
+noise variance for each data point. This model combines
+heteroskedastic noise modeling with a transformation-aware
+mechanism, allowing it to model noise in the transformed target
+space rather than the original.</p>
+<p>Heteroskedastic noise is useful when the variability of observations
+depends on the input, such as in sensor readings, financial data, or
+datasets with heterogeneity across the input space. A transformed
+noise model is appropriate when it is trained on transformed
+outputs, and noise must be adjusted accordingly.</p>
+<p>Inherits from both:
+- <cite>TransformedNoise</cite>: Handles transformations on noise in the target
+space.
+- <cite>HeteroskedasticNoise</cite>: Models variance as a function of inputs.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.transformer">
+<span class="sig-name descname"><span class="pre">transformer</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.transformer" title="Link to this definition">#</a></dt>
+<dd><p>A transformation object (e.g., log, standard scaler, etc.) that
+defines the transformation applied to the target variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../transformations/index.html#obsweatherscale.transformations.Transformer" title="obsweatherscale.transformations.Transformer">Transformer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_model">
+<span class="sig-name descname"><span class="pre">noise_model</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_model" title="Link to this definition">#</a></dt>
+<dd><p>A PyTorch module that outputs noise variances, typically
+conditioned on the input features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nn.Module</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_indices">
+<span class="sig-name descname"><span class="pre">noise_indices</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_indices" title="Link to this definition">#</a></dt>
+<dd><p>Optional list of indices indicating which input dimensions are
+used to model the noise. If None, all inputs are used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[int] or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_constraint">
+<span class="sig-name descname"><span class="pre">noise_constraint</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_constraint" title="Link to this definition">#</a></dt>
+<dd><p>Optional constraint to ensure valid noise variance
+(e.g., positivity).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nn.Module or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Size</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Size</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">linear_operator.operators.DiagLinearOperator</span></span></span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedHeteroskedasticNoise.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.forward" title="Link to this definition">#</a></dt>
+<dd><p>Computes transformed heteroskedastic noise as a linear
+operator.</p>
+<p>Computes input-dependent noise, applies transformation
+correction, and returns result as a diagonal linear operator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*params</strong> (<em>Any</em>) – Parameters passed to the underlying noise model.</p></li>
+<li><p><strong>y</strong> (<em>torch.Tensor, optional</em>) – Target values used to transform the noise variance. Required
+if the transformation is data-dependent.</p></li>
+<li><p><strong>batch_shape</strong> (<em>torch.Size, optional</em>) – The desired batch shape of the output operator.</p></li>
+<li><p><strong>shape</strong> (<em>torch.Size, optional</em>) – The desired shape of the output covariance matrix.</p></li>
+<li><p><strong>noise</strong> (<em>torch.Tensor, optional</em>) – Optional fixed noise tensor to override the learned model
+output.</p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Additional keyword arguments passed to internal components.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A diagonal linear operator representing the transformed
+noise covariance matrix. This is useful in Gaussian process
+models where efficient matrix representations are needed.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DiagLinearOperator</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TransformedFixedGaussianNoise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../transformations/transformer/index.html#obsweatherscale.transformations.transformer.Transformer" title="obsweatherscale.transformations.transformer.Transformer"><span class="pre">obsweatherscale.transformations.transformer.Transformer</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_noise_var</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedFixedGaussianNoise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise" title="obsweatherscale.likelihoods.noise_models.TransformedNoise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransformedNoise</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">gpytorch.likelihoods.noise_models.FixedGaussianNoise</span></code></p>
+<p>A fixed Gaussian noise model that accounts for target
+transformations.</p>
+<p>This model assumes fixed (non-trainable) Gaussian noise across all
+inputs, but ensures that the noise is properly transformed to
+reflect the transformed target space.</p>
+<p>Fixed Gaussian noise is appropriate when the observation noise is
+known ahead of time or externally provided (e.g., sensor precision),
+and does not vary with input. A transformed noise model is useful
+when the model is trained on transformed targets, and noise must be
+adjusted accordingly.</p>
+<p>Inherits from:
+- <cite>TransformedNoise</cite>: Applies the appropriate correction for target
+transformations.
+- <cite>FixedGaussianNoise</cite>: Represents fixed (non-trainable) Gaussian
+noise variance across all inputs.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.transformer">
+<span class="sig-name descname"><span class="pre">transformer</span></span><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.transformer" title="Link to this definition">#</a></dt>
+<dd><p>A transformation object (e.g., log, standard scaler, etc.) that
+defines the transformation applied to the target variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../transformations/index.html#obsweatherscale.transformations.Transformer" title="obsweatherscale.transformations.Transformer">Transformer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.extra_repr">
+<span class="sig-name descname"><span class="pre">extra_repr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedFixedGaussianNoise.extra_repr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.extra_repr" title="Link to this definition">#</a></dt>
+<dd><p>Returns a string representation of the noise value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A formatted string showing the stored fixed noise value.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Size</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">linear_operator.operators.DiagLinearOperator</span></span></span><a class="reference internal" href="../../../../_modules/obsweatherscale/likelihoods/noise_models.html#TransformedFixedGaussianNoise.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.forward" title="Link to this definition">#</a></dt>
+<dd><p>Computes transformed fixed Gaussian noise as a linear
+operator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*params</strong> (<em>Any</em>) – Parameters passed to the underlying noise model.</p></li>
+<li><p><strong>y</strong> (<em>torch.Tensor, optional</em>) – Target values used to transform the noise variance. Required
+if the transformation is data-dependent.</p></li>
+<li><p><strong>shape</strong> (<em>torch.Size, optional</em>) – The desired shape of the output covariance matrix.</p></li>
+<li><p><strong>noise</strong></p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Additional keyword arguments passed to internal components.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A diagonal linear operator representing the transformed
+noise covariance matrix. This is useful in Gaussian process
+models where efficient matrix representations are needed.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DiagLinearOperator</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">obsweatherscale.likelihoods</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../transformed_likelihood/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">obsweatherscale.likelihoods.transformed_likelihood</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise"><code class="docutils literal notranslate"><span class="pre">TransformedNoise</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise.transformer"><code class="docutils literal notranslate"><span class="pre">TransformedNoise.transformer</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise.transform_noise"><code class="docutils literal notranslate"><span class="pre">TransformedNoise.transform_noise()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedNoise.forward"><code class="docutils literal notranslate"><span class="pre">TransformedNoise.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id0"><code class="docutils literal notranslate"><span class="pre">TransformedNoise.transformer</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id1"><code class="docutils literal notranslate"><span class="pre">TransformedNoise.transform_noise()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id2"><code class="docutils literal notranslate"><span class="pre">TransformedNoise.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise"><code class="docutils literal notranslate"><span class="pre">TransformedHomoskedasticNoise</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.transformer"><code class="docutils literal notranslate"><span class="pre">TransformedHomoskedasticNoise.transformer</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.noise_prior"><code class="docutils literal notranslate"><span class="pre">TransformedHomoskedasticNoise.noise_prior</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.noise_constraint"><code class="docutils literal notranslate"><span class="pre">TransformedHomoskedasticNoise.noise_constraint</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.batch_shape"><code class="docutils literal notranslate"><span class="pre">TransformedHomoskedasticNoise.batch_shape</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise.forward"><code class="docutils literal notranslate"><span class="pre">TransformedHomoskedasticNoise.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise"><code class="docutils literal notranslate"><span class="pre">TransformedHeteroskedasticNoise</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.transformer"><code class="docutils literal notranslate"><span class="pre">TransformedHeteroskedasticNoise.transformer</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_model"><code class="docutils literal notranslate"><span class="pre">TransformedHeteroskedasticNoise.noise_model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_indices"><code class="docutils literal notranslate"><span class="pre">TransformedHeteroskedasticNoise.noise_indices</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.noise_constraint"><code class="docutils literal notranslate"><span class="pre">TransformedHeteroskedasticNoise.noise_constraint</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise.forward"><code class="docutils literal notranslate"><span class="pre">TransformedHeteroskedasticNoise.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise"><code class="docutils literal notranslate"><span class="pre">TransformedFixedGaussianNoise</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.transformer"><code class="docutils literal notranslate"><span class="pre">TransformedFixedGaussianNoise.transformer</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.extra_repr"><code class="docutils literal notranslate"><span class="pre">TransformedFixedGaussianNoise.extra_repr()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise.forward"><code class="docutils literal notranslate"><span class="pre">TransformedFixedGaussianNoise.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../_sources/autoapi/obsweatherscale/likelihoods/noise_models/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

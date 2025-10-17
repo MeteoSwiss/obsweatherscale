@@ -1,0 +1,22 @@
+obsweatherscale.inference.predict_distribution
+==============================================
+
+.. py:module:: obsweatherscale.inference.predict_distribution
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   obsweatherscale.inference.predict_distribution.predict_posterior
+   obsweatherscale.inference.predict_distribution.predict_prior
+
+
+Module Contents
+---------------
+
+.. py:function:: predict_posterior(model: gpytorch.models.ExactGP, likelihood: obsweatherscale.likelihoods.TransformedGaussianLikelihood, context_x: torch.Tensor, context_y: torch.Tensor, target_x: torch.Tensor) -> gpytorch.distributions.MultivariateNormal
+
+.. py:function:: predict_prior(model: gpytorch.models.ExactGP, likelihood: obsweatherscale.likelihoods.TransformedGaussianLikelihood, target_x: torch.Tensor, target_y: torch.Tensor) -> gpytorch.distributions.MultivariateNormal
+

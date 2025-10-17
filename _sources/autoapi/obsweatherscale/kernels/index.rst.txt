@@ -1,0 +1,116 @@
+obsweatherscale.kernels
+=======================
+
+.. py:module:: obsweatherscale.kernels
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/kernels/neural_kernel/index
+   /autoapi/obsweatherscale/kernels/scaled_rbf_kernel/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.kernels.NeuralKernel
+   obsweatherscale.kernels.ScaledRBFKernel
+
+
+Package Contents
+----------------
+
+.. py:class:: NeuralKernel(net: torch.nn.Module, kernel: gpytorch.kernels.Kernel)
+
+   Bases: :py:obj:`gpytorch.kernels.Kernel`
+
+
+   Neural Kernel class.
+
+   This class implements a neural kernel that transforms the input data
+   to a learned feature space using a neural network before applying
+   the kernel function.
+
+   TODO: add reference
+
+
+   .. py:attribute:: net
+
+
+   .. py:attribute:: kernel
+
+
+   .. py:method:: forward(x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any) -> Union[torch.Tensor, linear_operator.operators.LinearOperator]
+
+      Computes the covariance between :math:`\mathbf x_1` and :math:`\mathbf x_2`.
+      This method should be implemented by all Kernel subclasses.
+
+      :param x1: First set of data (... x N x D).
+      :param x2: Second set of data (... x M x D).
+      :param diag: Should the Kernel compute the whole kernel, or just the diag?
+          If True, it must be the case that `x1 == x2`. (Default: False.)
+      :param last_dim_is_batch: If True, treat the last dimension
+          of `x1` and `x2` as another batch dimension.
+          (Useful for additive structure over the dimensions). (Default: False.)
+
+      :return: The kernel matrix or vector. The shape depends on the kernel's evaluation mode:
+
+          * `full_covar`: `... x N x M`
+          * `full_covar` with `last_dim_is_batch=True`: `... x K x N x M`
+          * `diag`: `... x N`
+          * `diag` with `last_dim_is_batch=True`: `... x K x N`
+
+
+
+.. py:class:: ScaledRBFKernel(variance: torch.Tensor | None = None, lengthscale: torch.Tensor | None = None, ard_num_dims: int | None = None, batch_shape: torch.Size | None = None, active_dims: tuple[int, Ellipsis] | None = None, lengthscale_prior: gpytorch.priors.Prior | None = None, lengthscale_constraint: gpytorch.constraints.Interval | None = None, outputscale_prior: gpytorch.priors.Prior | None = None, outputscale_constraint: gpytorch.constraints.Interval | None = None, train_lengthscale: bool = True, train_variance: bool = True, eps: float = 1e-06, **kwargs: Any)
+
+   Bases: :py:obj:`gpytorch.kernels.Kernel`
+
+
+   Scaled RBF Kernel class.
+
+   This class implements a scaled radial basis function (RBF) kernel
+   with the option to set the lengthscale and variance parameters.
+
+
+   .. py:attribute:: kernel
+
+
+   .. py:method:: extra_repr() -> str
+
+      Return the extra representation of the module.
+
+      To print customized extra information, you should re-implement
+      this method in your own modules. Both single-line and multi-line
+      strings are acceptable.
+
+
+
+   .. py:method:: forward(x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any) -> Union[torch.Tensor, linear_operator.operators.LinearOperator]
+
+      Computes the covariance between :math:`\mathbf x_1` and :math:`\mathbf x_2`.
+      This method should be implemented by all Kernel subclasses.
+
+      :param x1: First set of data (... x N x D).
+      :param x2: Second set of data (... x M x D).
+      :param diag: Should the Kernel compute the whole kernel, or just the diag?
+          If True, it must be the case that `x1 == x2`. (Default: False.)
+      :param last_dim_is_batch: If True, treat the last dimension
+          of `x1` and `x2` as another batch dimension.
+          (Useful for additive structure over the dimensions). (Default: False.)
+
+      :return: The kernel matrix or vector. The shape depends on the kernel's evaluation mode:
+
+          * `full_covar`: `... x N x M`
+          * `full_covar` with `last_dim_is_batch=True`: `... x K x N x M`
+          * `diag`: `... x N`
+          * `diag` with `last_dim_is_batch=True`: `... x K x N`
+
+
+

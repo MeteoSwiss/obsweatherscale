@@ -1,0 +1,67 @@
+obsweatherscale.models
+======================
+
+.. py:module:: obsweatherscale.models
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/models/gp_model/index
+   /autoapi/obsweatherscale/models/mlp/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.models.GPModel
+   obsweatherscale.models.MLP
+
+
+Package Contents
+----------------
+
+.. py:class:: GPModel(train_x: torch.Tensor, train_y: torch.Tensor, likelihood: gpytorch.likelihoods._GaussianLikelihoodBase, mean_module: gpytorch.means.Mean, covar_module: gpytorch.kernels.Kernel)
+
+   Bases: :py:obj:`gpytorch.models.ExactGP`
+
+
+   Gaussian Process model class.
+
+
+   .. py:attribute:: mean_module
+
+
+   .. py:attribute:: covar_module
+
+
+   .. py:method:: forward(x: torch.Tensor, **kwargs: Any) -> gpytorch.distributions.MultivariateNormal
+
+
+.. py:class:: MLP(dimensions: list[int], output_activation_fct: Callable | None = None, active_dims: list[int] | None = None)
+
+   Bases: :py:obj:`torch.nn.Module`
+
+
+   Multi-Layer Perceptron (MLP) class.
+
+   This class implements a simple multi-layer perceptron with ReLU
+   activation functions and an optional output activation function.
+
+
+   .. py:attribute:: mlp
+
+
+   .. py:attribute:: output_activation_fct
+      :value: None
+
+
+
+   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
+
+

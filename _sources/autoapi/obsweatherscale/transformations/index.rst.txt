@@ -1,0 +1,151 @@
+obsweatherscale.transformations
+===============================
+
+.. py:module:: obsweatherscale.transformations
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/transformations/quantile_fitted_transformer/index
+   /autoapi/obsweatherscale/transformations/standardizer/index
+   /autoapi/obsweatherscale/transformations/transformer/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.transformations.QuantileFittedTransformer
+   obsweatherscale.transformations.Standardizer
+   obsweatherscale.transformations.Transformer
+
+
+Package Contents
+----------------
+
+.. py:class:: QuantileFittedTransformer(a: float = 4.66628594, b: float = 0.73680252, c: float = 0.07385268)
+
+   Bases: :py:obj:`obsweatherscale.transformations.transformer.Transformer`
+
+
+   QuantileFittedTransformer class.
+
+   This class implements a quantile fitted transformation for continuous
+   functions. It approximates the quantile transform using a continuous
+   function defined by the formula: f(y) = log(a / y - c) / b, where
+   a, b, and c are parameters of the transformation. The inverse
+   transformation is defined by the formula:
+   f^-1(z) = a / (c + exp(-b * z)).
+
+
+   .. py:attribute:: a
+      :value: 4.66628594
+
+
+
+   .. py:attribute:: b
+      :value: 0.73680252
+
+
+
+   .. py:attribute:: c
+      :value: 0.07385268
+
+
+
+   .. py:method:: description() -> str
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+
+      Apply the quantile fitted transformation to the input data.
+
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+
+      Apply the inverse quantile fitted transformation to the
+      input data.
+
+
+
+   .. py:method:: transform_derivative(y: torch.Tensor) -> torch.Tensor
+
+      Compute the derivative of the quantile fitted transformation.
+
+
+
+
+   .. py:method:: inv_transform_derivative(z: torch.Tensor) -> torch.Tensor
+
+      Compute the derivative of the inverse quantile fitted
+      transformation.
+
+
+
+   .. py:method:: noise_transform(data: torch.Tensor) -> torch.Tensor
+
+      Apply the noise transformation to the input data.
+
+
+
+.. py:class:: Standardizer(data: torch.Tensor, variables: tuple[int, Ellipsis] | int | None = None)
+
+   Standardization transformation class.
+
+
+   .. py:method:: description() -> str
+
+
+   .. py:method:: fit(data: torch.Tensor, variables: tuple[int, Ellipsis] | int | None = None) -> None
+
+      Fit the standardization transformation to the data.
+
+      :Parameters: * **data** (*torch.Tensor*) -- The data to be standardized.
+                   * **variables** (*tuple[int, ...] or int, optional*) -- The dimensions to be used for standardization.
+                     If None, all dimensions will be used.
+
+
+
+   .. py:method:: transform(y: torch.Tensor, copy: bool = False) -> torch.Tensor
+
+      Apply the standardization transformation to the input data.
+
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor, copy: bool = False) -> torch.Tensor
+
+      Apply the inverse standardization transformation to the
+      input data.
+
+
+
+.. py:class:: Transformer
+
+   .. py:method:: description() -> str
+      :abstractmethod:
+
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+
+   .. py:method:: noise_transform(data: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+

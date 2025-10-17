@@ -1,0 +1,71 @@
+obsweatherscale.utils
+=====================
+
+.. py:module:: obsweatherscale.utils
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/utils/dataset/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.utils.GPDataset
+
+
+Package Contents
+----------------
+
+.. py:class:: GPDataset
+
+   Bases: :py:obj:`torch.utils.data.Dataset`, :py:obj:`abc.ABC`
+
+
+   Abstract base class for Gaussian Process datasets.
+
+   This class extends PyTorch's Dataset class to provide a standardized
+   interface for datasets used in Gaussian Process models. It defines
+   required methods for data access, transformation, and device
+   management.
+
+   All subclasses must implement the abstract methods defined here.
+
+   .. seealso::
+
+      :obj:`torch.utils.data.Dataset`
+          PyTorch's base dataset class
+
+
+   .. py:method:: to(device: torch.device) -> None
+      :abstractmethod:
+
+
+      Move the dataset to the specified device.
+
+      :Parameters: **device** (*torch.device*) -- The device to move the dataset to (e.g., CPU or CUDA).
+
+      :returns: The dataset instance moved to the specified device.
+      :rtype: self
+
+
+
+   .. py:method:: get_dataset() -> tuple[torch.Tensor, Ellipsis]
+      :abstractmethod:
+
+
+      Get the entire dataset as tensors.
+
+      :returns: A tuple of tensors representing the entire dataset.
+                Typically contains input features and target values.
+      :rtype: tuple[torch.Tensor, ...]
+
+
+

@@ -1,0 +1,267 @@
+obsweatherscale.likelihoods
+===========================
+
+.. py:module:: obsweatherscale.likelihoods
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/likelihoods/noise_models/index
+   /autoapi/obsweatherscale/likelihoods/transformed_likelihood/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.likelihoods.TransformedNoise
+   obsweatherscale.likelihoods.TransformedGaussianLikelihood
+   obsweatherscale.likelihoods.ExactMarginalLogLikelihoodFill
+
+
+Package Contents
+----------------
+
+.. py:class:: TransformedNoise(transformer: obsweatherscale.transformations.transformer.Transformer)
+
+   Bases: :py:obj:`gpytorch.likelihoods.noise_models.Noise`
+
+
+   Noise model incorporating a transformation of the target data.
+
+   This is useful when the model is trained on transformed targets and
+   the noise must be expressed in the transformed space (e.g., log).It
+   ensures that the chosen noise model is scaled appropriately under
+   the transformation.
+
+   .. attribute:: transformer
+
+      Object representing the data transformation applied to the
+      targets.
+
+      :type: Transformer
+
+   .. method:: transform_noise(pure_noise_var, y=None) -> DiagLinearOperator
+
+      Applies the transformation to the noise variance based on the
+      target data.
+
+
+   .. method:: forward(*args, \*\*kwargs)
+
+      Abstract method to be implemented by subclasses.
+
+
+
+   .. py:attribute:: transformer
+
+
+   .. py:method:: transform_noise(pure_noise_var: torch.Tensor, y: torch.Tensor | None = None) -> linear_operator.operators.DiagLinearOperator
+
+      Transform noise variance to reflect target data
+      transformation.
+
+      Applies the square of the local derivative of the inverse
+      transformation to the predicted noise variance. This ensures
+      that the noise is properly scaled in the transformed target
+      space.
+
+      :Parameters: * **pure_noise_var** (*torch.Tensor*) -- Variance of the pure noise before transformation.
+                   * **y** (*torch.Tensor, optional*) -- Target data to be used in the transformation. If not
+                     provided, a zero tensor is used, assuming a transformation
+                     that is independent of the target values.
+
+      :returns: A diagonal linear operator representing the transformed
+                noise variance.
+      :rtype: DiagLinearOperator
+
+      :raises AttributeError: If the transformer does not implement `noise_transform`.
+
+
+
+   .. py:method:: forward(*args: Any, **kwargs: Any) -> linear_operator.operators.DiagLinearOperator
+      :abstractmethod:
+
+
+      Abstract method for the forward pass.
+
+      Must be implemented in subclasses to define how the noise model
+      produces a covariance structure from input data.
+
+      :Parameters: * **\*args** -- Positional arguments for the forward pass.
+                   * **\*\*kwargs** -- Keyword arguments for the forward pass.
+
+      :raises NotImplementedError: To be raised if the method is not implemented in a subclass.
+
+
+
+.. py:class:: TransformedGaussianLikelihood(noise_covar: obsweatherscale.likelihoods.noise_models.TransformedNoise, **kwargs: Any)
+
+   Bases: :py:obj:`gpytorch.likelihoods._GaussianLikelihoodBase`
+
+
+   A Gaussian likelihood with a transformed noise model.
+
+   This likelihood allows custom noise transformations by leveraging
+   a `TransformedNoise` object. It supports missing observation
+   handling policies, including masking and filling, and is designed
+   for compatibility with GPyTorch models using `MultivariateNormal`
+   outputs.
+
+   .. method:: _shaped_noise_covar(base_shape, \*params, y=None, \*\*kwargs)
+
+      Returns a noise covariance object of the correct shape,
+      optionally based on `y`.
+
+
+   .. method:: expected_log_prob(target, input, \*params, \*\*kwargs)
+
+      Computes the expected log probability of the target under the
+      input distribution, optionally handling NaNs according to the
+      active policy.
+
+
+   .. method:: forward(function_samples, \*params, \*\*kwargs)
+
+      Returns a Normal distribution by applying transformed noise to
+      function samples.
+
+
+   .. method:: marginal(function_dist, \*params, \*\*kwargs)
+
+      Returns the marginal distribution including the transformed
+      noise covariance.
+
+
+
+   .. py:method:: expected_log_prob(target: torch.Tensor, input: gpytorch.distributions.MultivariateNormal, *params: Any, **kwargs: Any) -> torch.Tensor
+
+      Expected log probability of target given input distribution.
+
+      Computes the expected log probability of the `target` given the
+      `input` distribution, accounting for noise and handling missing
+      values according to the configured NaN policy.
+
+      :Parameters: * **target** (*torch.Tensor*) -- The target tensor to compute the log probability for.
+                   * **input** (*MultivariateNormal*) -- The input distribution, typically a MultivariateNormal, from
+                     which the mean and variance will be used to compute the log
+                     probability.
+                   * **\*params** (*tuple*) -- Additional parameters passed to the likelihood.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to the likelihood.
+
+      :returns: The computed log probability for the given target and input
+                distribution.
+      :rtype: torch.Tensor
+
+
+
+   .. py:method:: forward(function_samples: torch.Tensor, *params: Any, **kwargs: Any) -> torch.distributions.Normal
+
+      Applies noise to given function samples.
+
+      Returns a Normal distribution by applying the transformed noise
+      to the given function samples.
+
+      :Parameters: * **function_samples** (*torch.Tensor*) -- The samples from the function (typically the mean of a
+                     MultivariateNormal).
+                   * **\*params** (*tuple*) -- Additional parameters passed to the noise covariance
+                     function.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to the likelihood.
+
+      :returns: The Normal distribution obtained after adding noise to the
+                function samples.
+      :rtype: torch.distributions.Normal
+
+
+
+   .. py:method:: marginal(function_dist: gpytorch.distributions.MultivariateNormal, *params: Any, **kwargs: Any) -> gpytorch.distributions.MultivariateNormal
+
+      Computes the marginal distribution by adding the noise
+      covariance to the covariance of the function distribution.
+
+      :Parameters: * **function_dist** (*MultivariateNormal*) -- The MultivariateNormal distribution representing the
+                     function's posterior.
+                   * **\*params** (*tuple*) -- Additional parameters passed to the noise covariance
+                     function.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to the likelihood.
+
+      :returns: The marginal distribution, which is the sum of the
+                function's covariance and the noise covariance.
+      :rtype: MultivariateNormal
+
+
+
+.. py:class:: ExactMarginalLogLikelihoodFill(likelihood, model)
+
+   Bases: :py:obj:`gpytorch.ExactMarginalLogLikelihood`
+
+
+   Extension of ExactMarginalLogLikelihood with support for handling
+   NaN values by filling.
+
+   This class extends the ExactMarginalLogLikelihood class to handle
+   missing values (represented as NaNs) through a filling mechanism.
+   It computes the exact marginal log likelihood for Gaussian
+   Processes, which is crucial for model selection and hyperparameter
+   optimization in GP models.
+
+   :Parameters: * **model** (*gpytorch.models.GP*) -- The GP model for which to compute the marginal log likelihood.
+                * **likelihood** (*gpytorch.likelihoods.Likelihood*) -- The likelihood for the GP model.
+
+   .. attribute:: model
+
+      The GP model.
+
+      :type: gpytorch.models.GP
+
+   .. attribute:: likelihood
+
+      The likelihood for the GP model.
+
+      :type: gpytorch.likelihoods.Likelihood
+
+   .. rubric:: Notes
+
+   This implementation properly handles NaN values in the target tensor
+   based on the observation_nan_policy setting, with special handling
+   for the "fill" policy.
+
+
+   .. py:method:: forward(function_dist: gpytorch.likelihoods._GaussianLikelihoodBase, target: torch.Tensor, *params: Any, **kwargs: Any) -> torch.Tensor
+
+      Computes the marginal log likelihood given a function
+      distribution and target values.
+
+      This method calculates the marginal log likelihood by evaluating
+      the probability of the observed data given the model. It
+      supports special handling for NaN values in the target tensor
+      based on the configured observation_nan_policy.
+
+      :Parameters: * **function_dist** (*gpytorch.distributions._GaussianLikelihoodBase*) -- The distribution p(f) representing outputs of the latent
+                     function.
+                   * **target** (*torch.Tensor*) -- The target values y to condition on.
+                   * **\*params** (*Any*) -- Additional positional arguments to pass to the likelihood.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments to pass to the likelihood.
+
+      :returns: The computed marginal log likelihood divided by the number
+                of data points. Output shape corresponds to the batch shape
+                of the model/input data.
+      :rtype: torch.Tensor
+
+      :raises RuntimeError: If function_dist is not a MultivariateNormal distribution.
+
+      .. rubric:: Notes
+
+      The method handles NaN values in the target tensor according to
+      the observation_nan_policy setting:
+      - "mask": NaN values are masked out from the computation
+      - "fill": NaN values are filled with zeros and the covariance
+      matrix is adjusted
+
+
+

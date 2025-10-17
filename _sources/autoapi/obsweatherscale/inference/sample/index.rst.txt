@@ -1,0 +1,29 @@
+obsweatherscale.inference.sample
+================================
+
+.. py:module:: obsweatherscale.inference.sample
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   obsweatherscale.inference.sample.Distribution
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   obsweatherscale.inference.sample.sample
+
+
+Module Contents
+---------------
+
+.. py:data:: Distribution
+
+.. py:function:: sample(distribution: Distribution, n_samples: int) -> torch.Tensor
+

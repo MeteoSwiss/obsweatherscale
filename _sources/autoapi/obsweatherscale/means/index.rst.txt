@@ -1,0 +1,43 @@
+obsweatherscale.means
+=====================
+
+.. py:module:: obsweatherscale.means
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/means/neural_mean/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.means.NeuralMean
+
+
+Package Contents
+----------------
+
+.. py:class:: NeuralMean(net: torch.nn.Module)
+
+   Bases: :py:obj:`gpytorch.means.Mean`
+
+
+   Neural Mean class.
+
+   Uses a neural network to compute the mean of the Gaussian process
+   prior, starting from the input data.
+
+
+   .. py:attribute:: net
+
+
+   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
+
+

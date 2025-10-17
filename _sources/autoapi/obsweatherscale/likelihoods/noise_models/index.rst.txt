@@ -1,0 +1,302 @@
+obsweatherscale.likelihoods.noise_models
+========================================
+
+.. py:module:: obsweatherscale.likelihoods.noise_models
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.likelihoods.noise_models.TransformedNoise
+   obsweatherscale.likelihoods.noise_models.TransformedHomoskedasticNoise
+   obsweatherscale.likelihoods.noise_models.TransformedHeteroskedasticNoise
+   obsweatherscale.likelihoods.noise_models.TransformedFixedGaussianNoise
+
+
+Module Contents
+---------------
+
+.. py:class:: TransformedNoise(transformer: obsweatherscale.transformations.transformer.Transformer)
+
+   Bases: :py:obj:`gpytorch.likelihoods.noise_models.Noise`
+
+
+   Noise model incorporating a transformation of the target data.
+
+   This is useful when the model is trained on transformed targets and
+   the noise must be expressed in the transformed space (e.g., log).It
+   ensures that the chosen noise model is scaled appropriately under
+   the transformation.
+
+   .. attribute:: transformer
+
+      Object representing the data transformation applied to the
+      targets.
+
+      :type: Transformer
+
+   .. method:: transform_noise(pure_noise_var, y=None) -> DiagLinearOperator
+
+      Applies the transformation to the noise variance based on the
+      target data.
+
+
+   .. method:: forward(*args, \*\*kwargs)
+
+      Abstract method to be implemented by subclasses.
+
+
+
+   .. py:attribute:: transformer
+
+
+   .. py:method:: transform_noise(pure_noise_var: torch.Tensor, y: torch.Tensor | None = None) -> linear_operator.operators.DiagLinearOperator
+
+      Transform noise variance to reflect target data
+      transformation.
+
+      Applies the square of the local derivative of the inverse
+      transformation to the predicted noise variance. This ensures
+      that the noise is properly scaled in the transformed target
+      space.
+
+      :Parameters: * **pure_noise_var** (*torch.Tensor*) -- Variance of the pure noise before transformation.
+                   * **y** (*torch.Tensor, optional*) -- Target data to be used in the transformation. If not
+                     provided, a zero tensor is used, assuming a transformation
+                     that is independent of the target values.
+
+      :returns: A diagonal linear operator representing the transformed
+                noise variance.
+      :rtype: DiagLinearOperator
+
+      :raises AttributeError: If the transformer does not implement `noise_transform`.
+
+
+
+   .. py:method:: forward(*args: Any, **kwargs: Any) -> linear_operator.operators.DiagLinearOperator
+      :abstractmethod:
+
+
+      Abstract method for the forward pass.
+
+      Must be implemented in subclasses to define how the noise model
+      produces a covariance structure from input data.
+
+      :Parameters: * **\*args** -- Positional arguments for the forward pass.
+                   * **\*\*kwargs** -- Keyword arguments for the forward pass.
+
+      :raises NotImplementedError: To be raised if the method is not implemented in a subclass.
+
+
+
+.. py:class:: TransformedHomoskedasticNoise(transformer: obsweatherscale.transformations.transformer.Transformer, noise_prior: gpytorch.priors.Prior | None = None, noise_constraint: torch.nn.Module | None = None, batch_shape: torch.Size = torch.Size())
+
+   Bases: :py:obj:`TransformedNoise`, :py:obj:`gpytorch.likelihoods.noise_models.HomoskedasticNoise`
+
+
+   A homoskedastic noise model that accounts for target
+   transformations.
+
+   This model assumes constant noise across all inputs (homoskedastic),
+   but ensures that the noise is properly transformed to reflect the
+   transformed target space.
+
+   Homoskedastic noise is appropriate when all observations are assumed
+   to have the same level of uncertainty, such as in well-controlled
+   experiments or uniformly sampled data. A transformed noise model is
+   appropriate when it is trained on transformed outputs, and noise
+   must be adjusted accordingly.
+
+   Inherits from:
+   - `TransformedNoise`: Applies the appropriate correction for target
+   transformations.
+   - `HomoskedasticNoise`: Represents fixed noise variance across all
+   inputs.
+
+   .. attribute:: transformer
+
+      A transformation object (e.g., log, standard scaler, etc.) that
+      defines the transformation applied to the target variable.
+
+      :type: Transformer
+
+   .. attribute:: noise_prior
+
+      Optional prior over the noise variance parameter.
+
+      :type: Prior or None
+
+   .. attribute:: noise_constraint
+
+      Optional constraint to ensure valid noise variance
+      (e.g., positivity).
+
+      :type: nn.Module or None
+
+   .. attribute:: batch_shape
+
+      The batch shape for the noise model parameters.
+
+      :type: torch.Size
+
+
+   .. py:method:: forward(*params: Any, y: torch.Tensor | None = None, shape: torch.Size | None = None, **kwargs: Any) -> linear_operator.operators.DiagLinearOperator
+
+      Computes transformed homoskedastic noise as linear operator.
+
+      Produces a constant diagonal noise covariance matrix and applies
+      a correction based on the transformation of the target variable.
+
+      :Parameters: * **\*params** (*Any*) -- Parameters passed to the underlying noise model.
+                   * **y** (*torch.Tensor, optional*) -- Target values used to transform the noise variance. Required
+                     if the transformation is data-dependent.
+                   * **shape** (*torch.Size, optional*) -- The desired shape of the output covariance matrix.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to internal components.
+
+      :returns: A diagonal linear operator representing the transformed
+                noise covariance matrix. This is useful in Gaussian process
+                models where efficient matrix representations are needed.
+      :rtype: DiagLinearOperator
+
+
+
+.. py:class:: TransformedHeteroskedasticNoise(transformer: obsweatherscale.transformations.transformer.Transformer, noise_model: torch.nn.Module, noise_indices: list[int] | None = None, noise_constraint: torch.nn.Module | None = None)
+
+   Bases: :py:obj:`TransformedNoise`, :py:obj:`gpytorch.likelihoods.noise_models.HeteroskedasticNoise`
+
+
+   A heteroskedastic noise model that accounts for target
+   transformations.
+
+   Heteroskedastic noise is data-dependent: it allows for a different
+   noise variance for each data point. This model combines
+   heteroskedastic noise modeling with a transformation-aware
+   mechanism, allowing it to model noise in the transformed target
+   space rather than the original.
+
+   Heteroskedastic noise is useful when the variability of observations
+   depends on the input, such as in sensor readings, financial data, or
+   datasets with heterogeneity across the input space. A transformed
+   noise model is appropriate when it is trained on transformed
+   outputs, and noise must be adjusted accordingly.
+
+   Inherits from both:
+   - `TransformedNoise`: Handles transformations on noise in the target
+   space.
+   - `HeteroskedasticNoise`: Models variance as a function of inputs.
+
+   .. attribute:: transformer
+
+      A transformation object (e.g., log, standard scaler, etc.) that
+      defines the transformation applied to the target variable.
+
+      :type: Transformer
+
+   .. attribute:: noise_model
+
+      A PyTorch module that outputs noise variances, typically
+      conditioned on the input features.
+
+      :type: nn.Module
+
+   .. attribute:: noise_indices
+
+      Optional list of indices indicating which input dimensions are
+      used to model the noise. If None, all inputs are used.
+
+      :type: list[int] or None
+
+   .. attribute:: noise_constraint
+
+      Optional constraint to ensure valid noise variance
+      (e.g., positivity).
+
+      :type: nn.Module or None
+
+
+   .. py:method:: forward(*params: Any, y: torch.Tensor | None = None, batch_shape: torch.Size | None = None, shape: torch.Size | None = None, noise: torch.Tensor | None = None, **kwargs: Any) -> linear_operator.operators.DiagLinearOperator
+
+      Computes transformed heteroskedastic noise as a linear
+      operator.
+
+      Computes input-dependent noise, applies transformation
+      correction, and returns result as a diagonal linear operator.
+
+      :Parameters: * **\*params** (*Any*) -- Parameters passed to the underlying noise model.
+                   * **y** (*torch.Tensor, optional*) -- Target values used to transform the noise variance. Required
+                     if the transformation is data-dependent.
+                   * **batch_shape** (*torch.Size, optional*) -- The desired batch shape of the output operator.
+                   * **shape** (*torch.Size, optional*) -- The desired shape of the output covariance matrix.
+                   * **noise** (*torch.Tensor, optional*) -- Optional fixed noise tensor to override the learned model
+                     output.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to internal components.
+
+      :returns: A diagonal linear operator representing the transformed
+                noise covariance matrix. This is useful in Gaussian process
+                models where efficient matrix representations are needed.
+      :rtype: DiagLinearOperator
+
+
+
+.. py:class:: TransformedFixedGaussianNoise(transformer: obsweatherscale.transformations.transformer.Transformer, obs_noise_var: torch.Tensor | int | float = 1.0)
+
+   Bases: :py:obj:`TransformedNoise`, :py:obj:`gpytorch.likelihoods.noise_models.FixedGaussianNoise`
+
+
+   A fixed Gaussian noise model that accounts for target
+   transformations.
+
+   This model assumes fixed (non-trainable) Gaussian noise across all
+   inputs, but ensures that the noise is properly transformed to
+   reflect the transformed target space.
+
+   Fixed Gaussian noise is appropriate when the observation noise is
+   known ahead of time or externally provided (e.g., sensor precision),
+   and does not vary with input. A transformed noise model is useful
+   when the model is trained on transformed targets, and noise must be
+   adjusted accordingly.
+
+   Inherits from:
+   - `TransformedNoise`: Applies the appropriate correction for target
+   transformations.
+   - `FixedGaussianNoise`: Represents fixed (non-trainable) Gaussian
+   noise variance across all inputs.
+
+   .. attribute:: transformer
+
+      A transformation object (e.g., log, standard scaler, etc.) that
+      defines the transformation applied to the target variable.
+
+      :type: Transformer
+
+
+   .. py:method:: extra_repr() -> str
+
+      Returns a string representation of the noise value.
+
+      :returns: A formatted string showing the stored fixed noise value.
+      :rtype: str
+
+
+
+   .. py:method:: forward(*params: Any, y: torch.Tensor | None = None, shape: torch.Size | None = None, noise: torch.Tensor | None = None, **kwargs: Any) -> linear_operator.operators.DiagLinearOperator
+
+      Computes transformed fixed Gaussian noise as a linear
+      operator.
+
+      :Parameters: * **\*params** (*Any*) -- Parameters passed to the underlying noise model.
+                   * **y** (*torch.Tensor, optional*) -- Target values used to transform the noise variance. Required
+                     if the transformation is data-dependent.
+                   * **shape** (*torch.Size, optional*) -- The desired shape of the output covariance matrix.
+                   * **noise**
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to internal components.
+
+      :returns: A diagonal linear operator representing the transformed
+                noise covariance matrix. This is useful in Gaussian process
+                models where efficient matrix representations are needed.
+      :rtype: DiagLinearOperator
+
+
+

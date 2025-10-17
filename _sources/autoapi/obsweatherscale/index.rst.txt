@@ -1,0 +1,22 @@
+obsweatherscale
+===============
+
+.. py:module:: obsweatherscale
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/inference/index
+   /autoapi/obsweatherscale/kernels/index
+   /autoapi/obsweatherscale/likelihoods/index
+   /autoapi/obsweatherscale/means/index
+   /autoapi/obsweatherscale/models/index
+   /autoapi/obsweatherscale/training/index
+   /autoapi/obsweatherscale/transformations/index
+   /autoapi/obsweatherscale/utils/index
+
+

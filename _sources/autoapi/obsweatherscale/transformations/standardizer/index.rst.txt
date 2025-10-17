@@ -1,0 +1,49 @@
+obsweatherscale.transformations.standardizer
+============================================
+
+.. py:module:: obsweatherscale.transformations.standardizer
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.transformations.standardizer.Standardizer
+
+
+Module Contents
+---------------
+
+.. py:class:: Standardizer(data: torch.Tensor, variables: tuple[int, Ellipsis] | int | None = None)
+
+   Standardization transformation class.
+
+
+   .. py:method:: description() -> str
+
+
+   .. py:method:: fit(data: torch.Tensor, variables: tuple[int, Ellipsis] | int | None = None) -> None
+
+      Fit the standardization transformation to the data.
+
+      :Parameters: * **data** (*torch.Tensor*) -- The data to be standardized.
+                   * **variables** (*tuple[int, ...] or int, optional*) -- The dimensions to be used for standardization.
+                     If None, all dimensions will be used.
+
+
+
+   .. py:method:: transform(y: torch.Tensor, copy: bool = False) -> torch.Tensor
+
+      Apply the standardization transformation to the input data.
+
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor, copy: bool = False) -> torch.Tensor
+
+      Apply the inverse standardization transformation to the
+      input data.
+
+
+

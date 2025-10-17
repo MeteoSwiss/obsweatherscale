@@ -1,0 +1,143 @@
+obsweatherscale.training.training
+=================================
+
+.. py:module:: obsweatherscale.training.training
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.training.training.RandomStateContext
+   obsweatherscale.training.training.Trainer
+
+
+Module Contents
+---------------
+
+.. py:class:: RandomStateContext
+
+   Context manager for preserving and restoring PyTorch's RNG state.
+
+   This context manager saves the current random number generator (RNG)
+   state upon entering and restores it upon exiting. This is useful to
+   ensure deterministic behavior when randomness is used within a
+   controlled block of code, without affecting the global RNG state
+   outside the block.
+
+   .. rubric:: Notes
+
+   - The RNG state is retrieved and stored using
+   `torch.random.get_rng_state()` and `torch.random.set_rng_state()`.
+   - A new seed is set upon entering the context using
+   `torch.manual_seed(torch.seed())`.
+
+
+   .. py:attribute:: current_state
+
+
+.. py:class:: Trainer(model: gpytorch.models.ExactGP, likelihood: gpytorch.likelihoods._GaussianLikelihoodBase, train_loss_fct: Callable, val_loss_fct: Callable, device: torch.device, optimizer: torch.optim.optimizer.Optimizer)
+
+   Trainer class for Gaussian Process models.
+
+
+   .. py:attribute:: model
+
+
+   .. py:attribute:: best_model
+      :value: None
+
+
+
+   .. py:attribute:: likelihood
+
+
+   .. py:attribute:: train_loss_fct
+
+
+   .. py:attribute:: val_loss_fct
+
+
+   .. py:attribute:: device
+
+
+   .. py:attribute:: optimizer
+
+
+   .. py:method:: sample_batch_idx(length: int, batch_size: int) -> list[int]
+
+      Randomly sample a batch of unique indices.
+
+      :Parameters: * **length** (*int*) -- The total number of available items to sample from.
+                   * **batch_size** (*int*) -- The number of unique indices to sample.
+
+      :returns: A list of `batch_size` unique indices randomly sampled from
+                the range [0, length).
+      :rtype: list of int
+
+
+
+   .. py:method:: train_step(batch_x: torch.Tensor, batch_y: torch.Tensor) -> float
+
+      Perform a training step on the model.
+
+      :Parameters: * **batch_x** (*torch.Tensor*) -- The input data for the training step.
+                   * **batch_y** (*torch.Tensor*) -- The target data for the training step.
+
+      :returns: The value of the loss function for this training step.
+      :rtype: float
+
+
+
+   .. py:method:: val_step(batch_x_context: torch.Tensor, batch_y_context: torch.Tensor, batch_x_target: torch.Tensor, batch_y_target: torch.Tensor) -> float
+
+      Perform a validation step on the model.
+
+      The validation loss is computed on target {}_target data
+      conditioned on the context {}_context data. It can be used to
+      diagnose the model's generalization performance.
+
+      :Parameters: * **batch_x_context** (*torch.Tensor*) -- The input data for the validation step (conditional).
+                   * **batch_y_context** (*torch.Tensor*) -- The target data for the validation step (conditional).
+                   * **batch_x_target** (*torch.Tensor*) -- The input data for the validation step (target).
+                   * **batch_y_target** (*torch.Tensor*) -- The target data for the validation step (target).
+
+      :returns: The value of the loss function for this validation step.
+      :rtype: float
+
+
+
+   .. py:method:: apply_random_masking(data: torch.Tensor, p: float = 0.5) -> torch.Tensor
+
+
+   .. py:method:: fit(train: obsweatherscale.utils.GPDataset, val_context: obsweatherscale.utils.GPDataset, val_target: obsweatherscale.utils.GPDataset, batch_size: int, n_iter: int, random_masking: bool = True, seed: int | None = None, nan_policy: str = 'fill', prec_size: int = 100, output_dir: pathlib.Path | None = None, verbose: bool = True) -> tuple[gpytorch.models.ExactGP, dict[str, list]]
+
+      Train the Gaussian Process model.
+
+      :Parameters: * **train** (*GPDataset*) -- The training dataset.
+                   * **val_context** (*GPDataset*) -- The validation dataset (context).
+                   * **val_target** (*GPDataset*) -- The validation dataset (target).
+                   * **batch_size** (*int*) -- The size of the batches for training.
+                   * **n_iter** (*int*) -- The number of iterations for training.
+                   * **random_masking** (*bool, default=True*) -- Whether to apply random masking to the training data.
+                   * **seed** (*int, optional, default=None*) -- The random seed for reproducibility.
+                   * **nan_policy** (*str, default='fill'*) --
+
+                     The policy for handling NaN values in the data. Options are
+                         - 'mask': removes all data points where the y is nan
+                         - 'fill': replaces nan values and keeps data points
+                   * **prec_size** (*int, default=100*) -- The size of the preconditioner for the optimizer.
+                   * **output_dir** (*Path, optional, default=None*) -- The directory to save the model checkpoints. If None, the
+                     model does not get saved during training.
+                   * **verbose** (*bool, default=True*) -- If True, prints training status (loss function values, iter,
+                     time)
+
+      :returns: * **model** (*ExactGP*) -- The trained Gaussian Process model.
+                * **train_progression** (*dict[str, list]*) -- Dictionary with training progression metrics with keys:
+                  - 'iter': List of iteration numbers
+                  - 'train loss': List of training loss values
+                  - 'val loss': List of validation loss values
+
+
+
