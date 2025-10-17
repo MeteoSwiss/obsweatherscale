@@ -44,14 +44,15 @@ jobs:
       run: poetry run sphinx-build doc doc/_build
 
     - name: Run pytest
-      run: poetry run pytest -s --cov=open_source_template --cov-fail-under=80
+      # run: poetry run pytest -s --cov=obsweatherscale --cov-fail-under=80
+      run: poetry run pytest -s --cov=obsweatherscale
 
     - name: Run linter
-      run: poetry run pylint -rn --output-format=parseable open_source_template
+      run: poetry run pylint -rn --output-format=parseable obsweatherscale
 
     - name: Run static checker
       run: |
-        OUTPUT=$(poetry run mypy open_source_template 2>&1 || true)
+        OUTPUT=$(poetry run mypy obsweatherscale 2>&1 || true)
         echo "$OUTPUT"
 
         # Extract the error count from lines

@@ -100,7 +100,7 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
     def expected_log_prob(
         self,
         target: torch.Tensor,
-        input: MultivariateNormal,
+        input: MultivariateNormal, # pylint: disable=redefined-builtin
         *params: Any,
         **kwargs: Any,
     ) -> torch.Tensor:
@@ -138,6 +138,7 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         # Handle NaN values if enabled
         nan_policy = settings.observation_nan_policy.value()
         if nan_policy == "mask":
+            # pylint: disable=protected-access
             observed = settings.observation_nan_policy._get_observed(
                 target, input.event_shape
             )
@@ -338,6 +339,7 @@ class ExactMarginalLogLikelihoodFill(ExactMarginalLogLikelihood):
 
         # Remove NaN values if enabled
         if settings.observation_nan_policy.value() == "mask":
+            # pylint: disable=protected-access
             observed = settings.observation_nan_policy._get_observed(
                 target, output.event_shape
             )

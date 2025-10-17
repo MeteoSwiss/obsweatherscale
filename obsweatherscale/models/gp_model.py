@@ -18,7 +18,7 @@ class GPModel(ExactGP):
         likelihood: _GaussianLikelihoodBase,
         mean_module: Mean,
         covar_module: Kernel,
-    ) -> None:
+    ) -> None: # pylint: disable=arguments-differ
         """Initialize the GPModel.
 
         Parameters
@@ -38,6 +38,7 @@ class GPModel(ExactGP):
         self.mean_module = mean_module
         self.covar_module = covar_module
 
+    # pylint: disable=arguments-differ
     def forward(self, x: torch.Tensor, **kwargs: Any) -> MultivariateNormal:
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
