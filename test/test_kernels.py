@@ -20,7 +20,7 @@ def test_neural_kernel() -> None:
     x2 = torch.randn(5, 3)
 
     # Compute the kernel output
-    output = neural_kernel(x1, x2).evaluate() # type: ignore
+    output = neural_kernel(x1, x2).to_dense() # type: ignore
 
     assert output.shape == (5, 5), "Output shape mismatch"
     assert isinstance(output, torch.Tensor), "Output type mismatch"
@@ -36,7 +36,7 @@ def test_scaled_rbf_kernel() -> None:
     x2 = torch.randn(5, 2)
 
     # Compute the kernel output
-    output = scaled_kernel(x1, x2).evaluate() # type: ignore
+    output = scaled_kernel(x1, x2).to_dense() # type: ignore
 
     assert output.shape == (5, 5), "Output shape mismatch"
     assert isinstance(output, torch.Tensor), "Output type mismatch"
