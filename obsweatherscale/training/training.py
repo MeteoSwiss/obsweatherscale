@@ -1,7 +1,7 @@
 import random
 import time
 from pathlib import Path
-from typing import Callable, Type
+from typing import Any, Callable, Sequence, Type
 
 import torch
 from gpytorch import settings
@@ -10,6 +10,8 @@ from gpytorch.models import ExactGP
 from torch.optim.optimizer import Optimizer
 
 from obsweatherscale.utils import GPDataset
+
+from .loggers import TerminalLogger, TrainingLogger
 
 
 class RandomStateContext:
@@ -219,6 +221,7 @@ class Trainer:
         prec_size: int = 100,
         output_dir: Path | None = None,
         verbose: bool = True,
+        loggers: Sequence[TrainingLogger] | None = None,
     ) -> tuple[ExactGP, dict[str, list]]:
         """Train the Gaussian Process model.
 
@@ -250,6 +253,12 @@ class Trainer:
         verbose : bool, default=True
             If True, prints training status (loss function values, iter,
             time)
+        loggers : Sequence of TrainingLogger, optional, default=None
+            Sequence of :class:`TrainingLogger` instances (e.g.
+            :class:`TerminalLogger`, :class:`CSVLogger`,
+            :class:`MLflowLogger`).  Each logger receives
+            hyperparameters once before training and per-iteration
+            metrics.  When *None*, no additional logging is performed.
         Returns
         -------
         model : ExactGP
@@ -260,6 +269,7 @@ class Trainer:
             - 'train loss': List of training loss values
             - 'val loss': List of validation loss values
         """
+
         if output_dir is not None:
             output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -279,6 +289,28 @@ class Trainer:
         val_target.to(self.device)
 
         best_val_loss = torch.inf
+
+        loggers_list: list[TrainingLogger] = list(loggers) if loggers else []
+        if verbose:
+            loggers_list.append(TerminalLogger())
+
+        if loggers_list:
+            log_params: dict[str, Any] = {
+                "batch_size": batch_size,
+                "n_iter": n_iter,
+                "seed": seed,
+                "random_masking": random_masking,
+                "nan_policy": nan_policy,
+                "prec_size": prec_size,
+                "device": str(self.device),
+                "model": type(self.model).__name__,
+                "optimizer": type(self.optimizer).__name__,
+            }
+            for group in self.optimizer.param_groups:
+                log_params["learning_rate"] = group["lr"]
+                break
+            for logger in loggers_list:
+                logger.log_params(log_params)
 
         for i in range(n_iter):
             start = time.time()
@@ -333,14 +365,19 @@ class Trainer:
 
             stop = time.time()
 
-            if verbose:
-                print(
-                    f"Iter {i + 1}/{n_iter} - "
-                    f"Loss: {train_loss:.3f}   "
-                    f"Val loss: {val_loss:.3f}   "
-                    f"train time: {stop_targetrain - start:.3f}   "
-                    f"time: {stop - start:.3f}",
-                    flush=True,
-                )
+            if loggers_list:
+                iter_metrics = {
+                    "train_loss": train_loss,
+                    "val_loss": val_loss,
+                    "best_val_loss": float(best_val_loss),
+                    "train_time": stop_targetrain - start,
+                    "iter_time": stop - start,
+                }
+                for logger in loggers_list:
+                    logger.log_metrics(iter_metrics, step=i + 1)
+
+        if loggers_list:
+            for logger in loggers_list:
+                logger.close()
 
         return self.best_model, train_progression # type: ignore

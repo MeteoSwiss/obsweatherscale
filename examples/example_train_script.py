@@ -15,7 +15,7 @@ from obsweatherscale.likelihoods.noise_models import (
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.training import (
-    crps_normal_loss_fct, mll_loss_fct, Trainer
+    crps_normal_loss_fct, mll_loss_fct, Trainer, CSVLogger
 )
 from obsweatherscale.transformations import (
     QuantileFittedTransformer, Standardizer
@@ -90,7 +90,7 @@ def split_data(
     frac_t_train: float = 0.7,
     frac_s_train: float = 0.8
 ) -> dict[str, dict[str, torch.Tensor]]:
-    n_times, n_stations = ds_x.shape
+    n_times, n_stations, _ = ds_x.shape
 
     nt_train = int(frac_t_train * n_times)
     ns_train = int(frac_s_train * n_stations)
@@ -118,7 +118,7 @@ def main() -> None:
     # Generate toy data, e.g. 100 stations, 10 timesteps on a [0,1]x[0,1] grid
     n_stations, n_times, noise_var = 100, 10, 0.1
     ds_x, ds_y = generate_toy_data(n_stations, n_times, noise_var)
-
+    print(ds_x.shape, ds_y.shape)
     # Split into train and validation (context and target)
     data = split_data(ds_x, ds_y)
 
@@ -173,6 +173,11 @@ def main() -> None:
 
     device = get_device()
 
+    # --- Loggers ---
+    loggers = [CSVLogger("training_log.csv")]
+    # To also log to MLflow (requires `pip install mlflow`):
+    # loggers.append(MLflowLogger(experiment_name="toy", run_name="run_1"))
+
     trainer = Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
     )
@@ -184,7 +189,8 @@ def main() -> None:
         n_iter=100,
         random_masking=True,
         seed=seed,
-        verbose=True
+        verbose=True,
+        loggers=loggers,
     )
 
     # Get the iteration of best model
