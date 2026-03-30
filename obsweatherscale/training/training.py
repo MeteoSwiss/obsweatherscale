@@ -268,6 +268,8 @@ class Trainer:
             - 'iter': List of iteration numbers
             - 'train loss': List of training loss values
             - 'val loss': List of validation loss values
+            - 'iter time': List of iteration durations (seconds)
+            - 'total time': List of cumulative iteration durations (seconds)
         """
 
         if output_dir is not None:
@@ -294,23 +296,22 @@ class Trainer:
         if verbose:
             loggers_list.append(TerminalLogger())
 
-        if loggers_list:
-            log_params: dict[str, Any] = {
-                "batch_size": batch_size,
-                "n_iter": n_iter,
-                "seed": seed,
-                "random_masking": random_masking,
-                "nan_policy": nan_policy,
-                "prec_size": prec_size,
-                "device": str(self.device),
-                "model": type(self.model).__name__,
-                "optimizer": type(self.optimizer).__name__,
-            }
-            for group in self.optimizer.param_groups:
-                log_params["learning_rate"] = group["lr"]
-                break
-            for logger in loggers_list:
-                logger.log_params(log_params)
+        log_params: dict[str, Any] = {
+            "batch_size": batch_size,
+            "n_iter": n_iter,
+            "seed": seed,
+            "random_masking": random_masking,
+            "nan_policy": nan_policy,
+            "prec_size": prec_size,
+            "device": str(self.device),
+            "model": type(self.model).__name__,
+            "optimizer": type(self.optimizer).__name__,
+        }
+        for group in self.optimizer.param_groups:
+            log_params["learning_rate"] = group["lr"]
+            break
+        for logger in loggers_list:
+            logger.log_params(log_params)
 
         for i in range(n_iter):
             start = time.time()
@@ -358,26 +359,22 @@ class Trainer:
                 if output_dir is not None:
                     torch.save(self.model.state_dict(), output_dir / "model")
 
-            # Save training log
-            train_progression["iter"].append(i + 1)
-            train_progression["train loss"].append(train_loss)
-            train_progression["val loss"].append(val_loss)
-
             stop = time.time()
 
-            if loggers_list:
-                iter_metrics = {
-                    "train_loss": train_loss,
-                    "val_loss": val_loss,
-                    "best_val_loss": float(best_val_loss),
-                    "train_time": stop_targetrain - start,
-                    "iter_time": stop - start,
-                }
-                for logger in loggers_list:
-                    logger.log_metrics(iter_metrics, step=i + 1)
-
-        if loggers_list:
+            iter_metrics = {
+                "iter": i + 1,
+                "train loss": train_loss,
+                "val loss": val_loss,
+                "total time": stop_targetrain - start,
+                "iter time": stop - start
+            }
             for logger in loggers_list:
-                logger.close()
+                logger.log_metrics(iter_metrics, step=i + 1)
+
+            for k, v in iter_metrics.items():
+                train_progression[k].append(v)
+
+        for logger in loggers_list:
+            logger.close()
 
         return self.best_model, train_progression # type: ignore

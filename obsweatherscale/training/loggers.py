@@ -116,8 +116,6 @@ class CSVLogger(TrainingLogger):
 
     def __init__(self, filepath: Path | str) -> None:
         self._filepath = Path(filepath)
-        self._file: Any = None
-        self._writer: Any = None
         self._header_written = False
 
     def log_params(self, params: dict[str, Any]) -> None:
@@ -129,21 +127,17 @@ class CSVLogger(TrainingLogger):
 
     def log_metrics(self, metrics: dict[str, float], step: int) -> None:
         """Append one row of metrics to the CSV file."""
-        if self._file is None:
-            self._filepath.parent.mkdir(parents=True, exist_ok=True)
-            self._file = open(  # noqa: SIM115
-                self._filepath, "w", newline="", encoding="utf-8"
-            )
-            self._writer = csv.writer(self._file)
-        if not self._header_written:
-            self._writer.writerow(["step", *metrics.keys()])
-            self._header_written = True
-        self._writer.writerow([step, *metrics.values()])
+        self._filepath.parent.mkdir(parents=True, exist_ok=True)
+        mode = "w" if not self._header_written else "a"
+        with open(self._filepath, mode, newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if not self._header_written:
+                writer.writerow(["step", *metrics.keys()])
+                self._header_written = True
+            writer.writerow([step, *metrics.values()])
 
     def close(self) -> None:
-        """Flush and close the CSV file."""
-        if self._file is not None:
-            self._file.close()
+        """No-op: the CSV file is opened and closed within each :meth:`log_metrics` call."""
 
 
 class MLflowLogger(TrainingLogger):
