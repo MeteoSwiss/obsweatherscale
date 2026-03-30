@@ -86,16 +86,8 @@ class TerminalLogger(TrainingLogger):
     def log_metrics(self, metrics: dict[str, float], step: int) -> None:
         """Log per-iteration metrics to the terminal."""
         n_iter_str = f"/{self._n_iter}" if self._n_iter else ""
-        self._logger.info(
-            "Iter %d%s - train_loss: %.3f   val_loss: %.3f   "
-            "train_time: %.3fs   iter_time: %.3fs",
-            step,
-            n_iter_str,
-            metrics["train_loss"],
-            metrics["val_loss"],
-            metrics["train_time"],
-            metrics["iter_time"],
-        )
+        metrics_str = "   ".join(f"{k}: {v:.3f}" for k, v in metrics.items())
+        self._logger.info("Iter %d%s - %s", step, n_iter_str, metrics_str)
 
     def close(self) -> None:
         """No-op for terminal logging."""

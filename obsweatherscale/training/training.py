@@ -268,8 +268,8 @@ class Trainer:
             - 'iter': List of iteration numbers
             - 'train loss': List of training loss values
             - 'val loss': List of validation loss values
-            - 'iter time': List of iteration durations (seconds)
-            - 'total time': List of cumulative iteration durations (seconds)
+            - 'train time': List of training step durations (seconds)
+            - 'iter time': List of total iteration durations (seconds)
         """
 
         if output_dir is not None:
@@ -278,7 +278,7 @@ class Trainer:
         length = len(train)
         val_length = len(val_context)
         train_progression : dict[str, list] = {
-            "iter": [], "train loss": [], "val loss": []
+            "iter": [], "train loss": [], "val loss": [], "iter time": [], "train time": []
         }
 
         torch.manual_seed(seed)
@@ -365,7 +365,7 @@ class Trainer:
                 "iter": i + 1,
                 "train loss": train_loss,
                 "val loss": val_loss,
-                "total time": stop_targetrain - start,
+                "train time": stop_targetrain - start,
                 "iter time": stop - start
             }
             for logger in loggers_list:

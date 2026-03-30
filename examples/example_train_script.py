@@ -15,7 +15,7 @@ from obsweatherscale.likelihoods.noise_models import (
 from obsweatherscale.means import NeuralMean
 from obsweatherscale.models import GPModel, MLP
 from obsweatherscale.training import (
-    crps_normal_loss_fct, mll_loss_fct, Trainer, CSVLogger
+    crps_normal_loss_fct, mll_loss_fct, Trainer, CSVLogger, MLflowLogger, TrainingLogger
 )
 from obsweatherscale.transformations import (
     QuantileFittedTransformer, Standardizer
@@ -118,7 +118,6 @@ def main() -> None:
     # Generate toy data, e.g. 100 stations, 10 timesteps on a [0,1]x[0,1] grid
     n_stations, n_times, noise_var = 100, 10, 0.1
     ds_x, ds_y = generate_toy_data(n_stations, n_times, noise_var)
-    print(ds_x.shape, ds_y.shape)
     # Split into train and validation (context and target)
     data = split_data(ds_x, ds_y)
 
@@ -174,7 +173,7 @@ def main() -> None:
     device = get_device()
 
     # --- Loggers ---
-    loggers = [CSVLogger("training_log.csv")]
+    loggers: list[TrainingLogger] = [CSVLogger("training_log.csv")]
     # To also log to MLflow (requires `pip install mlflow`):
     # loggers.append(MLflowLogger(experiment_name="toy", run_name="run_1"))
 

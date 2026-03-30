@@ -30,11 +30,10 @@ SAMPLE_PARAMS: dict[str, Any] = {
 }
 
 SAMPLE_METRICS: dict[str, float] = {
-    "train_loss": 1.234,
-    "val_loss": 1.567,
-    "best_val_loss": 1.567,
-    "train_time": 0.123,
-    "iter_time": 0.456,
+    "train loss": 1.234,
+    "val loss": 1.567,
+    "train time": 0.123,
+    "iter time": 0.456,
 }
 
 
@@ -160,8 +159,8 @@ class TestCSVLogger:
             next(reader)  # skip header
             row = next(reader)
         assert int(row[0]) == 3
-        assert float(row[1]) == pytest.approx(SAMPLE_METRICS["train_loss"])
-        assert float(row[2]) == pytest.approx(SAMPLE_METRICS["val_loss"])
+        assert float(row[1]) == pytest.approx(SAMPLE_METRICS["train loss"])
+        assert float(row[2]) == pytest.approx(SAMPLE_METRICS["val loss"])
 
     def test_csv_header_written_once(self, tmp_path: Path) -> None:
         csv_path = tmp_path / "log.csv"
