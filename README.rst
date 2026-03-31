@@ -12,7 +12,7 @@ obsweatherscale
 
 **obsweatherscale** is a GPyTorch-based Python library for ML probabilistic interpolation and regression using Gaussian Processes (GPs), with a focus on meteorological applications. It provides an extensible framework for building GP models that incorporate neural networks, designed for tasks involving spatial and temporal surface weather analysis fields.
 
-Gaussian Processes are a nonparametric supervised learning method, particularly well-suited for regression tasks that require uncertainty quantification. In our use case, GPs are employed to interpolate observed surface weather variables—such as temperature, precipitation, or wind—recorded at monitoring stations, to arbitrary locations in space. This interpolation is guided by input features, which could include any predictor deemed useful (coordinates, numerical weather prediction (NWP) outputs, topographic information, temporal information, ...).
+Gaussian Processes are a nonparametric supervised learning method, particularly well-suited for regression tasks that require uncertainty quantification. In our use case, GPs are employed to interpolate observed surface weather variables recorded at monitoring stations, such as temperature, precipitation, or wind, to arbitrary locations in space. This interpolation is guided by input features, which could include any predictor deemed useful (coordinates, numerical weather prediction (NWP) outputs, topographic information, temporal information, ...).
 
 Possible applications:
 
