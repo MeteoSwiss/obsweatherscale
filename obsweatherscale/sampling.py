@@ -1,10 +1,10 @@
-from typing import Union
+from typing import TypeAlias
 
 import torch
 from gpytorch.distributions import MultivariateNormal
 from torch.distributions import Normal
 
-Distribution = Union[MultivariateNormal, Normal]
+Distribution: TypeAlias = MultivariateNormal | Normal
 
 
 def sample(distribution: Distribution, n_samples: int) -> torch.Tensor:
@@ -14,7 +14,7 @@ def sample(distribution: Distribution, n_samples: int) -> torch.Tensor:
             " or [batch_size, n_points, n_vars]"
         )
 
-    sample_size = torch.Size((n_samples,))
+    sample_size = torch.Size([n_samples])
     samples = distribution.sample(sample_size)
 
     # Add "variable" dimension to make it robust for multitask

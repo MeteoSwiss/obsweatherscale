@@ -21,12 +21,12 @@ class GPDataset(Dataset, ABC):
     """
 
     @abstractmethod
-    def __getitem__(self, index: int | list | slice) -> Any:
+    def __getitem__(self, index: int | list[int] | slice) -> Any:
         """Get a sample from the dataset at the specified index.
 
         Parameters
         ----------
-        index : int | list | slice
+        index : int | list[int] | slice
             Index of the sample to retrieve.
 
         Returns

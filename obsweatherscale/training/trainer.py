@@ -1,7 +1,7 @@
 import random
 import time
 from pathlib import Path
-from typing import Callable, Type
+from typing import Callable
 
 import torch
 from gpytorch import settings
@@ -9,7 +9,7 @@ from gpytorch.likelihoods import _GaussianLikelihoodBase
 from gpytorch.models import ExactGP
 from torch.optim.optimizer import Optimizer
 
-from obsweatherscale.utils import GPDataset
+from obsweatherscale.data import GPDataset
 
 __all__ = ["Trainer"]
 
@@ -32,33 +32,16 @@ class RandomStateContext:
     """
 
     def __init__(self) -> None:
-        """Initialize RandomStateContext by capturing current RNG state.
-
-        This stores the RNG state so it can be restored later when the
-        context exits.
-        """
-        self.current_state = torch.random.get_rng_state()
+        self.current_state: torch.Tensor
 
     def __enter__(self) -> 'RandomStateContext':
-        """Enter the runtime context and prepare for deterministic
-        computation.
-
-        Saves the current RNG state again (to ensure up-to-date state)
-        and reseeds the RNG with a new seed using `torch.seed()` to
-        create a fresh random state.
-
-        Returns
-        -------
-        RandomStateContext
-            The context manager instance itself.
-        """
         self.current_state = torch.random.get_rng_state()
         torch.manual_seed(torch.seed())
         return self
 
     def __exit__(
         self,
-        exc_type: Type[BaseException | None],
+        exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: object | None,
     ) -> None:
@@ -77,7 +60,7 @@ class Trainer:
         val_loss_fct: Callable,
         device: torch.device,
         optimizer: Optimizer,
-    ):
+    ) -> None:
         """Initialize the Trainer class.
 
         Parameters
@@ -96,7 +79,7 @@ class Trainer:
             The optimizer to use for training the model.
         """
         self.model = model
-        self.best_model = None
+        self.best_model = model
         self.likelihood = likelihood
         self.train_loss_fct = train_loss_fct
         self.val_loss_fct = val_loss_fct
@@ -196,8 +179,22 @@ class Trainer:
     def apply_random_masking(
         self,
         data: torch.Tensor,
-        p: float = 0.5
+        p: float = 0.5,
     ) -> torch.Tensor:
+        """Apply random NaN masking to the input data.
+
+        Parameters
+        ----------
+        data : torch.Tensor
+            The input tensor to mask.
+        p : float, default=0.5
+            The probability of masking each element.
+
+        Returns
+        -------
+        torch.Tensor
+            The masked tensor with NaN values inserted.
+        """
         mask_shape = (1, *data.shape[1:])
 
         with RandomStateContext():
@@ -288,7 +285,7 @@ class Trainer:
             with settings.max_preconditioner_size(prec_size):
                 self.optimizer.zero_grad()
 
-                ### Training ###
+                # Training
                 # Get iter data
                 batch_idx = self.sample_batch_idx(length, batch_size)
                 batch_x, batch_y = train[batch_idx]
@@ -302,7 +299,7 @@ class Trainer:
                 self.optimizer.step()
                 stop_targetrain = time.time()
 
-                ### Validation ###
+                # Validation
                 # Get iter data
                 batch_idx = self.sample_batch_idx(val_length, batch_size)
                 batch_x_context, batch_y_context = val_context[batch_idx]
@@ -319,7 +316,7 @@ class Trainer:
                         batch_y_target
                     )
 
-            ### Logging ###
+            # Logging
             # Save best model so far
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -345,4 +342,4 @@ class Trainer:
                     flush=True,
                 )
 
-        return self.best_model, train_progression # type: ignore
+        return self.best_model, train_progression

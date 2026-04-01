@@ -29,11 +29,11 @@ class MyDataset(ows.GPDataset):
 
     def __getitem__(
         self,
-        idx: Union[int, list[int], slice]
+        idx: int | list[int] | slice,
     ) -> tuple[torch.Tensor, ...]:
         return self.x[idx, ...], self.y[idx, ...]
 
-    def get_dataset(self) -> tuple[torch.Tensor, ...]:
+    def get_dataset(self) -> tuple[torch.Tensor, torch.Tensor]:
         return self.x, self.y
 
 
