@@ -1,7 +1,7 @@
 import torch
 from gpytorch.kernels import RBFKernel
 
-from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
+import obsweatherscale as ows
 
 
 def test_neural_kernel() -> None:
@@ -13,7 +13,7 @@ def test_neural_kernel() -> None:
     )
 
     # Create the neural kernel
-    neural_kernel = NeuralKernel(net, RBFKernel(ard_num_dims=2))
+    neural_kernel = ows.NeuralKernel(net, RBFKernel(ard_num_dims=2))
 
     # Generate some random input data
     x1 = torch.randn(5, 3)
@@ -29,7 +29,8 @@ def test_neural_kernel() -> None:
 
 def test_scaled_rbf_kernel() -> None:
     # Create a scaled RBF kernel
-    scaled_kernel = ScaledRBFKernel(torch.tensor(1.5), torch.tensor([2., 0.5]))
+    var, lengthscale = torch.tensor(1.5), torch.tensor([2., 0.5])
+    scaled_kernel = ows.ScaledRBFKernel(var, lengthscale)
 
     # Generate some random input data
     x1 = torch.randn(5, 2)

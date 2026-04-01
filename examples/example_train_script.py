@@ -5,22 +5,7 @@ from typing import Union
 import torch
 from torch.optim.adam import Adam
 
-from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
-from obsweatherscale.likelihoods import (
-    TransformedGaussianLikelihood, ExactMarginalLogLikelihoodFill
-)
-from obsweatherscale.likelihoods.noise_models import (
-    TransformedFixedGaussianNoise
-)
-from obsweatherscale.means import NeuralMean
-from obsweatherscale.models import GPModel, MLP
-from obsweatherscale.training import (
-    crps_normal_loss_fct, mll_loss_fct, Trainer
-)
-from obsweatherscale.transformations import (
-    QuantileFittedTransformer, Standardizer
-)
-from obsweatherscale.utils import GPDataset
+import obsweatherscale as ows
 
 
 def get_device() -> torch.device:
@@ -30,7 +15,7 @@ def get_device() -> torch.device:
     return torch.device("cpu")
 
 # Custom dataset inheriting from GPDataset
-class MyDataset(GPDataset):
+class MyDataset(ows.GPDataset):
     def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor) -> None:
         self.x = ds_x
         self.y = ds_y
@@ -123,8 +108,8 @@ def main() -> None:
     data = split_data(ds_x, ds_y)
 
     # Normalize
-    standardizer = Standardizer(data['train']['x'])
-    y_transformer = QuantileFittedTransformer()
+    standardizer = ows.Standardizer(data['train']['x'])
+    y_transformer = ows.QuantileFittedTransformer()
 
     data['train']['x'] = standardizer.transform(data['train']['x'])
     data['train']['y'] = y_transformer.transform(data['train']['y'])
@@ -141,29 +126,29 @@ def main() -> None:
     #### Initialize model ####
     # Likelihood and noise model
     # Non-trainable constant variance across all data points
-    likelihood = TransformedGaussianLikelihood(
-        noise_covar=TransformedFixedGaussianNoise(y_transformer, noise_var)
+    likelihood = ows.TransformedGaussianLikelihood(
+        noise_covar=ows.TransformedFixedGaussianNoise(y_transformer, noise_var)
     )
 
     # GP model
     torch.manual_seed(seed)
-    mean_function = NeuralMean(net=MLP(dimensions=[3, 32, 32, 1]))
+    mean_function = ows.NeuralMean(net=ows.MLP(dimensions=[3, 32, 32, 1]))
 
     torch.manual_seed(seed)
-    kernel = NeuralKernel(
-        net=MLP(dimensions=[3, 32, 32, 4]),
-        kernel=ScaledRBFKernel()
+    kernel = ows.NeuralKernel(
+        net=ows.MLP(dimensions=[3, 32, 32, 4]),
+        kernel=ows.ScaledRBFKernel()
     )
 
-    model = GPModel(
+    model = ows.GPModel(
         data['train']['x'], data['train']['y'],
         likelihood, mean_function, kernel
     )
 
     #### Loss functions ####
-    mll = ExactMarginalLogLikelihoodFill(likelihood, model)
-    train_loss_fct = mll_loss_fct(mll)
-    val_loss_fct = crps_normal_loss_fct(likelihood)
+    mll = ows.ExactMarginalLogLikelihoodFill(likelihood, model)
+    train_loss_fct = ows.mll_loss_fct(mll)
+    val_loss_fct = ows.crps_normal_loss_fct(likelihood)
 
     #### Train ####
     optimizer = Adam(
@@ -173,7 +158,7 @@ def main() -> None:
 
     device = get_device()
 
-    trainer = Trainer(
+    trainer = ows.Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
     )
     model, train_progress = trainer.fit(

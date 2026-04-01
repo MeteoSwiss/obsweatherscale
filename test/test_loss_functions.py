@@ -6,9 +6,8 @@ from gpytorch import ExactMarginalLogLikelihood
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import GaussianLikelihood
 
-from obsweatherscale.training.loss_functions import (
-    crps_normal, crps_normal_loss_fct, mll_loss_fct
-)
+import obsweatherscale as ows
+
 
 def test_crps_normal() -> None:
     # Test the CRPS normal function
@@ -16,7 +15,7 @@ def test_crps_normal() -> None:
     sigma = torch.tensor([1.0])
     y = torch.tensor([0.5])
 
-    crps_value = crps_normal(y, mu, sigma)
+    crps_value = ows.crps_normal(y, mu, sigma)
 
     assert crps_value.shape == (), "CRPS value shape mismatch"
     assert crps_value.item() > 0, "CRPS value should be positive"
@@ -29,7 +28,7 @@ def test_crps_normal_loss_fct() -> None:
     sigma = torch.tensor([1.0])
     y = torch.tensor([0.5])
     dist = MultivariateNormal(mu, covariance_matrix=torch.diag_embed(sigma**2))
-    loss_fct = crps_normal_loss_fct(likelihood)
+    loss_fct = ows.crps_normal_loss_fct(likelihood)
 
     loss_value = loss_fct(dist, y)
 
@@ -56,6 +55,7 @@ def test_mll_loss_fct() -> None:
                 gpytorch.kernels.RBFKernel()
             )
 
+        # pylint: disable=arguments-differ
         def forward(
             self,
             x: torch.Tensor,
@@ -71,7 +71,7 @@ def test_mll_loss_fct() -> None:
     likelihood = GaussianLikelihood()
     model = ExactGPModel(train_x, train_y, likelihood)
     mll = ExactMarginalLogLikelihood(likelihood, model)
-    loss_fct = mll_loss_fct(mll)
+    loss_fct = ows.mll_loss_fct(mll)
 
     # Generate a distribution to test
     mu = torch.tensor([0.0])
