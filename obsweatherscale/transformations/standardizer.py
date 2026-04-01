@@ -8,7 +8,7 @@ class Standardizer:
         self,
         data: torch.Tensor,
         variables: tuple[int, ...] | int | None = None
-    ):
+    ) -> None:
         """Initialize the Standardizer.
 
         Parameters

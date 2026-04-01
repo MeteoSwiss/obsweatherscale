@@ -1,6 +1,5 @@
 # %%
 import math
-from typing import Union
 
 import torch
 from torch.optim.adam import Adam

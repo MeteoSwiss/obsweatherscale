@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 import torch
 from gpytorch.distributions import MultivariateNormal
@@ -40,6 +40,6 @@ class GPModel(ExactGP):
 
     # pylint: disable=arguments-differ
     def forward(self, x: torch.Tensor, **kwargs: Any) -> MultivariateNormal:
-        mean_x = self.mean_module(x)
+        mean_x = cast(torch.Tensor, self.mean_module(x))
         covar_x = self.covar_module(x)
-        return MultivariateNormal(mean_x, covar_x)  # type: ignore
+        return MultivariateNormal(mean_x, covar_x)

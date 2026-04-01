@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 
 import torch
 from gpytorch.constraints import Interval
@@ -135,6 +135,10 @@ class ScaledRBFKernel(Kernel):
         )
 
     def forward(
-        self, x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any
-    ) -> Union[torch.Tensor, LinearOperator]:
+        self,
+        x1: torch.Tensor,
+        x2: torch.Tensor,
+        *params: Any,
+        **kwargs: Any,
+    ) -> torch.Tensor | LinearOperator:
         return self.kernel(x1, x2, *params, **kwargs)

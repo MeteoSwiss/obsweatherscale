@@ -59,7 +59,7 @@ def test_mll_loss_fct() -> None:
         def forward(
             self,
             x: torch.Tensor,
-            **kwargs: Any
+            **kwargs: Any,
         ) -> gpytorch.distributions.MultivariateNormal:
             mean_x = self.mean_module(x)
             covar_x = self.covar_module(x)

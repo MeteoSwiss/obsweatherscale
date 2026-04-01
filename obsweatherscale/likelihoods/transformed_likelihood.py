@@ -1,5 +1,5 @@
 import math
-from typing import Any, Union
+from typing import Any
 
 import torch
 from gpytorch import ExactMarginalLogLikelihood, settings
@@ -69,7 +69,7 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         *params: Any,
         y: torch.Tensor | None = None,
         **kwargs: Any,
-    ) -> Union[torch.Tensor, LinearOperator]:
+    ) -> torch.Tensor | LinearOperator:
         """
         Returns the noise covariance of the appropriate shape, based on
         the provided `base_shape` and optional target `y`.
@@ -187,7 +187,10 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         return res
 
     def forward(
-        self, function_samples: torch.Tensor, *params: Any, **kwargs: Any
+        self,
+        function_samples: torch.Tensor,
+        *params: Any,
+        **kwargs: Any,
     ) -> torch.distributions.Normal:
         """Applies noise to given function samples.
 
@@ -220,7 +223,10 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         return base_distributions.Normal(function_samples, noise.sqrt())
 
     def marginal(
-        self, function_dist: MultivariateNormal, *params: Any, **kwargs: Any
+        self,
+        function_dist: MultivariateNormal,
+        *params: Any,
+        **kwargs: Any,
     ) -> MultivariateNormal:
         """Computes the marginal distribution by adding the noise
         covariance to the covariance of the function distribution.
