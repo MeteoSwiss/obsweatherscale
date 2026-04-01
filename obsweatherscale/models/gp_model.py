@@ -1,4 +1,5 @@
-from typing import Any, cast
+from contextlib import contextmanager
+from typing import Any, cast, Generator
 
 import torch
 from gpytorch.distributions import MultivariateNormal
@@ -43,3 +44,54 @@ class GPModel(ExactGP):
         mean_x = cast(torch.Tensor, self.mean_module(x))
         covar_x = self.covar_module(x)
         return MultivariateNormal(mean_x, covar_x)
+
+    @contextmanager
+    def _set_mode(self, train: bool) -> Generator[None, None, None]:
+        assert self.likelihood is not None, "Likelihood is not set"
+        prev_model = self.training
+        prev_likelihood = self.likelihood.training
+        try:
+            self.train(train)
+            self.likelihood.train(train)
+            yield
+        finally:
+            self.train(prev_model)
+            self.likelihood.train(prev_likelihood)
+
+
+    def predict(
+        self,
+        x_context: torch.Tensor,
+        y_context: torch.Tensor,
+        x_target: torch.Tensor | None = None,
+    ) -> MultivariateNormal:
+        assert self.likelihood is not None, "Likelihood is not set"
+
+        if x_target is None:
+            x_target = x_context
+
+        self.set_train_data(inputs=x_context, targets=y_context, strict=False)
+
+        distribution = self(x_target)
+        distribution_with_noise = self.likelihood(distribution)
+
+        return cast(MultivariateNormal, distribution_with_noise)
+
+
+    def predict_prior(
+        self,
+        x_context: torch.Tensor,
+        y_context: torch.Tensor
+    ) -> MultivariateNormal:
+        with self._set_mode(train=True):
+            return self.predict(x_context, y_context, x_context)
+
+
+    def predict_posterior(
+        self,
+        x_context: torch.Tensor,
+        y_context: torch.Tensor,
+        x_target: torch.Tensor,
+    ) -> MultivariateNormal:
+        with self._set_mode(train=False):
+            return self.predict(x_context, y_context, x_target)

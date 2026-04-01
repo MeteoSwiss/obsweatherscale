@@ -126,10 +126,8 @@ def main() -> None:
         settings.memory_efficient(True),
         settings.observation_nan_policy("fill")
     ):
-        posterior = ows.predict_posterior(
-            model, likelihood, context_x, context_y, target_x
-        )
-        prior = ows.predict_prior(model, likelihood, target_x, target_y)
+        posterior = model.predict_posterior(context_x, context_y, target_x)
+        prior = model.predict_prior(target_x, target_y)
 
     # 2. Sample from distributions
     # shape: (n_times, n_points, n_variables, n_samples)
