@@ -11,7 +11,7 @@ from linear_operator.operators import (
     LinearOperator, MaskedLinearOperator
 )
 
-from .noise_models import TransformedNoise
+from obsweatherscale.likelihoods.noise_models import TransformedNoise
 
 
 class TransformedGaussianLikelihood(_GaussianLikelihoodBase):

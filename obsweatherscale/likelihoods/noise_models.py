@@ -15,7 +15,7 @@ from linear_operator.operators import (
     ZeroLinearOperator,
 )
 
-from ..transformations.transformer import Transformer
+from obsweatherscale.transformations.transformer import Transformer
 
 __all__ = [
     "TransformedHomoskedasticNoise",

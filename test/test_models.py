@@ -7,6 +7,7 @@ from gpytorch.kernels import RBFKernel
 import obsweatherscale as ows
 
 
+
 def test_gp_model() -> None:
 
     train_x = torch.randn(20, 3)
