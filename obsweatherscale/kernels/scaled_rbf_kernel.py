@@ -5,7 +5,6 @@ from gpytorch.constraints import Interval
 from gpytorch.kernels import Kernel, RBFKernel, ScaleKernel
 from gpytorch.priors import Prior
 from linear_operator.operators import LinearOperator
-from torch import nn
 
 
 class ScaledRBFKernel(Kernel):
@@ -67,27 +66,27 @@ class ScaledRBFKernel(Kernel):
         if (
             active_dims is not None
             and lengthscale is not None
-            and len(lengthscale) != len(active_dims)
+            and lengthscale.numel() > 1
+            and lengthscale.numel() != len(active_dims)
         ):
             raise ValueError(
-                "The length of 'lengthscale' must match the length "
-                "of 'active_dims'"
+                "`lengthscale` must be a scalar"
+                " or its shape must match the shape of `active_dims`."
             )
-
-        if lengthscale is not None:
-            ard_num_dims = len(lengthscale)
 
         if not train_lengthscale and lengthscale is None:
             raise ValueError(
-                "A lengthscale value must be provided"
-                " if lengthscale is not trainable"
+                "`lengthscale` must be provided "
+                "if `train_lengthscale` is False."
             )
 
         if not train_variance and variance is None:
             raise ValueError(
-                "A variance value must be provided "
-                "if variance is not trainable"
+                "`variance` must be provided if `train_variance` is False."
             )
+
+        if lengthscale is not None and lengthscale.numel() > 1:
+            ard_num_dims = lengthscale.numel()
 
         rbf_kernel = RBFKernel(
             ard_num_dims=ard_num_dims,
@@ -101,13 +100,8 @@ class ScaledRBFKernel(Kernel):
 
         # Set lengthscale
         if lengthscale is not None:
-            rbf_kernel.raw_lengthscale = nn.Parameter(
-                rbf_kernel.raw_lengthscale_constraint.inverse_transform(
-                    lengthscale
-                ),
-                requires_grad=train_lengthscale,
-            )
-        rbf_kernel.raw_lengthscale.requires_grad = train_lengthscale
+            rbf_kernel.initialize(lengthscale=lengthscale)
+        rbf_kernel.raw_lengthscale.requires_grad_(train_lengthscale)
 
         self.kernel = ScaleKernel(
             rbf_kernel,
@@ -117,13 +111,8 @@ class ScaledRBFKernel(Kernel):
 
         # Set variance
         if variance is not None:
-            self.kernel.raw_outputscale = nn.Parameter(
-                self.kernel.raw_outputscale_constraint.inverse_transform(
-                    variance
-                ),
-                requires_grad=train_variance,
-            )
-        self.kernel.raw_outputscale.requires_grad = train_variance
+            self.kernel.initialize(outputscale=variance)
+        self.kernel.raw_outputscale.requires_grad_(train_variance)
 
     def extra_repr(self) -> str:
         return "\n".join(
