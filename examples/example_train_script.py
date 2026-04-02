@@ -74,7 +74,7 @@ def split_data(
     frac_t_train: float = 0.7,
     frac_s_train: float = 0.8
 ) -> dict[str, dict[str, torch.Tensor]]:
-    n_times, n_stations = ds_x.shape
+    n_times, n_stations, _ = ds_x.shape
 
     nt_train = int(frac_t_train * n_times)
     ns_train = int(frac_s_train * n_stations)
