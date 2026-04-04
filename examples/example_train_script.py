@@ -152,7 +152,7 @@ def main() -> None:
     #### Train ####
     optimizer = Adam(
         [{'params': model.parameters()}, {'params': likelihood.parameters()}],
-        lr=0.005
+        lr=0.005,
     )
 
     device = get_device()
@@ -168,17 +168,17 @@ def main() -> None:
         n_iter=100,
         random_masking=True,
         seed=seed,
-        verbose=True
+        verbose=True,
     )
 
     # Get the iteration of best model
-    best_val_loss_idx = train_progress["val loss"].index(
-        min(train_progress["val loss"])
-    )
+    min_val_loss = min(train_progress["val loss"])
+    best_val_loss_idx = train_progress["val loss"].index(min_val_loss)
+
     print(
         f"Best model found at "
         f"iteration {train_progress["iter"][best_val_loss_idx]} with "
-        f"validation loss: {train_progress["val loss"][best_val_loss_idx]:.4f}"
+        f"validation loss: {min_val_loss:.4f}"
     )
 
     #### Free GPU ####
