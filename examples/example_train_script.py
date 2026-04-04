@@ -146,8 +146,8 @@ def main() -> None:
 
     #### Loss functions ####
     mll = ows.ExactMarginalLogLikelihoodFill(likelihood, model)
-    train_loss_fct = ows.mll_loss_fct(mll)
-    val_loss_fct = ows.crps_normal_loss_fct(likelihood)
+    train_loss_fct = ows.make_mll_loss(mll)
+    val_loss_fct = ows.make_crps_loss(likelihood)
 
     #### Train ####
     optimizer = Adam(

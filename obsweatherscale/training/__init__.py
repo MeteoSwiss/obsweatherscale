@@ -1,4 +1,4 @@
 from .trainer import Trainer
-from .loss_functions import crps_normal, crps_normal_loss_fct, mll_loss_fct
+from .losses import crps_normal, make_crps_loss, make_mll_loss
 
-__all__ = ["Trainer", "crps_normal", "crps_normal_loss_fct", "mll_loss_fct"]
+__all__ = ["Trainer", "crps_normal", "make_crps_loss", "make_mll_loss"]
