@@ -114,15 +114,6 @@ class ScaledRBFKernel(Kernel):
             self.kernel.initialize(outputscale=variance)
         self.kernel.raw_outputscale.requires_grad_(train_variance)
 
-    def extra_repr(self) -> str:
-        return "\n".join(
-            [
-                f"(lengthscale): {self.kernel.base_kernel.lengthscale}",
-                f"(variance): {self.kernel.outputscale}",
-                f"(num_dims): {self.kernel.base_kernel.ard_num_dims}",
-            ]
-        )
-
     def forward(
         self,
         x1: torch.Tensor,
@@ -131,3 +122,12 @@ class ScaledRBFKernel(Kernel):
         **kwargs: Any,
     ) -> torch.Tensor | LinearOperator:
         return self.kernel(x1, x2, *params, **kwargs)
+
+    def extra_repr(self) -> str:
+        return "\n".join(
+            [
+                f"(lengthscale): {self.kernel.base_kernel.lengthscale}",
+                f"(variance): {self.kernel.outputscale}",
+                f"(num_dims): {self.kernel.base_kernel.ard_num_dims}",
+            ]
+        )

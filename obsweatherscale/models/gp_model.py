@@ -39,25 +39,14 @@ class GPModel(ExactGP):
         self.mean_module = mean_module
         self.covar_module = covar_module
 
-    # pylint: disable=arguments-differ
-    def forward(self, x: torch.Tensor, **kwargs: Any) -> MultivariateNormal:
+    def forward( # pylint: disable=arguments-differ
+        self,
+        x: torch.Tensor,
+        **kwargs: Any
+    ) -> MultivariateNormal:
         mean_x = cast(torch.Tensor, self.mean_module(x))
         covar_x = self.covar_module(x)
         return MultivariateNormal(mean_x, covar_x)
-
-    @contextmanager
-    def _set_mode(self, train: bool) -> Generator[None, None, None]:
-        assert self.likelihood is not None, "Likelihood is not set"
-        prev_model = self.training
-        prev_likelihood = self.likelihood.training
-        try:
-            self.train(train)
-            self.likelihood.train(train)
-            yield
-        finally:
-            self.train(prev_model)
-            self.likelihood.train(prev_likelihood)
-
 
     def predict(
         self,
@@ -77,7 +66,6 @@ class GPModel(ExactGP):
 
         return cast(MultivariateNormal, distribution_with_noise)
 
-
     def predict_prior(
         self,
         x_context: torch.Tensor,
@@ -85,7 +73,6 @@ class GPModel(ExactGP):
     ) -> MultivariateNormal:
         with self._set_mode(train=True):
             return self.predict(x_context, y_context, x_context)
-
 
     def predict_posterior(
         self,
@@ -95,3 +82,16 @@ class GPModel(ExactGP):
     ) -> MultivariateNormal:
         with self._set_mode(train=False):
             return self.predict(x_context, y_context, x_target)
+
+    @contextmanager
+    def _set_mode(self, train: bool) -> Generator[None, None, None]:
+        assert self.likelihood is not None, "Likelihood is not set"
+        prev_model = self.training
+        prev_likelihood = self.likelihood.training
+        try:
+            self.train(train)
+            self.likelihood.train(train)
+            yield
+        finally:
+            self.train(prev_model)
+            self.likelihood.train(prev_likelihood)

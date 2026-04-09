@@ -63,40 +63,6 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         """
         super().__init__(noise_covar=noise_covar)
 
-    def _shaped_noise_covar(
-        self,
-        base_shape: torch.Size,
-        *params: Any,
-        y: torch.Tensor | None = None,
-        **kwargs: Any,
-    ) -> torch.Tensor | LinearOperator:
-        """
-        Returns the noise covariance of the appropriate shape, based on
-        the provided `base_shape` and optional target `y`.
-
-        Parameters
-        ----------
-        base_shape : torch.Size
-            The base shape of the noise covariance matrix. If `y` is
-            provided, the shape will be inferred from `y`.
-        *params : tuple
-            Additional parameters passed to noise covariance function.
-        y : torch.Tensor, optional
-            The target tensor whose shape will be used to infer the
-            noise covariance. Default is None.
-        **kwargs : Any
-            Additional keyword arguments passed to the noise covariance
-            function.
-
-        Returns
-        -------
-        torch.Tensor or LinearOperator
-            The noise covariance, either as tensor or LinearOperator.
-        """
-        if y is not None:
-            base_shape = y.shape
-        return self.noise_covar(*params, y=y, shape=base_shape, **kwargs)
-
     def expected_log_prob(
         self,
         target: torch.Tensor,
@@ -254,6 +220,40 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         )
         full_covar = covar + noise_covar  # type: ignore
         return function_dist.__class__(mean, full_covar)
+
+    def _shaped_noise_covar(
+        self,
+        base_shape: torch.Size,
+        *params: Any,
+        y: torch.Tensor | None = None,
+        **kwargs: Any,
+    ) -> torch.Tensor | LinearOperator:
+        """
+        Returns the noise covariance of the appropriate shape, based on
+        the provided `base_shape` and optional target `y`.
+
+        Parameters
+        ----------
+        base_shape : torch.Size
+            The base shape of the noise covariance matrix. If `y` is
+            provided, the shape will be inferred from `y`.
+        *params : tuple
+            Additional parameters passed to noise covariance function.
+        y : torch.Tensor, optional
+            The target tensor whose shape will be used to infer the
+            noise covariance. Default is None.
+        **kwargs : Any
+            Additional keyword arguments passed to the noise covariance
+            function.
+
+        Returns
+        -------
+        torch.Tensor or LinearOperator
+            The noise covariance, either as tensor or LinearOperator.
+        """
+        if y is not None:
+            base_shape = y.shape
+        return self.noise_covar(*params, y=y, shape=base_shape, **kwargs)
 
 
 class ExactMarginalLogLikelihoodFill(ExactMarginalLogLikelihood):

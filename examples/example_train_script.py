@@ -7,12 +7,6 @@ from torch.optim.adam import Adam
 import obsweatherscale as ows
 
 
-def get_device() -> torch.device:
-    if torch.cuda.is_available():
-        torch.cuda.init()
-        return torch.device("cuda")
-    return torch.device("cpu")
-
 # Custom dataset inheriting from GPDataset
 class MyDataset(ows.GPDataset):
     def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor) -> None:
@@ -20,21 +14,21 @@ class MyDataset(ows.GPDataset):
         self.y = ds_y
         self.n_samples = ds_x.shape[0]
 
-    def to(self, device: torch.device) -> None:
-        self.x = self.x.to(device)
-        self.y = self.y.to(device)
-
-    def __len__(self) -> int:
-        return self.n_samples
-
     def __getitem__(
         self,
         idx: int | list[int] | slice,
     ) -> tuple[torch.Tensor, ...]:
         return self.x[idx, ...], self.y[idx, ...]
 
+    def __len__(self) -> int:
+        return self.n_samples
+
     def get_dataset(self) -> tuple[torch.Tensor, torch.Tensor]:
         return self.x, self.y
+
+    def to(self, device: torch.device) -> None:
+        self.x = self.x.to(device)
+        self.y = self.y.to(device)
 
 
 def generate_toy_data(
@@ -93,6 +87,13 @@ def split_data(
     data['val_t']['y'] = ds_y[nt_train:, val_stations]
 
     return data
+
+
+def get_device() -> torch.device:
+    if torch.cuda.is_available():
+        torch.cuda.init()
+        return torch.device("cuda")
+    return torch.device("cpu")
 
 
 def main() -> None:

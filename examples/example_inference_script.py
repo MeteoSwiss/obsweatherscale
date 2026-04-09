@@ -7,13 +7,6 @@ from gpytorch import settings
 import obsweatherscale as ows
 
 
-def get_device() -> torch.device:
-    if torch.cuda.is_available():
-        torch.cuda.init()
-        return torch.device("cuda")
-    return torch.device("cpu")
-
-
 def true_signal(
     x: torch.Tensor,
     y: torch.Tensor,
@@ -66,6 +59,13 @@ def generate_toy_point_data(
         math.sqrt(noise_var) * torch.randn_like(x_coords)
 
     return ds_x, ds_y
+
+
+def get_device() -> torch.device:
+    if torch.cuda.is_available():
+        torch.cuda.init()
+        return torch.device("cuda")
+    return torch.device("cpu")
 
 
 def main() -> None:

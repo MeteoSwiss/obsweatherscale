@@ -424,16 +424,6 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         super().__init__(transformer)
         FixedGaussianNoise.__init__(self, obs_noise_var)
 
-    def extra_repr(self) -> str:
-        """Returns a string representation of the noise value.
-
-        Returns
-        -------
-        str
-            A formatted string showing the stored fixed noise value.
-        """
-        return f"\n  (obs_noise_var): {self.noise}"
-
     def forward(
         self,
         *params: Any,
@@ -501,3 +491,13 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
 
         # Transform noise
         return self.transform_noise(pure_noise_var=pure_noise_var, y=y)
+
+    def extra_repr(self) -> str:
+        """Returns a string representation of the noise value.
+
+        Returns
+        -------
+        str
+            A formatted string showing the stored fixed noise value.
+        """
+        return f"\n  (obs_noise_var): {self.noise}"
