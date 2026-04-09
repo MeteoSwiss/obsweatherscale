@@ -1,4 +1,4 @@
-from .inference import predict_posterior, predict_prior, sample
+from .data import GPDataset
 from .kernels import NeuralKernel, ScaledRBFKernel
 from .likelihoods import (
     TransformedGaussianLikelihood,
@@ -9,12 +9,12 @@ from .likelihoods import (
 )
 from .means import NeuralMean
 from .models import GPModel, MLP
-from .training import Trainer, crps_normal, crps_normal_loss_fct, mll_loss_fct
+from .sampling import sample
+from .training import Trainer, crps_normal, make_crps_loss, make_mll_loss
 from .transformations import QuantileFittedTransformer, Standardizer, Transformer
-from .utils import GPDataset
 
 __all__ = [
-    "predict_posterior", "predict_prior", "sample",
+    "GPDataset",
     "NeuralKernel", "ScaledRBFKernel",
     "TransformedGaussianLikelihood", "ExactMarginalLogLikelihoodFill",
     "TransformedHomoskedasticNoise",
@@ -22,7 +22,6 @@ __all__ = [
     "TransformedFixedGaussianNoise",
     "NeuralMean",
     "GPModel", "MLP",
-    "Trainer", "crps_normal", "crps_normal_loss_fct", "mll_loss_fct",
+    "Trainer", "crps_normal", "make_crps_loss", "make_mll_loss",
     "QuantileFittedTransformer", "Standardizer", "Transformer",
-    "GPDataset",
 ]
