@@ -1,6 +1,6 @@
 import torch
 
-from obsweatherscale.means import NeuralMean
+import obsweatherscale as ows
 
 
 def test_neural_mean() -> None:
@@ -12,7 +12,7 @@ def test_neural_mean() -> None:
     )
 
     # Create the neural mean
-    neural_mean = NeuralMean(net)
+    neural_mean = ows.NeuralMean(net)
 
     # Generate some random input data
     x = torch.randn(5, 3)

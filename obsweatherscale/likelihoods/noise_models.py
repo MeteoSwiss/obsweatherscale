@@ -17,6 +17,12 @@ from linear_operator.operators import (
 
 from ..transformations.transformer import Transformer
 
+__all__ = [
+    "TransformedHomoskedasticNoise",
+    "TransformedHeteroskedasticNoise",
+    "TransformedFixedGaussianNoise",
+]
+
 
 class TransformedNoise(Noise):
     """Noise model incorporating a transformation of the target data.

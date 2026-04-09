@@ -11,6 +11,8 @@ from torch.optim.optimizer import Optimizer
 
 from obsweatherscale.utils import GPDataset
 
+__all__ = ["Trainer"]
+
 
 class RandomStateContext:
     """Context manager for preserving and restoring PyTorch's RNG state.

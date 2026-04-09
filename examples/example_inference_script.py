@@ -1,18 +1,10 @@
 # %%
 import math
+
 import torch
 from gpytorch import settings
 
-from obsweatherscale.inference import predict_posterior, predict_prior, sample
-from obsweatherscale.kernels import NeuralKernel, ScaledRBFKernel
-from obsweatherscale.likelihoods import TransformedGaussianLikelihood
-from obsweatherscale.likelihoods.noise_models import (
-    TransformedFixedGaussianNoise
-)
-from obsweatherscale.means import NeuralMean
-from obsweatherscale.models import GPModel, MLP
-from obsweatherscale.transformations import QuantileFittedTransformer
-from obsweatherscale.transformations.standardizer import Standardizer
+import obsweatherscale as ows
 
 
 def get_device() -> torch.device:
@@ -95,8 +87,8 @@ def main() -> None:
     # with open("y_transformer.pkl", 'rb') as y_transformer_file:
     #     y_transformer = pickle.load(y_transformer_file)
 
-    standardizer = Standardizer(context_x)
-    y_transformer = QuantileFittedTransformer()
+    standardizer = ows.Standardizer(context_x)
+    y_transformer = ows.QuantileFittedTransformer()
 
     context_x = standardizer.transform(context_x)
     context_y = y_transformer.transform(context_y)
@@ -107,18 +99,18 @@ def main() -> None:
     device = get_device()
 
     # Initialize likelihood
-    likelihood = TransformedGaussianLikelihood(
-        noise_covar=TransformedFixedGaussianNoise(y_transformer, noise_var)
+    likelihood = ows.TransformedGaussianLikelihood(
+        noise_covar=ows.TransformedFixedGaussianNoise(y_transformer, noise_var)
     )
 
     # Initialize model
-    mean_function = NeuralMean(net=MLP(dimensions=[3, 32, 32, 1]))
-    kernel = NeuralKernel(
-        net=MLP(dimensions=[3, 32, 32, 4]),
-        kernel=ScaledRBFKernel()
+    mean_function = ows.NeuralMean(net=ows.MLP(dimensions=[3, 32, 32, 1]))
+    kernel = ows.NeuralKernel(
+        net=ows.MLP(dimensions=[3, 32, 32, 4]),
+        kernel=ows.ScaledRBFKernel()
     )
     # Load the trained model (here we instantiate it but it should be loaded)
-    model = GPModel(context_x, context_y, likelihood, mean_function, kernel)
+    model = ows.GPModel(context_x, context_y, likelihood, mean_function, kernel)
 
     ## Evaluate
     model.to(device)
@@ -134,17 +126,17 @@ def main() -> None:
         settings.memory_efficient(True),
         settings.observation_nan_policy("fill")
     ):
-        posterior = predict_posterior(
+        posterior = ows.predict_posterior(
             model, likelihood, context_x, context_y, target_x
         )
-        prior = predict_prior(model, likelihood, target_x, target_y)
+        prior = ows.predict_prior(model, likelihood, target_x, target_y)
 
     # 2. Sample from distributions
     # shape: (n_times, n_points, n_variables, n_samples)
     n_samples = 101
     torch.manual_seed(123)
-    samples_posterior = sample(posterior, n_samples=n_samples)
-    samples_prior = sample(prior, n_samples=n_samples)
+    samples_posterior = ows.sample(posterior, n_samples=n_samples)
+    samples_prior = ows.sample(prior, n_samples=n_samples)
 
     # 3. Reshape samples
     # Only one variable was predicted (true_signal), so we can squeeze it

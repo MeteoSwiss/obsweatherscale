@@ -3,14 +3,11 @@ import math
 import pytest
 import torch
 
-from obsweatherscale.transformations import (
-    Standardizer, QuantileFittedTransformer
-)
-from obsweatherscale.utils import GPDataset
+import obsweatherscale as ows
 
 
 # Create dataset
-class MyDataset(GPDataset):
+class MyDataset(ows.GPDataset):
     def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor) -> None:
         self.x = ds_x
         self.y = ds_y
@@ -77,8 +74,8 @@ def create_test_data() -> dict[str, MyDataset]:
     val_y = ds_y[int(train_frac_times * nt):]
 
     # Normalize data
-    standardizer = Standardizer(train_x)
-    y_transformer = QuantileFittedTransformer()
+    standardizer = ows.Standardizer(train_x)
+    y_transformer = ows.QuantileFittedTransformer()
 
     train_x = standardizer.transform(train_x)
     train_y = y_transformer.transform(train_y)
@@ -94,6 +91,7 @@ def create_test_data() -> dict[str, MyDataset]:
     res["val_context"] = ds_val_c
     res["val_target"] = ds_val_t
     return res
+
 
 test_data = create_test_data()
 
