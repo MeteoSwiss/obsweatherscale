@@ -21,6 +21,7 @@ class Standardizer:
         """
         self.fit(data, variables)
 
+    @property
     def description(self) -> str:
         return "Standard normalization: f(y) = (y - mean(y) / stddev(y))"
 

@@ -34,6 +34,7 @@ class QuantileFittedTransformer(Transformer):
         self.b = b
         self.c = c
 
+    @property
     def description(self) -> str:
         return (
             "Continuous function approximating quantile transform: "

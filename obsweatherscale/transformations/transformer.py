@@ -4,10 +4,7 @@ import torch
 
 class Transformer:
 
-    @abc.abstractmethod
-    def __init__(self) -> None:
-        pass
-
+    @property
     @abc.abstractmethod
     def description(self) -> str:
         pass
