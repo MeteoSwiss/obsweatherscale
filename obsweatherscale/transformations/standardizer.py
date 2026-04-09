@@ -23,6 +23,7 @@ class Standardizer:
 
     @property
     def description(self) -> str:
+        """Return a short description of the sandard normalization."""
         return "Standard normalization: f(y) = (y - mean(y) / stddev(y))"
 
     def fit(
@@ -30,7 +31,7 @@ class Standardizer:
         data: torch.Tensor,
         variables: tuple[int, ...] | int | None = None
     ) -> None:
-        """Fit the standardization transformation to the data.
+        """Fit standardization transformation to input data.
 
         Parameters
         ----------
@@ -44,8 +45,7 @@ class Standardizer:
         self.std = data.std(dim=variables).squeeze()
 
     def transform(self, y: torch.Tensor, copy: bool = False) -> torch.Tensor:
-        """Apply the standardization transformation to the input data.
-        """
+        """Apply standardization transformation to input data."""
         if copy:
             y = y.detach().clone()
         return (y - self.mean) / self.std
@@ -55,9 +55,7 @@ class Standardizer:
         z: torch.Tensor,
         copy: bool = False
     ) -> torch.Tensor:
-        """Apply the inverse standardization transformation to the
-        input data.
-        """
+        """Apply inverse standardization transformation to input data."""
         if copy:
             z = z.detach().clone()
         return z * self.std + self.mean

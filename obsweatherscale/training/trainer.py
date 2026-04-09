@@ -35,6 +35,13 @@ class RandomStateContext:
         self.current_state: torch.Tensor
 
     def __enter__(self) -> 'RandomStateContext':
+        """Enter the context, saving the current RNG state and reseeding.
+
+        Returns
+        -------
+        RandomStateContext
+            The context manager instance.
+        """
         self.current_state = torch.random.get_rng_state()
         torch.manual_seed(torch.seed())
         return self
@@ -45,7 +52,17 @@ class RandomStateContext:
         exc_value: BaseException | None,
         traceback: object | None,
     ) -> None:
-        """Exit the context and restore the original RNG state."""
+        """Exit the context and restore the original RNG state.
+
+        Parameters
+        ----------
+        exc_type : type[BaseException] | None
+            The exception type if an exception occurred, else None.
+        exc_value : BaseException | None
+            The exception instance if an exception occurred, else None.
+        traceback : object | None
+            Traceback object if an exception occurred, else None.
+        """
         torch.random.set_rng_state(self.current_state)
 
 

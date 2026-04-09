@@ -36,35 +36,30 @@ class QuantileFittedTransformer(Transformer):
 
     @property
     def description(self) -> str:
+        """Return a short description of the quantile fitted transformation."""
         return (
             "Continuous function approximating quantile transform: "
             "f(y) = log(a / y - c) / b"
         )
 
     def transform(self, y: torch.Tensor) -> torch.Tensor:
-        """Apply the quantile fitted transformation to the input data.
-        """
+        """Apply quantile fitted transformation to input data."""
         y = torch.clip(y, 1e-3, 70.0)
         return -torch.log(self.a / y - self.c) / self.b
 
     def inverse_transform(self, z: torch.Tensor) -> torch.Tensor:
-        """Apply the inverse quantile fitted transformation to the
-        input data.
-        """
+        """Apply inverse quantile fitted transformation to input data."""
         return self.a / (self.c + torch.exp(-self.b * z))
 
     def transform_derivative(self, y: torch.Tensor) -> torch.Tensor:
-        """Compute the derivative of the quantile fitted transformation.
-        """
+        """Compute derivative of quantile fitted transformation."""
         return self.a / (self.b * y * (self.a - self.c * y))
 
     def inv_transform_derivative(self, z: torch.Tensor) -> torch.Tensor:
-        """Compute the derivative of the inverse quantile fitted
-        transformation.
-        """
+        """Compute derivative of inverse quantile fitted transformation."""
         exp_neg_bz = torch.exp(-self.b * z)
         return (self.a * self.b * exp_neg_bz) / ((self.c + exp_neg_bz) ** 2)
 
     def noise_transform(self, data: torch.Tensor) -> torch.Tensor:
-        """Apply the noise transformation to the input data."""
+        """Apply noise transformation to input data."""
         return self.transform_derivative(self.inverse_transform(data))
