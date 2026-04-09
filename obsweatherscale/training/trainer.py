@@ -86,125 +86,6 @@ class Trainer:
         self.device = device
         self.optimizer = optimizer
 
-    def sample_batch_idx(self, length: int, batch_size: int) -> list[int]:
-        """Randomly sample a batch of unique indices.
-
-        Parameters
-        ----------
-        length : int
-            The total number of available items to sample from.
-        batch_size : int
-            The number of unique indices to sample.
-
-        Returns
-        -------
-        list of int
-            A list of `batch_size` unique indices randomly sampled from
-            the range [0, length).
-        """
-        return random.sample(range(length), batch_size)
-
-    def train_step(
-        self,
-        batch_x: torch.Tensor,
-        batch_y: torch.Tensor,
-    ) -> float:
-        """Perform a training step on the model.
-
-        Parameters
-        ----------
-        batch_x : torch.Tensor
-            The input data for the training step.
-        batch_y : torch.Tensor
-            The target data for the training step.
-
-        Returns
-        -------
-        float
-            The value of the loss function for this training step.
-        """
-        self.model.train()
-        self.likelihood.train()
-
-        self.model.set_train_data(
-            inputs=batch_x, targets=batch_y, strict=False
-        )
-        distribution = self.model(batch_x)
-        loss = self.train_loss_fct(distribution, batch_y)
-
-        loss.backward()
-
-        return loss.item()
-
-    def val_step(
-        self,
-        batch_x_context: torch.Tensor,
-        batch_y_context: torch.Tensor,
-        batch_x_target: torch.Tensor,
-        batch_y_target: torch.Tensor,
-    ) -> float:
-        """Perform a validation step on the model.
-
-        The validation loss is computed on target {}_target data
-        conditioned on the context {}_context data. It can be used to
-        diagnose the model's generalization performance.
-
-        Parameters
-        ----------
-        batch_x_context : torch.Tensor
-            The input data for the validation step (conditional).
-        batch_y_context : torch.Tensor
-            The target data for the validation step (conditional).
-        batch_x_target : torch.Tensor
-            The input data for the validation step (target).
-        batch_y_target : torch.Tensor
-            The target data for the validation step (target).
-
-        Returns
-        -------
-        float
-            The value of the loss function for this validation step.
-        """
-        self.model.eval()
-        self.likelihood.eval()
-
-        self.model.set_train_data(
-            batch_x_context, batch_y_context, strict=False
-        )
-        distribution_val = self.model(batch_x_target)
-        loss = self.val_loss_fct(distribution_val, batch_y_target)
-
-        return loss.item()
-
-    def apply_random_masking(
-        self,
-        data: torch.Tensor,
-        p: float = 0.5,
-    ) -> torch.Tensor:
-        """Apply random NaN masking to the input data.
-
-        Parameters
-        ----------
-        data : torch.Tensor
-            The input tensor to mask.
-        p : float, default=0.5
-            The probability of masking each element.
-
-        Returns
-        -------
-        torch.Tensor
-            The masked tensor with NaN values inserted.
-        """
-        mask_shape = (1, *data.shape[1:])
-
-        with RandomStateContext():
-            random_mask = torch.bernoulli(
-                torch.ones(mask_shape) * p
-            ).bool().expand_as(data)
-            data[random_mask] = torch.nan
-
-        return data
-
     def fit(
         self,
         train: GPDataset,
@@ -287,21 +168,21 @@ class Trainer:
 
                 # Training
                 # Get iter data
-                batch_idx = self.sample_batch_idx(length, batch_size)
+                batch_idx = self._sample_batch_idx(length, batch_size)
                 batch_x, batch_y = train[batch_idx]
 
                 if random_masking:
-                    batch_y = self.apply_random_masking(batch_y)
+                    batch_y = self._apply_random_masking(batch_y)
 
                 with settings.observation_nan_policy(nan_policy):
-                    train_loss = self.train_step(batch_x, batch_y)
+                    train_loss = self._train_step(batch_x, batch_y)
 
                 self.optimizer.step()
                 stop_targetrain = time.time()
 
                 # Validation
                 # Get iter data
-                batch_idx = self.sample_batch_idx(val_length, batch_size)
+                batch_idx = self._sample_batch_idx(val_length, batch_size)
                 batch_x_context, batch_y_context = val_context[batch_idx]
                 batch_x_target, batch_y_target = val_target[batch_idx]
 
@@ -309,7 +190,7 @@ class Trainer:
                     torch.no_grad(),
                     settings.observation_nan_policy(nan_policy)
                 ):
-                    val_loss = self.val_step(
+                    val_loss = self._val_step(
                         batch_x_context,
                         batch_y_context,
                         batch_x_target,
@@ -343,3 +224,122 @@ class Trainer:
                 )
 
         return self.best_model, train_progression
+
+    def _train_step(
+        self,
+        batch_x: torch.Tensor,
+        batch_y: torch.Tensor,
+    ) -> float:
+        """Perform a training step on the model.
+
+        Parameters
+        ----------
+        batch_x : torch.Tensor
+            The input data for the training step.
+        batch_y : torch.Tensor
+            The target data for the training step.
+
+        Returns
+        -------
+        float
+            The value of the loss function for this training step.
+        """
+        self.model.train()
+        self.likelihood.train()
+
+        self.model.set_train_data(
+            inputs=batch_x, targets=batch_y, strict=False
+        )
+        distribution = self.model(batch_x)
+        loss = self.train_loss_fct(distribution, batch_y)
+
+        loss.backward()
+
+        return loss.item()
+
+    def _val_step(
+        self,
+        batch_x_context: torch.Tensor,
+        batch_y_context: torch.Tensor,
+        batch_x_target: torch.Tensor,
+        batch_y_target: torch.Tensor,
+    ) -> float:
+        """Perform a validation step on the model.
+
+        The validation loss is computed on target {}_target data
+        conditioned on the context {}_context data. It can be used to
+        diagnose the model's generalization performance.
+
+        Parameters
+        ----------
+        batch_x_context : torch.Tensor
+            The input data for the validation step (conditional).
+        batch_y_context : torch.Tensor
+            The target data for the validation step (conditional).
+        batch_x_target : torch.Tensor
+            The input data for the validation step (target).
+        batch_y_target : torch.Tensor
+            The target data for the validation step (target).
+
+        Returns
+        -------
+        float
+            The value of the loss function for this validation step.
+        """
+        self.model.eval()
+        self.likelihood.eval()
+
+        self.model.set_train_data(
+            batch_x_context, batch_y_context, strict=False
+        )
+        distribution_val = self.model(batch_x_target)
+        loss = self.val_loss_fct(distribution_val, batch_y_target)
+
+        return loss.item()
+
+    def _sample_batch_idx(self, length: int, batch_size: int) -> list[int]:
+        """Randomly sample a batch of unique indices.
+
+        Parameters
+        ----------
+        length : int
+            The total number of available items to sample from.
+        batch_size : int
+            The number of unique indices to sample.
+
+        Returns
+        -------
+        list of int
+            A list of `batch_size` unique indices randomly sampled from
+            the range [0, length).
+        """
+        return random.sample(range(length), batch_size)
+
+    def _apply_random_masking(
+        self,
+        data: torch.Tensor,
+        p: float = 0.5,
+    ) -> torch.Tensor:
+        """Apply random NaN masking to the input data.
+
+        Parameters
+        ----------
+        data : torch.Tensor
+            The input tensor to mask.
+        p : float, default=0.5
+            The probability of masking each element.
+
+        Returns
+        -------
+        torch.Tensor
+            The masked tensor with NaN values inserted.
+        """
+        mask_shape = (1, *data.shape[1:])
+
+        with RandomStateContext():
+            random_mask = torch.bernoulli(
+                torch.ones(mask_shape) * p
+            ).bool().expand_as(data)
+            data[random_mask] = torch.nan
+
+        return data
