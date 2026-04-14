@@ -110,7 +110,7 @@ def main() -> None:
         kernel=ows.ScaledRBFKernel()
     )
     # Load the trained model (here we instantiate it but it should be loaded)
-    model = ows.GPModel(context_x, context_y, likelihood, mean_function, kernel)
+    model = ows.GPModel(mean_function, kernel, likelihood, context_x, context_y)
 
     ## Evaluate
     model.to(device)

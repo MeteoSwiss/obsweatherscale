@@ -141,8 +141,11 @@ def main() -> None:
     )
 
     model = ows.GPModel(
-        data['train']['x'], data['train']['y'],
-        likelihood, mean_function, kernel
+        mean_function,
+        kernel,
+        likelihood,
+        data['train']['x'],
+        data['train']['y'],
     )
 
     #### Loss functions ####

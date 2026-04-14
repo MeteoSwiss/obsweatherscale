@@ -14,11 +14,11 @@ class GPModel(ExactGP):
 
     def __init__(
         self,
-        train_x: torch.Tensor,
-        train_y: torch.Tensor,
-        likelihood: _GaussianLikelihoodBase,
         mean_module: Mean,
         covar_module: Kernel,
+        likelihood: _GaussianLikelihoodBase,
+        train_x: torch.Tensor,
+        train_y: torch.Tensor,
     ) -> None: # pylint: disable=arguments-differ
         """Initialize the GPModel.
 
