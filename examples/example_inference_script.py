@@ -95,13 +95,9 @@ def main() -> None:
     target_x = standardizer.transform(target_x)
     target_y = y_transformer.transform(target_y)
 
-    # Initialize device
-    device = get_device()
-
     # Initialize likelihood
-    likelihood = ows.TransformedGaussianLikelihood(
-        noise_covar=ows.TransformedFixedGaussianNoise(y_transformer, noise_var)
-    )
+    noise_model = ows.TransformedFixedGaussianNoise(y_transformer, noise_var)
+    likelihood = ows.TransformedGaussianLikelihood(noise_covar=noise_model)
 
     # Initialize model
     mean_function = ows.NeuralMean(net=ows.MLP(dimensions=[3, 32, 32, 1]))
@@ -109,10 +105,12 @@ def main() -> None:
         net=ows.MLP(dimensions=[3, 32, 32, 4]),
         kernel=ows.ScaledRBFKernel()
     )
-    # Load the trained model (here we instantiate it but it should be loaded)
+    # Load trained model (instantiated here, but it should be loaded)
     model = ows.GPModel(mean_function, kernel, likelihood, context_x, context_y)
 
     ## Evaluate
+    device = get_device()
+
     model.to(device)
     likelihood.to(device)
     context_x = context_x.to(device)
@@ -124,7 +122,7 @@ def main() -> None:
     with (
         torch.no_grad(),
         settings.memory_efficient(True),
-        settings.observation_nan_policy("fill")
+        settings.observation_nan_policy("fill"),
     ):
         posterior = model.predict_posterior(context_x, context_y, target_x)
         prior = model.predict_prior(target_x, target_y)

@@ -1,5 +1,6 @@
 # %%
 import math
+from typing import TypeAlias
 
 import torch
 from torch.optim.adam import Adam
@@ -8,6 +9,9 @@ import obsweatherscale as ows
 
 
 # Custom dataset inheriting from GPDataset
+DataDict: TypeAlias = dict[str, dict[str, torch.Tensor]]
+
+
 class MyDataset(ows.GPDataset):
     def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor) -> None:
         self.x = ds_x
@@ -36,12 +40,12 @@ def generate_toy_data(
     n_times: int,
     noise_var: float
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    # Simulated true weather signal
     def true_signal(
         x: torch.Tensor,
         y: torch.Tensor,
         t: torch.Tensor
     ) -> torch.Tensor:
+        """Simulated true weather signal."""
         return (
             torch.sin(math.pi * x) *
             torch.cos(math.pi * y) *
@@ -67,7 +71,7 @@ def split_data(
     ds_y: torch.Tensor,
     frac_t_train: float = 0.7,
     frac_s_train: float = 0.8
-) -> dict[str, dict[str, torch.Tensor]]:
+) -> DataDict:
     n_times, n_stations, _ = ds_x.shape
 
     nt_train = int(frac_t_train * n_times)
@@ -77,14 +81,16 @@ def split_data(
     train_stations = stations_idx[:ns_train]
     val_stations = stations_idx[ns_train:]
 
-    data: dict[str, dict] = {'train': {}, 'val_c': {}, 'val_t': {}}
+    splits: dict[str, dict[str, slice | torch.Tensor]] = {
+        'train': {'time': slice(0, nt_train), 'station': train_stations},
+        'val_c': {'time': slice(nt_train, None), 'station': train_stations},
+        'val_t': {'time': slice(nt_train, None), 'station': val_stations},
+    }
 
-    data['train']['x'] = ds_x[:nt_train, train_stations, ...]
-    data['train']['y'] = ds_y[:nt_train, train_stations]
-    data['val_c']['x'] = ds_x[nt_train:, train_stations, ...]
-    data['val_c']['y'] = ds_y[nt_train:, train_stations]
-    data['val_t']['x'] = ds_x[nt_train:, val_stations, ...]
-    data['val_t']['y'] = ds_y[nt_train:, val_stations]
+    data: DataDict = {}
+    for split, idx in splits.items():
+        data[split]['x'] = ds_x[idx['time'], idx['station'], ...]
+        data[split]['y'] = ds_y[idx['time'], idx['station']]
 
     return data
 
@@ -105,30 +111,27 @@ def main() -> None:
     ds_x, ds_y = generate_toy_data(n_stations, n_times, noise_var)
 
     # Split into train and validation (context and target)
-    data = split_data(ds_x, ds_y)
+    raw_data = split_data(ds_x, ds_y)
 
     # Normalize
-    standardizer = ows.Standardizer(data['train']['x'])
+    standardizer = ows.Standardizer(raw_data['train']['x'])
     y_transformer = ows.QuantileFittedTransformer()
 
-    data['train']['x'] = standardizer.transform(data['train']['x'])
-    data['train']['y'] = y_transformer.transform(data['train']['y'])
-    data['val_c']['x'] = standardizer.transform(data['val_c']['x'])
-    data['val_c']['y'] = y_transformer.transform(data['val_c']['y'])
-    data['val_t']['x'] = standardizer.transform(data['val_t']['x'])
-    data['val_t']['y'] = y_transformer.transform(data['val_t']['y'])
+    data: DataDict = {}
+    for split in ['train', 'val_c', 'val_t']:
+        data[split]['x'] = standardizer.transform(raw_data[split]['x'])
+        data[split]['y'] = y_transformer.transform(raw_data[split]['y'])
 
-    # Initialize datasets and further split val into context and target
+    # Initialize datasets
     dataset_train = MyDataset(data['train']['x'], data['train']['y'])
     dataset_val_c = MyDataset(data['val_c']['x'], data['val_c']['y'])
     dataset_val_t = MyDataset(data['val_t']['x'], data['val_t']['y'])
 
     #### Initialize model ####
-    # Likelihood and noise model
-    # Non-trainable constant variance across all data points
-    likelihood = ows.TransformedGaussianLikelihood(
-        noise_covar=ows.TransformedFixedGaussianNoise(y_transformer, noise_var)
-    )
+    # Likelihood and noise model (non-trainable constant variance
+    # across all data points)
+    noise_model = ows.TransformedFixedGaussianNoise(y_transformer, noise_var)
+    likelihood = ows.TransformedGaussianLikelihood(noise_covar=noise_model)
 
     # GP model
     torch.manual_seed(seed)
@@ -144,8 +147,7 @@ def main() -> None:
         mean_function,
         kernel,
         likelihood,
-        data['train']['x'],
-        data['train']['y'],
+        *dataset_train.get_dataset(), # train_x, train_y
     )
 
     #### Loss functions ####
@@ -154,12 +156,12 @@ def main() -> None:
     val_loss_fct = ows.make_crps_loss(likelihood)
 
     #### Train ####
+    device = get_device()
+
     optimizer = Adam(
         [{'params': model.parameters()}, {'params': likelihood.parameters()}],
         lr=0.005,
     )
-
-    device = get_device()
 
     trainer = ows.Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
