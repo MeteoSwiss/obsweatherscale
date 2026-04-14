@@ -21,22 +21,23 @@ def test_crps_normal() -> None:
     assert crps_value.item() > 0, "CRPS value should be positive"
 
 
-def test_crps_normal_loss_fct() -> None:
+def test_crps_loss_fn() -> None:
 
     likelihood = GaussianLikelihood()
     mu = torch.tensor([0.0])
     sigma = torch.tensor([1.0])
     y = torch.tensor([0.5])
     dist = MultivariateNormal(mu, covariance_matrix=torch.diag_embed(sigma**2))
-    loss_fct = ows.crps_normal_loss_fct(likelihood)
 
-    loss_value = loss_fct(dist, y)
+    loss_fn = ows.make_crps_loss(likelihood)
+
+    loss_value = loss_fn(dist, y)
 
     assert loss_value.shape == (), "Loss value shape mismatch"
     assert loss_value.item() > 0, "Loss value should be positive"
 
 
-def test_mll_loss_fct() -> None:
+def test_mll_loss_fn() -> None:
     # Prepare training data
     train_x = torch.randn(10, 3)
     train_y = torch.randn(10, 1)
@@ -59,7 +60,7 @@ def test_mll_loss_fct() -> None:
         def forward(
             self,
             x: torch.Tensor,
-            **kwargs: Any
+            **kwargs: Any,
         ) -> gpytorch.distributions.MultivariateNormal:
             mean_x = self.mean_module(x)
             covar_x = self.covar_module(x)
@@ -71,7 +72,7 @@ def test_mll_loss_fct() -> None:
     likelihood = GaussianLikelihood()
     model = ExactGPModel(train_x, train_y, likelihood)
     mll = ExactMarginalLogLikelihood(likelihood, model)
-    loss_fct = ows.mll_loss_fct(mll)
+    loss_fn = ows.make_mll_loss(mll)
 
     # Generate a distribution to test
     mu = torch.tensor([0.0])
@@ -80,6 +81,6 @@ def test_mll_loss_fct() -> None:
     dist = MultivariateNormal(mu, covariance_matrix=torch.diag_embed(sigma**2))
 
     # Compute the loss and check its properties
-    loss_value = loss_fct(dist, y)
+    loss_value = loss_fn(dist, y)
     assert loss_value.shape == (), "Loss value shape mismatch"
     assert loss_value.item() > 0, "Loss value should be positive"

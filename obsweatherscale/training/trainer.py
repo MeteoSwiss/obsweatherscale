@@ -1,7 +1,7 @@
 import random
 import time
 from pathlib import Path
-from typing import Callable, Type
+from typing import Callable
 
 import torch
 from gpytorch import settings
@@ -9,7 +9,7 @@ from gpytorch.likelihoods import _GaussianLikelihoodBase
 from gpytorch.models import ExactGP
 from torch.optim.optimizer import Optimizer
 
-from obsweatherscale.utils import GPDataset
+from obsweatherscale.data import GPDataset
 
 __all__ = ["Trainer"]
 
@@ -32,25 +32,15 @@ class RandomStateContext:
     """
 
     def __init__(self) -> None:
-        """Initialize RandomStateContext by capturing current RNG state.
-
-        This stores the RNG state so it can be restored later when the
-        context exits.
-        """
-        self.current_state = torch.random.get_rng_state()
+        self.current_state: torch.Tensor
 
     def __enter__(self) -> 'RandomStateContext':
-        """Enter the runtime context and prepare for deterministic
-        computation.
-
-        Saves the current RNG state again (to ensure up-to-date state)
-        and reseeds the RNG with a new seed using `torch.seed()` to
-        create a fresh random state.
+        """Enter the context, saving the current RNG state and reseeding.
 
         Returns
         -------
         RandomStateContext
-            The context manager instance itself.
+            The context manager instance.
         """
         self.current_state = torch.random.get_rng_state()
         torch.manual_seed(torch.seed())
@@ -58,11 +48,21 @@ class RandomStateContext:
 
     def __exit__(
         self,
-        exc_type: Type[BaseException | None],
+        exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: object | None,
     ) -> None:
-        """Exit the context and restore the original RNG state."""
+        """Exit the context and restore the original RNG state.
+
+        Parameters
+        ----------
+        exc_type : type[BaseException] | None
+            The exception type if an exception occurred, else None.
+        exc_value : BaseException | None
+            The exception instance if an exception occurred, else None.
+        traceback : object | None
+            Traceback object if an exception occurred, else None.
+        """
         torch.random.set_rng_state(self.current_state)
 
 
@@ -77,7 +77,7 @@ class Trainer:
         val_loss_fct: Callable,
         device: torch.device,
         optimizer: Optimizer,
-    ):
+    ) -> None:
         """Initialize the Trainer class.
 
         Parameters
@@ -96,117 +96,12 @@ class Trainer:
             The optimizer to use for training the model.
         """
         self.model = model
-        self.best_model = None
+        self.best_model = model
         self.likelihood = likelihood
         self.train_loss_fct = train_loss_fct
         self.val_loss_fct = val_loss_fct
         self.device = device
         self.optimizer = optimizer
-
-    def sample_batch_idx(self, length: int, batch_size: int) -> list[int]:
-        """Randomly sample a batch of unique indices.
-
-        Parameters
-        ----------
-        length : int
-            The total number of available items to sample from.
-        batch_size : int
-            The number of unique indices to sample.
-
-        Returns
-        -------
-        list of int
-            A list of `batch_size` unique indices randomly sampled from
-            the range [0, length).
-        """
-        return random.sample(range(length), batch_size)
-
-    def train_step(
-        self,
-        batch_x: torch.Tensor,
-        batch_y: torch.Tensor,
-    ) -> float:
-        """Perform a training step on the model.
-
-        Parameters
-        ----------
-        batch_x : torch.Tensor
-            The input data for the training step.
-        batch_y : torch.Tensor
-            The target data for the training step.
-
-        Returns
-        -------
-        float
-            The value of the loss function for this training step.
-        """
-        self.model.train()
-        self.likelihood.train()
-
-        self.model.set_train_data(
-            inputs=batch_x, targets=batch_y, strict=False
-        )
-        distribution = self.model(batch_x)
-        loss = self.train_loss_fct(distribution, batch_y)
-
-        loss.backward()
-
-        return loss.item()
-
-    def val_step(
-        self,
-        batch_x_context: torch.Tensor,
-        batch_y_context: torch.Tensor,
-        batch_x_target: torch.Tensor,
-        batch_y_target: torch.Tensor,
-    ) -> float:
-        """Perform a validation step on the model.
-
-        The validation loss is computed on target {}_target data
-        conditioned on the context {}_context data. It can be used to
-        diagnose the model's generalization performance.
-
-        Parameters
-        ----------
-        batch_x_context : torch.Tensor
-            The input data for the validation step (conditional).
-        batch_y_context : torch.Tensor
-            The target data for the validation step (conditional).
-        batch_x_target : torch.Tensor
-            The input data for the validation step (target).
-        batch_y_target : torch.Tensor
-            The target data for the validation step (target).
-
-        Returns
-        -------
-        float
-            The value of the loss function for this validation step.
-        """
-        self.model.eval()
-        self.likelihood.eval()
-
-        self.model.set_train_data(
-            batch_x_context, batch_y_context, strict=False
-        )
-        distribution_val = self.model(batch_x_target)
-        loss = self.val_loss_fct(distribution_val, batch_y_target)
-
-        return loss.item()
-
-    def apply_random_masking(
-        self,
-        data: torch.Tensor,
-        p: float = 0.5
-    ) -> torch.Tensor:
-        mask_shape = (1, *data.shape[1:])
-
-        with RandomStateContext():
-            random_mask = torch.bernoulli(
-                torch.ones(mask_shape) * p
-            ).bool().expand_as(data)
-            data[random_mask] = torch.nan
-
-        return data
 
     def fit(
         self,
@@ -288,23 +183,23 @@ class Trainer:
             with settings.max_preconditioner_size(prec_size):
                 self.optimizer.zero_grad()
 
-                ### Training ###
+                # Training
                 # Get iter data
-                batch_idx = self.sample_batch_idx(length, batch_size)
+                batch_idx = self._sample_batch_idx(length, batch_size)
                 batch_x, batch_y = train[batch_idx]
 
                 if random_masking:
-                    batch_y = self.apply_random_masking(batch_y)
+                    batch_y = self._apply_random_masking(batch_y)
 
                 with settings.observation_nan_policy(nan_policy):
-                    train_loss = self.train_step(batch_x, batch_y)
+                    train_loss = self._train_step(batch_x, batch_y)
 
                 self.optimizer.step()
                 stop_targetrain = time.time()
 
-                ### Validation ###
+                # Validation
                 # Get iter data
-                batch_idx = self.sample_batch_idx(val_length, batch_size)
+                batch_idx = self._sample_batch_idx(val_length, batch_size)
                 batch_x_context, batch_y_context = val_context[batch_idx]
                 batch_x_target, batch_y_target = val_target[batch_idx]
 
@@ -312,14 +207,14 @@ class Trainer:
                     torch.no_grad(),
                     settings.observation_nan_policy(nan_policy)
                 ):
-                    val_loss = self.val_step(
+                    val_loss = self._val_step(
                         batch_x_context,
                         batch_y_context,
                         batch_x_target,
                         batch_y_target
                     )
 
-            ### Logging ###
+            # Logging
             # Save best model so far
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -345,4 +240,123 @@ class Trainer:
                     flush=True,
                 )
 
-        return self.best_model, train_progression # type: ignore
+        return self.best_model, train_progression
+
+    def _train_step(
+        self,
+        batch_x: torch.Tensor,
+        batch_y: torch.Tensor,
+    ) -> float:
+        """Perform a training step on the model.
+
+        Parameters
+        ----------
+        batch_x : torch.Tensor
+            The input data for the training step.
+        batch_y : torch.Tensor
+            The target data for the training step.
+
+        Returns
+        -------
+        float
+            The value of the loss function for this training step.
+        """
+        self.model.train()
+        self.likelihood.train()
+
+        self.model.set_train_data(
+            inputs=batch_x, targets=batch_y, strict=False
+        )
+        distribution = self.model(batch_x)
+        loss = self.train_loss_fct(distribution, batch_y)
+
+        loss.backward()
+
+        return loss.item()
+
+    def _val_step(
+        self,
+        batch_x_context: torch.Tensor,
+        batch_y_context: torch.Tensor,
+        batch_x_target: torch.Tensor,
+        batch_y_target: torch.Tensor,
+    ) -> float:
+        """Perform a validation step on the model.
+
+        The validation loss is computed on target {}_target data
+        conditioned on the context {}_context data. It can be used to
+        diagnose the model's generalization performance.
+
+        Parameters
+        ----------
+        batch_x_context : torch.Tensor
+            The input data for the validation step (conditional).
+        batch_y_context : torch.Tensor
+            The target data for the validation step (conditional).
+        batch_x_target : torch.Tensor
+            The input data for the validation step (target).
+        batch_y_target : torch.Tensor
+            The target data for the validation step (target).
+
+        Returns
+        -------
+        float
+            The value of the loss function for this validation step.
+        """
+        self.model.eval()
+        self.likelihood.eval()
+
+        self.model.set_train_data(
+            batch_x_context, batch_y_context, strict=False
+        )
+        distribution_val = self.model(batch_x_target)
+        loss = self.val_loss_fct(distribution_val, batch_y_target)
+
+        return loss.item()
+
+    def _sample_batch_idx(self, length: int, batch_size: int) -> list[int]:
+        """Randomly sample a batch of unique indices.
+
+        Parameters
+        ----------
+        length : int
+            The total number of available items to sample from.
+        batch_size : int
+            The number of unique indices to sample.
+
+        Returns
+        -------
+        list of int
+            A list of `batch_size` unique indices randomly sampled from
+            the range [0, length).
+        """
+        return random.sample(range(length), batch_size)
+
+    def _apply_random_masking(
+        self,
+        data: torch.Tensor,
+        p: float = 0.5,
+    ) -> torch.Tensor:
+        """Apply random NaN masking to the input data.
+
+        Parameters
+        ----------
+        data : torch.Tensor
+            The input tensor to mask.
+        p : float, default=0.5
+            The probability of masking each element.
+
+        Returns
+        -------
+        torch.Tensor
+            The masked tensor with NaN values inserted.
+        """
+        mask_shape = (1, *data.shape[1:])
+
+        with RandomStateContext():
+            random_mask = torch.bernoulli(
+                torch.ones(mask_shape) * p
+            ).bool().expand_as(data)
+            data[random_mask] = torch.nan
+
+        return data

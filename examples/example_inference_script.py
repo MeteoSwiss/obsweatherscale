@@ -7,13 +7,6 @@ from gpytorch import settings
 import obsweatherscale as ows
 
 
-def get_device() -> torch.device:
-    if torch.cuda.is_available():
-        torch.cuda.init()
-        return torch.device("cuda")
-    return torch.device("cpu")
-
-
 def true_signal(
     x: torch.Tensor,
     y: torch.Tensor,
@@ -68,6 +61,13 @@ def generate_toy_point_data(
     return ds_x, ds_y
 
 
+def get_device() -> torch.device:
+    if torch.cuda.is_available():
+        torch.cuda.init()
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+
 def main() -> None:
     #### Data ####
     n_stations, n_x, n_y, n_times, noise_var = 100, 30, 20, 10, 0.1
@@ -95,13 +95,9 @@ def main() -> None:
     target_x = standardizer.transform(target_x)
     target_y = y_transformer.transform(target_y)
 
-    # Initialize device
-    device = get_device()
-
     # Initialize likelihood
-    likelihood = ows.TransformedGaussianLikelihood(
-        noise_covar=ows.TransformedFixedGaussianNoise(y_transformer, noise_var)
-    )
+    noise_model = ows.TransformedFixedGaussianNoise(y_transformer, noise_var)
+    likelihood = ows.TransformedGaussianLikelihood(noise_covar=noise_model)
 
     # Initialize model
     mean_function = ows.NeuralMean(net=ows.MLP(dimensions=[3, 32, 32, 1]))
@@ -109,10 +105,12 @@ def main() -> None:
         net=ows.MLP(dimensions=[3, 32, 32, 4]),
         kernel=ows.ScaledRBFKernel()
     )
-    # Load the trained model (here we instantiate it but it should be loaded)
-    model = ows.GPModel(context_x, context_y, likelihood, mean_function, kernel)
+    # Load trained model (instantiated here, but it should be loaded)
+    model = ows.GPModel(mean_function, kernel, likelihood, context_x, context_y)
 
     ## Evaluate
+    device = get_device()
+
     model.to(device)
     likelihood.to(device)
     context_x = context_x.to(device)
@@ -124,12 +122,10 @@ def main() -> None:
     with (
         torch.no_grad(),
         settings.memory_efficient(True),
-        settings.observation_nan_policy("fill")
+        settings.observation_nan_policy("fill"),
     ):
-        posterior = ows.predict_posterior(
-            model, likelihood, context_x, context_y, target_x
-        )
-        prior = ows.predict_prior(model, likelihood, target_x, target_y)
+        posterior = model.predict_posterior(context_x, context_y, target_x)
+        prior = model.predict_prior(target_x, target_y)
 
     # 2. Sample from distributions
     # shape: (n_times, n_points, n_variables, n_samples)

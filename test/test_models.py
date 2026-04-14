@@ -16,10 +16,10 @@ def test_gp_model() -> None:
     mean = LinearMean(3)
     kernel = RBFKernel(3)
 
-    model = ows.GPModel(train_x, train_y, likelihood, mean, kernel)
+    model = ows.GPModel(mean, kernel, likelihood, train_x, train_y)
 
     train_x_shape = model.train_inputs[0].shape # type: ignore
-    train_y_shape = model.train_targets.shape
+    train_y_shape = model.train_targets.shape   # type: ignore
 
     assert isinstance(model, ows.GPModel), "Model is not of type GPModel"
     assert train_x_shape == train_x.shape, "Train x shape mismatch"

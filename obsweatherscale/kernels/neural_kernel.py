@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 
 import torch
 from gpytorch.kernels import Kernel
@@ -30,8 +30,12 @@ class NeuralKernel(Kernel):
         self.kernel = kernel
 
     def forward(
-        self, x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any
-    ) -> Union[torch.Tensor, LinearOperator]:
+        self,
+        x1: torch.Tensor,
+        x2: torch.Tensor,
+        *params: Any,
+        **kwargs: Any,
+    ) -> torch.Tensor | LinearOperator:
         x1 = self.net(x1)
         x2 = self.net(x2)
 
