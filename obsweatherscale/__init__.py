@@ -7,6 +7,7 @@ from .likelihoods import (
     TransformedHeteroskedasticNoise,
     TransformedFixedGaussianNoise,
 )
+from .logger import Logger, TerminalLogger, CSVLogger, MLflowLogger
 from .means import NeuralMean
 from .models import GPModel, MLP
 from .sampling import sample
@@ -20,6 +21,7 @@ __all__ = [
     "TransformedHomoskedasticNoise",
     "TransformedHeteroskedasticNoise",
     "TransformedFixedGaussianNoise",
+    "Logger", "TerminalLogger", "CSVLogger", "MLflowLogger",
     "NeuralMean",
     "GPModel", "MLP",
     "Trainer", "crps_normal", "make_crps_loss", "make_mll_loss",

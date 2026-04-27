@@ -13,6 +13,8 @@ from obsweatherscale.data import GPDataset
 
 __all__ = ["Trainer"]
 
+from obsweatherscale.logger import TerminalLogger, Logger
+
 
 class RandomStateContext:
     """Context manager for preserving and restoring PyTorch's RNG state.
@@ -116,6 +118,7 @@ class Trainer:
         prec_size: int = 100,
         output_dir: Path | None = None,
         verbose: bool = True,
+        loggers: list[Logger] | None = None,
     ) -> tuple[ExactGP, dict[str, list]]:
         """Train the Gaussian Process model.
 
@@ -147,6 +150,12 @@ class Trainer:
         verbose : bool, default=True
             If True, prints training status (loss function values, iter,
             time)
+        loggers : Sequence of TrainingLogger, optional, default=None
+            Sequence of :class:`TrainingLogger` instances (e.g.
+            :class:`TerminalLogger`, :class:`CSVLogger`,
+            :class:`MLflowLogger`).  Each logger receives
+            hyperparameters once before training and per-iteration
+            metrics.  When *None*, no additional logging is performed.
         Returns
         -------
         model : ExactGP
@@ -156,14 +165,17 @@ class Trainer:
             - 'iter': List of iteration numbers
             - 'train loss': List of training loss values
             - 'val loss': List of validation loss values
+            - 'train time': List of training step durations (seconds)
+            - 'iter time': List of total iteration durations (seconds)
         """
+
         if output_dir is not None:
             output_dir.mkdir(parents=True, exist_ok=True)
 
         length = len(train)
         val_length = len(val_context)
         train_progression : dict[str, list] = {
-            "iter": [], "train loss": [], "val loss": []
+            "iter": [], "train loss": [], "val loss": [], "iter time": [], "train time": []
         }
 
         torch.manual_seed(seed)
@@ -176,6 +188,27 @@ class Trainer:
         val_target.to(self.device)
 
         best_val_loss = torch.inf
+
+        loggers_list: list[Logger] = list(loggers) if loggers else []
+        if verbose:
+            loggers_list.append(TerminalLogger())
+
+        log_params: dict = {
+            "batch_size": batch_size,
+            "n_iter": n_iter,
+            "seed": seed,
+            "random_masking": random_masking,
+            "nan_policy": nan_policy,
+            "prec_size": prec_size,
+            "device": str(self.device),
+            "model": type(self.model).__name__,
+            "optimizer": type(self.optimizer).__name__,
+        }
+        for group in self.optimizer.param_groups:
+            log_params["learning_rate"] = group["lr"]
+            break
+        for logger in loggers_list:
+            logger.log_params(log_params)
 
         for i in range(n_iter):
             start = time.time()
@@ -223,22 +256,23 @@ class Trainer:
                 if output_dir is not None:
                     torch.save(self.model.state_dict(), output_dir / "model")
 
-            # Save training log
-            train_progression["iter"].append(i + 1)
-            train_progression["train loss"].append(train_loss)
-            train_progression["val loss"].append(val_loss)
-
             stop = time.time()
 
-            if verbose:
-                print(
-                    f"Iter {i + 1}/{n_iter} - "
-                    f"Loss: {train_loss:.3f}   "
-                    f"Val loss: {val_loss:.3f}   "
-                    f"train time: {stop_targetrain - start:.3f}   "
-                    f"time: {stop - start:.3f}",
-                    flush=True,
-                )
+            iter_metrics = {
+                "iter": i + 1,
+                "train loss": train_loss,
+                "val loss": val_loss,
+                "train time": stop_targetrain - start,
+                "iter time": stop - start
+            }
+            for logger in loggers_list:
+                logger.log_metrics(iter_metrics, step=i + 1)
+
+            for k, v in iter_metrics.items():
+                train_progression[k].append(v)
+
+        for logger in loggers_list:
+            logger.close()
 
         return self.best_model, train_progression
 

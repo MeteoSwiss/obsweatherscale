@@ -7,7 +7,6 @@ from torch.optim.adam import Adam
 
 import obsweatherscale as ows
 
-
 # Custom dataset inheriting from GPDataset
 DataDict: TypeAlias = dict[str, dict[str, torch.Tensor]]
 
@@ -70,7 +69,7 @@ def split_data(
     ds_x: torch.Tensor,
     ds_y: torch.Tensor,
     frac_t_train: float = 0.7,
-    frac_s_train: float = 0.8
+    frac_s_train: float = 0.8,
 ) -> DataDict:
     n_times, n_stations, _ = ds_x.shape
 
@@ -81,18 +80,16 @@ def split_data(
     train_stations = stations_idx[:ns_train]
     val_stations = stations_idx[ns_train:]
 
-    splits: dict[str, dict[str, slice | torch.Tensor]] = {
-        'train': {'time': slice(0, nt_train), 'station': train_stations},
-        'val_c': {'time': slice(nt_train, None), 'station': train_stations},
-        'val_t': {'time': slice(nt_train, None), 'station': val_stations},
+    splits = {
+        'train': (slice(None, nt_train), train_stations),
+        'val_c': (slice(nt_train, None), train_stations),
+        'val_t': (slice(nt_train, None), val_stations),
     }
 
-    data: DataDict = {}
-    for split, idx in splits.items():
-        data[split]['x'] = ds_x[idx['time'], idx['station'], ...]
-        data[split]['y'] = ds_y[idx['time'], idx['station']]
-
-    return data
+    return {
+        split: {'x': ds_x[times, stations], 'y': ds_y[times, stations]}
+        for split, (times, stations) in splits.items()
+    }
 
 
 def get_device() -> torch.device:
@@ -111,16 +108,15 @@ def main() -> None:
     ds_x, ds_y = generate_toy_data(n_stations, n_times, noise_var)
 
     # Split into train and validation (context and target)
-    raw_data = split_data(ds_x, ds_y)
+    data = split_data(ds_x, ds_y)
 
     # Normalize
-    standardizer = ows.Standardizer(raw_data['train']['x'])
+    standardizer = ows.Standardizer(data['train']['x'])
     y_transformer = ows.QuantileFittedTransformer()
 
-    data: DataDict = {}
-    for split in ['train', 'val_c', 'val_t']:
-        data[split]['x'] = standardizer.transform(raw_data[split]['x'])
-        data[split]['y'] = y_transformer.transform(raw_data[split]['y'])
+    for split in data:
+        data[split]['x'] = standardizer.transform(data[split]['x'])
+        data[split]['y'] = y_transformer.transform(data[split]['y'])
 
     # Initialize datasets
     dataset_train = MyDataset(data['train']['x'], data['train']['y'])
@@ -163,6 +159,11 @@ def main() -> None:
         lr=0.005,
     )
 
+    # --- Loggers ---
+    loggers: list[ows.Logger] = [ows.CSVLogger("training_log.csv")]
+    # To also log to MLflow (requires `pip install mlflow`):
+    # loggers.append(ows.training.MLflowLogger(experiment_name="obsweatherscale", run_name="run_1"))
+
     trainer = ows.Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
     )
@@ -175,6 +176,7 @@ def main() -> None:
         random_masking=True,
         seed=seed,
         verbose=True,
+        loggers=loggers,
     )
 
     # Get the iteration of best model

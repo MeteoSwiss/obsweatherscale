@@ -110,3 +110,9 @@ experiments/
 
 # Miscellaneous
 _dev/
+
+# Example training logs
+training_log.csv
+training_log.json
+mlflow.db
+mlruns/
