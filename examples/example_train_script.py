@@ -87,7 +87,11 @@ def split_data(
         'val_t': {'time': slice(nt_train, None), 'station': val_stations},
     }
 
-    data: DataDict = {}
+    data: DataDict = {
+        'train': {},
+        'val_c': {},
+        'val_t': {},
+    }
     for split, idx in splits.items():
         data[split]['x'] = ds_x[idx['time'], idx['station'], ...]
         data[split]['y'] = ds_y[idx['time'], idx['station']]
@@ -116,8 +120,12 @@ def main() -> None:
     standardizer = ows.Standardizer(raw_data['train']['x'])
     y_transformer = ows.QuantileFittedTransformer()
 
-    data: DataDict = {}
-    for split in ['train', 'val_c', 'val_t']:
+    data: DataDict = {
+        'train': {},
+        'val_c': {},
+        'val_t': {},
+    }
+    for split in data:
         data[split]['x'] = standardizer.transform(raw_data[split]['x'])
         data[split]['y'] = y_transformer.transform(raw_data[split]['y'])
 
@@ -165,7 +173,7 @@ def main() -> None:
     # --- Loggers ---
     loggers: list[ows.training.TrainingLogger] = [ows.training.CSVLogger("training_log.csv")]
     # To also log to MLflow (requires `pip install mlflow`):
-    # loggers.append(MLflowLogger(experiment_name="toy", run_name="run_1"))
+    # loggers.append(ows.training.MLflowLogger(experiment_name="obsweatherscale", run_name="run_1"))
 
     trainer = ows.Trainer(
         model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
