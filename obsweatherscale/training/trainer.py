@@ -13,7 +13,7 @@ from obsweatherscale.data import GPDataset
 
 __all__ = ["Trainer"]
 
-from .loggers import TerminalLogger, TrainingLogger
+from obsweatherscale.logger import TerminalLogger, Logger
 
 
 class RandomStateContext:
@@ -118,7 +118,7 @@ class Trainer:
         prec_size: int = 100,
         output_dir: Path | None = None,
         verbose: bool = True,
-        loggers: list[TrainingLogger] | None = None,
+        loggers: list[Logger] | None = None,
     ) -> tuple[ExactGP, dict[str, list]]:
         """Train the Gaussian Process model.
 
@@ -189,7 +189,7 @@ class Trainer:
 
         best_val_loss = torch.inf
 
-        loggers_list: list[TrainingLogger] = list(loggers) if loggers else []
+        loggers_list: list[Logger] = list(loggers) if loggers else []
         if verbose:
             loggers_list.append(TerminalLogger())
 

@@ -112,7 +112,7 @@ experiments/
 _dev/
 
 # Example training logs
-examples/training_log.csv
-examples/training_log.json
-examples/mlflow.db
-examples/mlruns/
+training_log.csv
+training_log.json
+mlflow.db
+mlruns/

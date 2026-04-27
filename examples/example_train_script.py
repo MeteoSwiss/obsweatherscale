@@ -7,7 +7,6 @@ from torch.optim.adam import Adam
 
 import obsweatherscale as ows
 
-
 # Custom dataset inheriting from GPDataset
 DataDict: TypeAlias = dict[str, dict[str, torch.Tensor]]
 
@@ -161,7 +160,7 @@ def main() -> None:
     )
 
     # --- Loggers ---
-    loggers: list[ows.training.TrainingLogger] = [ows.training.CSVLogger("training_log.csv")]
+    loggers: list[ows.Logger] = [ows.CSVLogger("training_log.csv")]
     # To also log to MLflow (requires `pip install mlflow`):
     # loggers.append(ows.training.MLflowLogger(experiment_name="obsweatherscale", run_name="run_1"))
 

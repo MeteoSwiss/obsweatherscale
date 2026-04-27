@@ -1,6 +1,6 @@
-"""Training loggers for obsweatherscale.
+"""Loggers for obsweatherscale.
 
-Provides a base :class:`TrainingLogger` interface and three concrete
+Provides a base :class:`Logger` interface and three concrete
 implementations:
 
 - :class:`TerminalLogger` — logs via Python's :mod:`logging` module.
@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 
-class TrainingLogger(ABC):
+class Logger(ABC):
     """Abstract base class for training loggers.
 
     Subclasses must implement :meth:`log_params`, :meth:`log_metrics`,
@@ -52,7 +52,7 @@ class TrainingLogger(ABC):
         """Finalize and release any resources held by the logger."""
 
 
-class TerminalLogger(TrainingLogger):
+class TerminalLogger(Logger):
     """Logger that writes training progress via Python's :mod:`logging`.
 
     Parameters
@@ -93,7 +93,7 @@ class TerminalLogger(TrainingLogger):
         """No-op for terminal logging."""
 
 
-class CSVLogger(TrainingLogger):
+class CSVLogger(Logger):
     """Logger that writes per-iteration metrics to a CSV file.
 
     Hyperparameters are stored in a JSON sidecar file with the same
@@ -132,7 +132,7 @@ class CSVLogger(TrainingLogger):
         """No-op: the CSV file is opened and closed within each :meth:`log_metrics` call."""
 
 
-class MLflowLogger(TrainingLogger):
+class MLflowLogger(Logger):
     """Logger that records parameters and metrics to MLflow.
 
     Requires the optional ``mlflow`` package.  If no active MLflow run

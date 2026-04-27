@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from obsweatherscale.training.loggers import (
+from obsweatherscale import (
     CSVLogger,
     TerminalLogger,
     MLflowLogger,
