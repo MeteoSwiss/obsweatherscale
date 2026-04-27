@@ -1,8 +1,6 @@
 import torch
 
-from obsweatherscale.transformations import (
-    Standardizer, QuantileFittedTransformer
-)
+import obsweatherscale as ows
 
 
 def test_standardizer() -> None:
@@ -10,7 +8,7 @@ def test_standardizer() -> None:
     x = torch.randn(5, 3)
 
     # Create a simple Standardizer
-    standardizer = Standardizer(x, 0)
+    standardizer = ows.Standardizer(x, 0)
 
     # Transform the data
     transformed_x = standardizer.transform(x)
@@ -36,7 +34,7 @@ def test_quantile_fitted_transformer() -> None:
     x = torch.exp(torch.randn(5, 3))
 
     # Create a simple QuantileFittedTransformer
-    quantile_transformer = QuantileFittedTransformer()
+    quantile_transformer = ows.QuantileFittedTransformer()
 
     # Transform the data
     transformed_x = quantile_transformer.transform(x)

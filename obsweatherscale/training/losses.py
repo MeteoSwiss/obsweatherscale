@@ -8,7 +8,9 @@ from gpytorch.likelihoods import _GaussianLikelihoodBase
 
 
 def crps_normal(
-    obs: torch.Tensor, mu: torch.Tensor, sigma: torch.Tensor
+    obs: torch.Tensor,
+    mu: torch.Tensor,
+    sigma: torch.Tensor,
 ) -> torch.Tensor:
     """Wrapper to compute the Continuous Ranked Probability Score (CRPS)
     for a Normal distribution.
@@ -56,8 +58,8 @@ def crps_normal(
     return crps.mean()
 
 
-def crps_normal_loss_fct(
-    likelihood: _GaussianLikelihoodBase | None = None
+def make_crps_loss(
+    likelihood: _GaussianLikelihoodBase | None = None,
 ) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
     """Wrapper to create a CRPS loss function for normal distributions
     that handles missing values and optionally transforms the
@@ -83,7 +85,7 @@ def crps_normal_loss_fct(
     the parameters are set to produce a neutral contribution to the loss.
     """
 
-    def loss_fct(
+    def loss_fn(
         distribution: MultivariateNormal,
         obs: torch.Tensor
     ) -> torch.Tensor:
@@ -99,11 +101,11 @@ def crps_normal_loss_fct(
         )
         return crps_normal(obs, mu, sigma)
 
-    return loss_fct
+    return loss_fn
 
 
-def mll_loss_fct(
-    mll: ExactMarginalLogLikelihood
+def make_mll_loss(
+    mll: ExactMarginalLogLikelihood,
 ) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
     """Wrapper to create a negative log-likelihood loss function
     of a multivariate normal distribution, optionally transformed by a
@@ -132,7 +134,7 @@ def mll_loss_fct(
         If the mll doesn't return a torch.Tensor.
     """
 
-    def loss_fct(
+    def loss_fn(
         distribution: MultivariateNormal,
         obs: torch.Tensor
     ) -> torch.Tensor:
@@ -145,4 +147,4 @@ def mll_loss_fct(
             f"got {type(log_likelihood)}"
         )
 
-    return loss_fct
+    return loss_fn

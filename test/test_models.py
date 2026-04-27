@@ -4,7 +4,8 @@ from gpytorch.priors import NormalPrior
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.kernels import RBFKernel
 
-from obsweatherscale.models import GPModel, MLP
+import obsweatherscale as ows
+
 
 def test_gp_model() -> None:
 
@@ -15,12 +16,12 @@ def test_gp_model() -> None:
     mean = LinearMean(3)
     kernel = RBFKernel(3)
 
-    model = GPModel(train_x, train_y, likelihood, mean, kernel)
+    model = ows.GPModel(mean, kernel, likelihood, train_x, train_y)
 
     train_x_shape = model.train_inputs[0].shape # type: ignore
-    train_y_shape = model.train_targets.shape
+    train_y_shape = model.train_targets.shape   # type: ignore
 
-    assert isinstance(model, GPModel), "Model is not of type GPModel"
+    assert isinstance(model, ows.GPModel), "Model is not of type GPModel"
     assert train_x_shape == train_x.shape, "Train x shape mismatch"
     assert train_y_shape == train_y.shape, "Train y shape mismatch"
 
@@ -40,7 +41,7 @@ def test_gp_model() -> None:
 
 def test_mlp() -> None:
     # Test the MLP class
-    mlp = MLP([2,8,1], active_dims=[0,1])
+    mlp = ows.MLP([2,8,1], active_dims=[0,1])
 
     # Check the input and output dimensions
     test_input = torch.randn(5, 3)

@@ -21,12 +21,12 @@ class GPDataset(Dataset, ABC):
     """
 
     @abstractmethod
-    def __getitem__(self, index: int | list | slice) -> Any:
+    def __getitem__(self, index: int | list[int] | slice) -> Any:
         """Get a sample from the dataset at the specified index.
 
         Parameters
         ----------
-        index : int | list | slice
+        index : int | list[int] | slice
             Index of the sample to retrieve.
 
         Returns
@@ -46,6 +46,17 @@ class GPDataset(Dataset, ABC):
         """
 
     @abstractmethod
+    def get_dataset(self) -> tuple[torch.Tensor, ...]:
+        """Get the entire dataset as tensors.
+
+        Returns
+        -------
+        tuple[torch.Tensor, ...]
+            A tuple of tensors representing the entire dataset.
+            Typically contains input features and target values.
+        """
+
+    @abstractmethod
     def to(self, device: torch.device) -> None:
         """Move the dataset to the specified device.
 
@@ -58,15 +69,4 @@ class GPDataset(Dataset, ABC):
         -------
         self
             The dataset instance moved to the specified device.
-        """
-
-    @abstractmethod
-    def get_dataset(self) -> tuple[torch.Tensor, ...]:
-        """Get the entire dataset as tensors.
-
-        Returns
-        -------
-        tuple[torch.Tensor, ...]
-            A tuple of tensors representing the entire dataset.
-            Typically contains input features and target values.
         """
