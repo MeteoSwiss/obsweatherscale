@@ -1,0 +1,169 @@
+obsweatherscale.logger
+======================
+
+.. py:module:: obsweatherscale.logger
+
+.. autoapi-nested-parse::
+
+   Loggers for obsweatherscale.
+
+   Provides a base :class:`Logger` interface and three concrete
+   implementations:
+
+   - :class:`TerminalLogger` — logs via Python's :mod:`logging` module.
+   - :class:`CSVLogger` — writes per-iteration metrics to a CSV file and
+     hyperparameters to a JSON sidecar.
+   - :class:`MLflowLogger` — logs parameters and metrics to an MLflow
+     tracking server.  Requires the optional ``mlflow`` dependency.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.logger.Logger
+   obsweatherscale.logger.TerminalLogger
+   obsweatherscale.logger.CSVLogger
+   obsweatherscale.logger.MLflowLogger
+
+
+Module Contents
+---------------
+
+.. py:class:: Logger
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   Abstract base class for training loggers.
+
+   Subclasses must implement :meth:`log_params`, :meth:`log_metrics`,
+   and :meth:`close`.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+      :abstractmethod:
+
+
+      Log training hyperparameters and configuration.
+
+      :Parameters: **params** (*dict[str, Any]*) -- Dictionary of hyperparameter names and values.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int) -> None
+      :abstractmethod:
+
+
+      Log metrics for a single training iteration.
+
+      :Parameters: * **metrics** (*dict[str, float]*) -- Dictionary of metric names and values.
+                   * **step** (*int*) -- Current iteration number (1-based).
+
+
+
+   .. py:method:: close() -> None
+      :abstractmethod:
+
+
+      Finalize and release any resources held by the logger.
+
+
+
+.. py:class:: TerminalLogger(name: str = 'obsweatherscale.training', level: int = logging.INFO)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that writes training progress via Python's :mod:`logging`.
+
+   :Parameters: * **name** (*str, default='obsweatherscale.training'*) -- Name of the Python logger instance.
+                * **level** (*int, default=logging.INFO*) -- Logging level.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Log hyperparameters to the terminal.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int) -> None
+
+      Log per-iteration metrics to the terminal.
+
+
+
+   .. py:method:: close() -> None
+
+      No-op for terminal logging.
+
+
+
+.. py:class:: CSVLogger(filepath: pathlib.Path | str)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that writes per-iteration metrics to a CSV file.
+
+   Hyperparameters are stored in a JSON sidecar file with the same
+   stem (e.g. ``log.csv`` → ``log.json``).
+
+   :Parameters: **filepath** (*Path or str*) -- Path to the CSV output file.  Parent directories are created
+                automatically.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Write hyperparameters to a JSON sidecar file.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int) -> None
+
+      Append one row of metrics to the CSV file.
+
+
+
+   .. py:method:: close() -> None
+
+      No-op: the CSV file is opened and closed within each :meth:`log_metrics` call.
+
+
+
+.. py:class:: MLflowLogger(experiment_name: str | None = None, run_name: str | None = None)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that records parameters and metrics to MLflow.
+
+   Requires the optional ``mlflow`` package.  If no active MLflow run
+   exists when the logger is constructed, a new run is started
+   automatically and ended on :meth:`close`.
+
+   :Parameters: * **experiment_name** (*str, optional*) -- MLflow experiment name.  If provided,
+                  :func:`mlflow.set_experiment` is called.
+                * **run_name** (*str, optional*) -- Name for the MLflow run (used only when a new run is started).
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Log hyperparameters to the active MLflow run.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int) -> None
+
+      Log per-iteration metrics to the active MLflow run.
+
+
+
+   .. py:method:: close() -> None
+
+      End the MLflow run if it was started by this logger.
+
+
+

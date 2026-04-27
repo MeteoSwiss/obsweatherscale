@@ -1,0 +1,1054 @@
+obsweatherscale
+===============
+
+.. py:module:: obsweatherscale
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/data/index
+   /autoapi/obsweatherscale/kernels/index
+   /autoapi/obsweatherscale/likelihoods/index
+   /autoapi/obsweatherscale/logger/index
+   /autoapi/obsweatherscale/means/index
+   /autoapi/obsweatherscale/models/index
+   /autoapi/obsweatherscale/sampling/index
+   /autoapi/obsweatherscale/training/index
+   /autoapi/obsweatherscale/transformations/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.GPDataset
+   obsweatherscale.NeuralKernel
+   obsweatherscale.ScaledRBFKernel
+   obsweatherscale.TransformedGaussianLikelihood
+   obsweatherscale.ExactMarginalLogLikelihoodFill
+   obsweatherscale.TransformedHomoskedasticNoise
+   obsweatherscale.TransformedHeteroskedasticNoise
+   obsweatherscale.TransformedFixedGaussianNoise
+   obsweatherscale.Logger
+   obsweatherscale.TerminalLogger
+   obsweatherscale.CSVLogger
+   obsweatherscale.MLflowLogger
+   obsweatherscale.NeuralMean
+   obsweatherscale.GPModel
+   obsweatherscale.MLP
+   obsweatherscale.Trainer
+   obsweatherscale.QuantileFittedTransformer
+   obsweatherscale.Standardizer
+   obsweatherscale.Transformer
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   obsweatherscale.crps_normal
+   obsweatherscale.make_crps_loss
+   obsweatherscale.make_mll_loss
+
+
+Package Contents
+----------------
+
+.. py:class:: GPDataset
+
+   Bases: :py:obj:`torch.utils.data.Dataset`, :py:obj:`abc.ABC`
+
+
+   Abstract base class for Gaussian Process datasets.
+
+   This class extends PyTorch's Dataset class to provide a standardized
+   interface for datasets used in Gaussian Process models. It defines
+   required methods for data access, transformation, and device
+   management.
+
+   All subclasses must implement the abstract methods defined here.
+
+   .. seealso::
+
+      :obj:`torch.utils.data.Dataset`
+          PyTorch's base dataset class
+
+
+   .. py:method:: get_dataset() -> tuple[torch.Tensor, Ellipsis]
+      :abstractmethod:
+
+
+      Get the entire dataset as tensors.
+
+      :returns: A tuple of tensors representing the entire dataset.
+                Typically contains input features and target values.
+      :rtype: tuple[torch.Tensor, ...]
+
+
+
+   .. py:method:: to(device: torch.device) -> None
+      :abstractmethod:
+
+
+      Move the dataset to the specified device.
+
+      :Parameters: **device** (*torch.device*) -- The device to move the dataset to (e.g., CPU or CUDA).
+
+      :returns: The dataset instance moved to the specified device.
+      :rtype: self
+
+
+
+.. py:class:: NeuralKernel(net: torch.nn.Module, kernel: gpytorch.kernels.Kernel)
+
+   Bases: :py:obj:`gpytorch.kernels.Kernel`
+
+
+   Neural Kernel class.
+
+   This class implements a neural kernel that transforms the input data
+   to a learned feature space using a neural network before applying
+   the kernel function.
+
+   TODO: add reference
+
+
+   .. py:attribute:: net
+
+
+   .. py:attribute:: kernel
+
+
+   .. py:method:: forward(x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any) -> torch.Tensor | linear_operator.operators.LinearOperator
+
+      Computes the covariance between :math:`\mathbf x_1` and :math:`\mathbf x_2`.
+      This method should be implemented by all Kernel subclasses.
+
+      :param x1: First set of data (... x N x D).
+      :param x2: Second set of data (... x M x D).
+      :param diag: Should the Kernel compute the whole kernel, or just the diag?
+          If True, it must be the case that `x1 == x2`. (Default: False.)
+      :param last_dim_is_batch: If True, treat the last dimension
+          of `x1` and `x2` as another batch dimension.
+          (Useful for additive structure over the dimensions). (Default: False.)
+
+      :return: The kernel matrix or vector. The shape depends on the kernel's evaluation mode:
+
+          * `full_covar`: `... x N x M`
+          * `full_covar` with `last_dim_is_batch=True`: `... x K x N x M`
+          * `diag`: `... x N`
+          * `diag` with `last_dim_is_batch=True`: `... x K x N`
+
+
+
+.. py:class:: ScaledRBFKernel(variance: torch.Tensor | None = None, lengthscale: torch.Tensor | None = None, ard_num_dims: int | None = None, batch_shape: torch.Size | None = None, active_dims: tuple[int, Ellipsis] | None = None, lengthscale_prior: gpytorch.priors.Prior | None = None, lengthscale_constraint: gpytorch.constraints.Interval | None = None, outputscale_prior: gpytorch.priors.Prior | None = None, outputscale_constraint: gpytorch.constraints.Interval | None = None, train_lengthscale: bool = True, train_variance: bool = True, eps: float = 1e-06, **kwargs: Any)
+
+   Bases: :py:obj:`gpytorch.kernels.Kernel`
+
+
+   Scaled RBF Kernel class.
+
+   This class implements a scaled radial basis function (RBF) kernel
+   with the option to set the lengthscale and variance parameters.
+
+
+   .. py:attribute:: kernel
+
+
+   .. py:method:: forward(x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any) -> torch.Tensor | linear_operator.operators.LinearOperator
+
+      Computes the covariance between :math:`\mathbf x_1` and :math:`\mathbf x_2`.
+      This method should be implemented by all Kernel subclasses.
+
+      :param x1: First set of data (... x N x D).
+      :param x2: Second set of data (... x M x D).
+      :param diag: Should the Kernel compute the whole kernel, or just the diag?
+          If True, it must be the case that `x1 == x2`. (Default: False.)
+      :param last_dim_is_batch: If True, treat the last dimension
+          of `x1` and `x2` as another batch dimension.
+          (Useful for additive structure over the dimensions). (Default: False.)
+
+      :return: The kernel matrix or vector. The shape depends on the kernel's evaluation mode:
+
+          * `full_covar`: `... x N x M`
+          * `full_covar` with `last_dim_is_batch=True`: `... x K x N x M`
+          * `diag`: `... x N`
+          * `diag` with `last_dim_is_batch=True`: `... x K x N`
+
+
+
+   .. py:method:: extra_repr() -> str
+
+      Return the extra representation of the module.
+
+      To print customized extra information, you should re-implement
+      this method in your own modules. Both single-line and multi-line
+      strings are acceptable.
+
+
+
+.. py:class:: TransformedGaussianLikelihood(noise_covar: obsweatherscale.likelihoods.noise_models.TransformedNoise, **kwargs: Any)
+
+   Bases: :py:obj:`gpytorch.likelihoods._GaussianLikelihoodBase`
+
+
+   A Gaussian likelihood with a transformed noise model.
+
+   This likelihood allows custom noise transformations by leveraging
+   a `TransformedNoise` object. It supports missing observation
+   handling policies, including masking and filling, and is designed
+   for compatibility with GPyTorch models using `MultivariateNormal`
+   outputs.
+
+   .. method:: _shaped_noise_covar(base_shape, \*params, y=None, \*\*kwargs)
+
+      Returns a noise covariance object of the correct shape,
+      optionally based on `y`.
+
+
+   .. method:: expected_log_prob(target, input, \*params, \*\*kwargs)
+
+      Computes the expected log probability of the target under the
+      input distribution, optionally handling NaNs according to the
+      active policy.
+
+
+   .. method:: forward(function_samples, \*params, \*\*kwargs)
+
+      Returns a Normal distribution by applying transformed noise to
+      function samples.
+
+
+   .. method:: marginal(function_dist, \*params, \*\*kwargs)
+
+      Returns the marginal distribution including the transformed
+      noise covariance.
+
+
+
+   .. py:method:: expected_log_prob(target: torch.Tensor, input: gpytorch.distributions.MultivariateNormal, *params: Any, **kwargs: Any) -> torch.Tensor
+
+      Expected log probability of target given input distribution.
+
+      Computes the expected log probability of the `target` given the
+      `input` distribution, accounting for noise and handling missing
+      values according to the configured NaN policy.
+
+      :Parameters: * **target** (*torch.Tensor*) -- The target tensor to compute the log probability for.
+                   * **input** (*MultivariateNormal*) -- The input distribution, typically a MultivariateNormal, from
+                     which the mean and variance will be used to compute the log
+                     probability.
+                   * **\*params** (*tuple*) -- Additional parameters passed to the likelihood.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to the likelihood.
+
+      :returns: The expected log probability for each observation, reduced
+                along event dimensions for multitask outputs if needed.
+      :rtype: torch.Tensor
+
+      .. rubric:: Notes
+
+      - Missing values in `target` are handled according to the active
+      `settings.observation_nan_policy`:
+          - "mask": excludes NaNs from computation using a masked covariance.
+          - "fill": replaces NaNs with zeros and assigns small variance.
+      - Noise variance is computed using the transformed likelihood's
+      noise model (`self._shaped_noise_covar`) and scaled according to
+      any target transformation.
+      - The final log probability is computed as the Gaussian log-likelihood:
+          log P(y | μ, σ^2) = -0.5 * [(y - μ)^2 / σ^2 + log σ^2 + log 2π]
+      - For multitask outputs, the log probabilities are summed across
+      event dimensions.
+
+
+
+   .. py:method:: forward(function_samples: torch.Tensor, *params: Any, **kwargs: Any) -> torch.distributions.Normal
+
+      Applies noise to given function samples.
+
+      Returns a Normal distribution by applying the transformed noise
+      to the given function samples.
+
+      :Parameters: * **function_samples** (*torch.Tensor*) -- The samples from the function (typically the mean of a
+                     MultivariateNormal).
+                   * **\*params** (*tuple*) -- Additional parameters passed to the noise covariance
+                     function.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to the likelihood.
+
+      :returns: The Normal distribution obtained after adding noise to the
+                function samples.
+      :rtype: torch.distributions.Normal
+
+
+
+   .. py:method:: marginal(function_dist: gpytorch.distributions.MultivariateNormal, *params: Any, **kwargs: Any) -> gpytorch.distributions.MultivariateNormal
+
+      Computes the marginal distribution by adding the noise
+      covariance to the covariance of the function distribution.
+
+      :Parameters: * **function_dist** (*MultivariateNormal*) -- The MultivariateNormal distribution representing the
+                     function's posterior.
+                   * **\*params** (*tuple*) -- Additional parameters passed to the noise covariance
+                     function.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to the likelihood.
+
+      :returns: The marginal distribution, which is the sum of the
+                function's covariance and the noise covariance.
+      :rtype: MultivariateNormal
+
+
+
+.. py:class:: ExactMarginalLogLikelihoodFill(likelihood, model)
+
+   Bases: :py:obj:`gpytorch.ExactMarginalLogLikelihood`
+
+
+   Extension of ExactMarginalLogLikelihood with support for handling
+   NaN values by filling.
+
+   This class extends the ExactMarginalLogLikelihood class to handle
+   missing values (represented as NaNs) through a filling mechanism.
+   It computes the exact marginal log likelihood for Gaussian
+   Processes, which is crucial for model selection and hyperparameter
+   optimization in GP models.
+
+   :Parameters: * **model** (*gpytorch.models.GP*) -- The GP model for which to compute the marginal log likelihood.
+                * **likelihood** (*gpytorch.likelihoods.Likelihood*) -- The likelihood for the GP model.
+
+   .. attribute:: model
+
+      The GP model.
+
+      :type: gpytorch.models.GP
+
+   .. attribute:: likelihood
+
+      The likelihood for the GP model.
+
+      :type: gpytorch.likelihoods.Likelihood
+
+   .. rubric:: Notes
+
+   This implementation properly handles NaN values in the target tensor
+   based on the observation_nan_policy setting, with special handling
+   for the "fill" policy.
+
+
+   .. py:method:: forward(function_dist: gpytorch.likelihoods._GaussianLikelihoodBase, target: torch.Tensor, *params: Any, **kwargs: Any) -> torch.Tensor
+
+      Computes the marginal log likelihood given a function
+      distribution and target values.
+
+      This method calculates the marginal log likelihood by evaluating
+      the probability of the observed data given the model. It
+      supports special handling for NaN values in the target tensor
+      based on the active `settings.observation_nan_policy` value.
+
+      :Parameters: * **function_dist** (*gpytorch.distributions._GaussianLikelihoodBase*) -- The distribution p(f) representing outputs of the latent
+                     function.
+                   * **target** (*torch.Tensor*) -- The target values y to condition on.
+                   * **\*params** (*Any*) -- Additional positional arguments to pass to the likelihood.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments to pass to the likelihood.
+
+      :returns: The computed marginal log likelihood divided by the number
+                of data points. Output shape corresponds to the batch shape
+                of the model/input data.
+      :rtype: torch.Tensor
+
+      :raises RuntimeError: If function_dist is not a MultivariateNormal distribution.
+
+      .. rubric:: Notes
+
+      The method handles NaN values in the target tensor according to
+      the observation_nan_policy setting:
+      - "mask": Remove (ignore) all observations where `target` is
+      NaN. This uses `MaskedLinearOperator` to exclude those entries
+      from the covariance.
+      - "fill": Replace NaN values with zeros in `target` and adjust
+      the covariance accordingly, assigning small variance (1 / 2π) to
+      missing entries.
+
+
+
+.. py:class:: TransformedHomoskedasticNoise(transformer: obsweatherscale.transformations.transformer.Transformer, noise_prior: gpytorch.priors.Prior | None = None, noise_constraint: torch.nn.Module | None = None, batch_shape: torch.Size = torch.Size())
+
+   Bases: :py:obj:`TransformedNoise`, :py:obj:`gpytorch.likelihoods.noise_models.HomoskedasticNoise`
+
+
+   A homoskedastic noise model that accounts for target
+   transformations.
+
+   This model assumes constant noise across all inputs (homoskedastic),
+   but ensures that the noise is properly transformed to reflect the
+   transformed target space.
+
+   Homoskedastic noise is appropriate when all observations are assumed
+   to have the same level of uncertainty, such as in well-controlled
+   experiments or uniformly sampled data. A transformed noise model is
+   appropriate when it is trained on transformed outputs, and noise
+   must be adjusted accordingly.
+
+   Inherits from:
+   - `TransformedNoise`: Applies the appropriate correction for target
+   transformations.
+   - `HomoskedasticNoise`: Represents fixed noise variance across all
+   inputs.
+
+   .. attribute:: transformer
+
+      A transformation object (e.g., log, standard scaler, etc.) that
+      defines the transformation applied to the target variable.
+
+      :type: Transformer
+
+   .. attribute:: noise_prior
+
+      Optional prior over the noise variance parameter.
+
+      :type: Prior or None
+
+   .. attribute:: noise_constraint
+
+      Optional constraint to ensure valid noise variance
+      (e.g., positivity).
+
+      :type: nn.Module or None
+
+   .. attribute:: batch_shape
+
+      The batch shape for the noise model parameters.
+
+      :type: torch.Size
+
+
+   .. py:method:: forward(*params: Any, y: torch.Tensor | None = None, shape: torch.Size | None = None, **kwargs: Any) -> linear_operator.operators.DiagLinearOperator
+
+      Computes transformed homoskedastic noise as linear operator.
+
+      Produces a constant diagonal noise covariance matrix and applies
+      a correction based on the transformation of the target variable.
+
+      :Parameters: * **\*params** (*Any*) -- Parameters passed to the underlying noise model.
+                   * **y** (*torch.Tensor, optional*) -- Target values used to transform the noise variance. Required
+                     if the transformation is data-dependent.
+                   * **shape** (*torch.Size, optional*) -- The desired shape of the output covariance matrix.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to internal components.
+
+      :returns: A diagonal linear operator representing the transformed
+                noise covariance matrix. This is useful in Gaussian process
+                models where efficient matrix representations are needed.
+      :rtype: DiagLinearOperator
+
+
+
+.. py:class:: TransformedHeteroskedasticNoise(transformer: obsweatherscale.transformations.transformer.Transformer, noise_model: torch.nn.Module, noise_indices: list[int] | None = None, noise_constraint: torch.nn.Module | None = None)
+
+   Bases: :py:obj:`TransformedNoise`, :py:obj:`gpytorch.likelihoods.noise_models.HeteroskedasticNoise`
+
+
+   A heteroskedastic noise model that accounts for target
+   transformations.
+
+   Heteroskedastic noise is data-dependent: it allows for a different
+   noise variance for each data point. This model combines
+   heteroskedastic noise modeling with a transformation-aware
+   mechanism, allowing it to model noise in the transformed target
+   space rather than the original.
+
+   Heteroskedastic noise is useful when the variability of observations
+   depends on the input, such as in sensor readings, financial data, or
+   datasets with heterogeneity across the input space. A transformed
+   noise model is appropriate when it is trained on transformed
+   outputs, and noise must be adjusted accordingly.
+
+   Inherits from both:
+   - `TransformedNoise`: Handles transformations on noise in the target
+   space.
+   - `HeteroskedasticNoise`: Models variance as a function of inputs.
+
+   .. attribute:: transformer
+
+      A transformation object (e.g., log, standard scaler, etc.) that
+      defines the transformation applied to the target variable.
+
+      :type: Transformer
+
+   .. attribute:: noise_model
+
+      A PyTorch module that outputs noise variances, typically
+      conditioned on the input features.
+
+      :type: nn.Module
+
+   .. attribute:: noise_indices
+
+      Optional list of indices indicating which input dimensions are
+      used to model the noise. If None, all inputs are used.
+
+      :type: list[int] or None
+
+   .. attribute:: noise_constraint
+
+      Optional constraint to ensure valid noise variance
+      (e.g., positivity).
+
+      :type: nn.Module or None
+
+
+   .. py:method:: forward(*params: Any, y: torch.Tensor | None = None, batch_shape: torch.Size | None = None, shape: torch.Size | None = None, noise: torch.Tensor | None = None, **kwargs: Any) -> linear_operator.operators.DiagLinearOperator
+
+      Computes transformed heteroskedastic noise as a linear
+      operator.
+
+      Computes input-dependent noise, applies transformation
+      correction, and returns result as a diagonal linear operator.
+
+      :Parameters: * **\*params** (*Any*) -- Parameters passed to the underlying noise model.
+                   * **y** (*torch.Tensor, optional*) -- Target values used to transform the noise variance. Required
+                     if the transformation is data-dependent.
+                   * **batch_shape** (*torch.Size, optional*) -- The desired batch shape of the output operator.
+                   * **shape** (*torch.Size, optional*) -- The desired shape of the output covariance matrix.
+                   * **noise** (*torch.Tensor, optional*) -- Optional fixed noise tensor to override the learned model
+                     output.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to internal components.
+
+      :returns: A diagonal linear operator representing the transformed
+                noise covariance matrix. This is useful in Gaussian process
+                models where efficient matrix representations are needed.
+      :rtype: DiagLinearOperator
+
+
+
+.. py:class:: TransformedFixedGaussianNoise(transformer: obsweatherscale.transformations.transformer.Transformer, obs_noise_var: torch.Tensor | int | float = 1.0)
+
+   Bases: :py:obj:`TransformedNoise`, :py:obj:`gpytorch.likelihoods.noise_models.FixedGaussianNoise`
+
+
+   A fixed Gaussian noise model that accounts for target
+   transformations.
+
+   This model assumes fixed (non-trainable) Gaussian noise across all
+   inputs, but ensures that the noise is properly transformed to
+   reflect the transformed target space.
+
+   Fixed Gaussian noise is appropriate when the observation noise is
+   known ahead of time or externally provided (e.g., sensor precision),
+   and does not vary with input. A transformed noise model is useful
+   when the model is trained on transformed targets, and noise must be
+   adjusted accordingly.
+
+   Inherits from:
+   - `TransformedNoise`: Applies the appropriate correction for target
+   transformations.
+   - `FixedGaussianNoise`: Represents fixed (non-trainable) Gaussian
+   noise variance across all inputs.
+
+   .. attribute:: transformer
+
+      A transformation object (e.g., log, standard scaler, etc.) that
+      defines the transformation applied to the target variable.
+
+      :type: Transformer
+
+
+   .. py:method:: forward(*params: Any, y: torch.Tensor | None = None, shape: torch.Size | None = None, noise: torch.Tensor | None = None, **kwargs: Any) -> linear_operator.operators.DiagLinearOperator
+
+      Computes transformed fixed Gaussian noise as a linear
+      operator.
+
+      :Parameters: * **\*params** (*Any*) -- Parameters passed to the underlying noise model.
+                   * **y** (*torch.Tensor, optional*) -- Target values used to transform the noise variance. Required
+                     if the transformation is data-dependent.
+                   * **shape** (*torch.Size, optional*) -- The desired shape of the output covariance matrix.
+                   * **noise**
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments passed to internal components.
+
+      :returns: A diagonal linear operator representing the transformed
+                noise covariance matrix. This is useful in Gaussian process
+                models where efficient matrix representations are needed.
+      :rtype: DiagLinearOperator
+
+
+
+   .. py:method:: extra_repr() -> str
+
+      Returns a string representation of the noise value.
+
+      :returns: A formatted string showing the stored fixed noise value.
+      :rtype: str
+
+
+
+.. py:class:: Logger
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   Abstract base class for training loggers.
+
+   Subclasses must implement :meth:`log_params`, :meth:`log_metrics`,
+   and :meth:`close`.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+      :abstractmethod:
+
+
+      Log training hyperparameters and configuration.
+
+      :Parameters: **params** (*dict[str, Any]*) -- Dictionary of hyperparameter names and values.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int) -> None
+      :abstractmethod:
+
+
+      Log metrics for a single training iteration.
+
+      :Parameters: * **metrics** (*dict[str, float]*) -- Dictionary of metric names and values.
+                   * **step** (*int*) -- Current iteration number (1-based).
+
+
+
+   .. py:method:: close() -> None
+      :abstractmethod:
+
+
+      Finalize and release any resources held by the logger.
+
+
+
+.. py:class:: TerminalLogger(name: str = 'obsweatherscale.training', level: int = logging.INFO)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that writes training progress via Python's :mod:`logging`.
+
+   :Parameters: * **name** (*str, default='obsweatherscale.training'*) -- Name of the Python logger instance.
+                * **level** (*int, default=logging.INFO*) -- Logging level.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Log hyperparameters to the terminal.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int) -> None
+
+      Log per-iteration metrics to the terminal.
+
+
+
+   .. py:method:: close() -> None
+
+      No-op for terminal logging.
+
+
+
+.. py:class:: CSVLogger(filepath: pathlib.Path | str)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that writes per-iteration metrics to a CSV file.
+
+   Hyperparameters are stored in a JSON sidecar file with the same
+   stem (e.g. ``log.csv`` → ``log.json``).
+
+   :Parameters: **filepath** (*Path or str*) -- Path to the CSV output file.  Parent directories are created
+                automatically.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Write hyperparameters to a JSON sidecar file.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int) -> None
+
+      Append one row of metrics to the CSV file.
+
+
+
+   .. py:method:: close() -> None
+
+      No-op: the CSV file is opened and closed within each :meth:`log_metrics` call.
+
+
+
+.. py:class:: MLflowLogger(experiment_name: str | None = None, run_name: str | None = None)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that records parameters and metrics to MLflow.
+
+   Requires the optional ``mlflow`` package.  If no active MLflow run
+   exists when the logger is constructed, a new run is started
+   automatically and ended on :meth:`close`.
+
+   :Parameters: * **experiment_name** (*str, optional*) -- MLflow experiment name.  If provided,
+                  :func:`mlflow.set_experiment` is called.
+                * **run_name** (*str, optional*) -- Name for the MLflow run (used only when a new run is started).
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Log hyperparameters to the active MLflow run.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int) -> None
+
+      Log per-iteration metrics to the active MLflow run.
+
+
+
+   .. py:method:: close() -> None
+
+      End the MLflow run if it was started by this logger.
+
+
+
+.. py:class:: NeuralMean(net: torch.nn.Module)
+
+   Bases: :py:obj:`gpytorch.means.Mean`
+
+
+   Neural Mean class.
+
+   Uses a neural network to compute the mean of the Gaussian process
+   prior, starting from the input data.
+
+
+   .. py:attribute:: net
+
+
+   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
+
+
+.. py:class:: GPModel(mean_module: gpytorch.means.Mean, covar_module: gpytorch.kernels.Kernel, likelihood: gpytorch.likelihoods._GaussianLikelihoodBase, train_x: torch.Tensor, train_y: torch.Tensor)
+
+   Bases: :py:obj:`gpytorch.models.ExactGP`
+
+
+   Gaussian Process model class.
+
+
+   .. py:attribute:: mean_module
+
+
+   .. py:attribute:: covar_module
+
+
+   .. py:method:: forward(x: torch.Tensor, **kwargs: Any) -> gpytorch.distributions.MultivariateNormal
+
+
+   .. py:method:: predict(x_context: torch.Tensor, y_context: torch.Tensor, x_target: torch.Tensor | None = None) -> gpytorch.distributions.MultivariateNormal
+
+
+   .. py:method:: predict_prior(x_context: torch.Tensor, y_context: torch.Tensor) -> gpytorch.distributions.MultivariateNormal
+
+
+   .. py:method:: predict_posterior(x_context: torch.Tensor, y_context: torch.Tensor, x_target: torch.Tensor) -> gpytorch.distributions.MultivariateNormal
+
+
+.. py:class:: MLP(dimensions: list[int], output_activation_fct: Callable | None = None, active_dims: list[int] | None = None)
+
+   Bases: :py:obj:`torch.nn.Module`
+
+
+   Multi-Layer Perceptron (MLP) class.
+
+   This class implements a simple multi-layer perceptron with ReLU
+   activation functions and an optional output activation function.
+
+
+   .. py:attribute:: mlp
+
+
+   .. py:attribute:: output_activation_fct
+      :value: None
+
+
+
+   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
+
+
+.. py:class:: Trainer(model: gpytorch.models.ExactGP, likelihood: gpytorch.likelihoods._GaussianLikelihoodBase, train_loss_fct: Callable, val_loss_fct: Callable, device: torch.device, optimizer: torch.optim.optimizer.Optimizer)
+
+   Trainer class for Gaussian Process models.
+
+
+   .. py:attribute:: model
+
+
+   .. py:attribute:: best_model
+
+
+   .. py:attribute:: likelihood
+
+
+   .. py:attribute:: train_loss_fct
+
+
+   .. py:attribute:: val_loss_fct
+
+
+   .. py:attribute:: device
+
+
+   .. py:attribute:: optimizer
+
+
+   .. py:method:: fit(train: obsweatherscale.data.GPDataset, val_context: obsweatherscale.data.GPDataset, val_target: obsweatherscale.data.GPDataset, batch_size: int, n_iter: int, random_masking: bool = True, seed: int | None = None, nan_policy: str = 'fill', prec_size: int = 100, output_dir: pathlib.Path | None = None, verbose: bool = True, loggers: list[obsweatherscale.logger.Logger] | None = None) -> tuple[gpytorch.models.ExactGP, dict[str, list]]
+
+      Train the Gaussian Process model.
+
+      :Parameters: * **train** (*GPDataset*) -- The training dataset.
+                   * **val_context** (*GPDataset*) -- The validation dataset (context).
+                   * **val_target** (*GPDataset*) -- The validation dataset (target).
+                   * **batch_size** (*int*) -- The size of the batches for training.
+                   * **n_iter** (*int*) -- The number of iterations for training.
+                   * **random_masking** (*bool, default=True*) -- Whether to apply random masking to the training data.
+                   * **seed** (*int, optional, default=None*) -- The random seed for reproducibility.
+                   * **nan_policy** (*str, default='fill'*) --
+
+                     The policy for handling NaN values in the data. Options are
+                         - 'mask': removes all data points where the y is nan
+                         - 'fill': replaces nan values and keeps data points
+                   * **prec_size** (*int, default=100*) -- The size of the preconditioner for the optimizer.
+                   * **output_dir** (*Path, optional, default=None*) -- The directory to save the model checkpoints. If None, the
+                     model does not get saved during training.
+                   * **verbose** (*bool, default=True*) -- If True, prints training status (loss function values, iter,
+                     time)
+                   * **loggers** (*Sequence of TrainingLogger, optional, default=None*) -- Sequence of :class:`TrainingLogger` instances (e.g.
+                     :class:`TerminalLogger`, :class:`CSVLogger`,
+                     :class:`MLflowLogger`).  Each logger receives
+                     hyperparameters once before training and per-iteration
+                     metrics.  When *None*, no additional logging is performed.
+
+      :returns: * **model** (*ExactGP*) -- The trained Gaussian Process model.
+                * **train_progression** (*dict[str, list]*) -- Dictionary with training progression metrics with keys:
+                  - 'iter': List of iteration numbers
+                  - 'train loss': List of training loss values
+                  - 'val loss': List of validation loss values
+                  - 'train time': List of training step durations (seconds)
+                  - 'iter time': List of total iteration durations (seconds)
+
+
+
+.. py:function:: crps_normal(obs: torch.Tensor, mu: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor
+
+   Wrapper to compute the Continuous Ranked Probability Score (CRPS)
+   for a Normal distribution.
+
+   :Parameters: * **obs** (*torch.Tensor*) -- Observed values.
+                * **mu** (*torch.Tensor*) -- Mean of the Normal distribution.
+                * **sigma** (*torch.Tensor*) -- Standard deviation of the Normal distribution.
+
+   :returns: The CRPS for the normal distribution, averaged across all
+             observations.
+   :rtype: torch.Tensor
+
+   .. rubric:: Notes
+
+   The CRPS is a proper scoring rule that measures the compatibility
+   between a probability distribution and an observation. It's defined
+   as the integrated squared difference between the CDF of the forecast
+   distribution and the empirical CDF of the observation.
+
+   For a normal distribution, the CRPS has the closed form:
+   CRPS(N(μ, σ), y) =
+       σ * [y_norm * (2*Φ(y_norm) - 1) + 2*φ(y_norm) - 1/√π]
+   where y_norm = (y - μ)/σ, Φ is the CDF and φ is the PDF of the
+   standard normal.
+
+
+.. py:function:: make_crps_loss(likelihood: gpytorch.likelihoods._GaussianLikelihoodBase | None = None) -> Callable[[gpytorch.distributions.MultivariateNormal, torch.Tensor], torch.Tensor]
+
+   Wrapper to create a CRPS loss function for normal distributions
+   that handles missing values and optionally transforms the
+   distribution.
+
+   :Parameters: **likelihood** (*_GaussianLikelihoodBase or None, optional*) -- A Gaussian likelihood transformation to apply to the
+                distribution. If provided, transforms the distribution before
+                computing the CRPS.
+
+   :returns: A function that computes the CRPS loss between a multivariate
+             Normal distribution and observed values.
+   :rtype: Callable
+
+   .. rubric:: Notes
+
+   The returned loss function handles missing values by masking them
+   and treats them specially in the computation. For missing values,
+   the parameters are set to produce a neutral contribution to the loss.
+
+
+.. py:function:: make_mll_loss(mll: gpytorch.ExactMarginalLogLikelihood) -> Callable[[gpytorch.distributions.MultivariateNormal, torch.Tensor], torch.Tensor]
+
+   Wrapper to create a negative log-likelihood loss function
+   of a multivariate normal distribution, optionally transformed by a
+   likelihood function.
+
+   :Parameters: **mll** (*ExactMarginalLogLikelihood*) -- The marginal log likelihood object that computes the log
+                likelihood of the observations given the distribution.
+
+   :returns: A function that computes the negative log likelihood loss
+             between a multivariate normal distribution and observed values.
+   :rtype: Callable
+
+   .. rubric:: Notes
+
+   The returned loss function negates and averages the log likelihood
+   to create a loss suitable for minimization in optimization problems.
+
+   :raises TypeError: If the mll doesn't return a torch.Tensor.
+
+
+.. py:class:: QuantileFittedTransformer(a: float = 4.66628594, b: float = 0.73680252, c: float = 0.07385268)
+
+   Bases: :py:obj:`obsweatherscale.transformations.transformer.Transformer`
+
+
+   QuantileFittedTransformer class.
+
+   This class implements a quantile fitted transformation for continuous
+   functions. It approximates the quantile transform using a continuous
+   function defined by the formula: f(y) = log(a / y - c) / b, where
+   a, b, and c are parameters of the transformation. The inverse
+   transformation is defined by the formula:
+   f^-1(z) = a / (c + exp(-b * z)).
+
+
+   .. py:attribute:: a
+      :value: 4.66628594
+
+
+
+   .. py:attribute:: b
+      :value: 0.73680252
+
+
+
+   .. py:attribute:: c
+      :value: 0.07385268
+
+
+
+   .. py:property:: description
+      :type: str
+
+
+      Return a short description of the quantile fitted transformation.
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+
+      Apply quantile fitted transformation to input data.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+
+      Apply inverse quantile fitted transformation to input data.
+
+
+
+   .. py:method:: transform_derivative(y: torch.Tensor) -> torch.Tensor
+
+      Compute derivative of quantile fitted transformation.
+
+
+
+   .. py:method:: inv_transform_derivative(z: torch.Tensor) -> torch.Tensor
+
+      Compute derivative of inverse quantile fitted transformation.
+
+
+
+   .. py:method:: noise_transform(data: torch.Tensor) -> torch.Tensor
+
+      Apply noise transformation to input data.
+
+
+
+.. py:class:: Standardizer(data: torch.Tensor, variables: tuple[int, Ellipsis] | int | None = None)
+
+   Standardization transformation class.
+
+
+   .. py:property:: description
+      :type: str
+
+
+      Return a short description of the sandard normalization.
+
+
+   .. py:method:: fit(data: torch.Tensor, variables: tuple[int, Ellipsis] | int | None = None) -> None
+
+      Fit standardization transformation to input data.
+
+      :Parameters: * **data** (*torch.Tensor*) -- The data to be standardized.
+                   * **variables** (*tuple[int, ...] or int, optional*) -- The dimensions to be used for standardization.
+                     If None, all dimensions will be used.
+
+
+
+   .. py:method:: transform(y: torch.Tensor, copy: bool = False) -> torch.Tensor
+
+      Apply standardization transformation to input data.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor, copy: bool = False) -> torch.Tensor
+
+      Apply inverse standardization transformation to input data.
+
+
+
+.. py:class:: Transformer
+
+   .. py:property:: description
+      :type: str
+
+      :abstractmethod:
+
+
+      Return a short description of the transformation.
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply transformation to the input data.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply inverse transformation to input data.
+
+
+
+   .. py:method:: noise_transform(data: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply noise transformation to input data.
+
+
+
