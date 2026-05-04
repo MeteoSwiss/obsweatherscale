@@ -229,9 +229,8 @@ class TestMLflowLogger:
         mock_mlflow: MagicMock,
         experiment_name: str | None = None,
         run_name: str | None = None,
-    ):
+    ) -> MLflowLogger:
         """Instantiate MLflowLogger with mlflow patched."""
-
 
         with patch.dict("sys.modules", {"mlflow": mock_mlflow}):
             # Re-import to pick up the patched module inside __init__
