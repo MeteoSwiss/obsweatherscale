@@ -52,7 +52,9 @@ def crps_normal(
 
     # Compute CRPS
     term1 = (obs - mu) * (2 * cdf_obs - 1)
-    term2 = 2 * sigma * pdf_obs - 1 / torch.sqrt(torch.tensor(torch.pi))
+    term2 = sigma * (
+        2 * sigma * pdf_obs - 1 / torch.sqrt(torch.tensor(torch.pi))
+    )
     crps = term1 + term2
 
     return crps.mean()
