@@ -1,0 +1,43 @@
+obsweatherscale.models.gp_model
+===============================
+
+.. py:module:: obsweatherscale.models.gp_model
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.models.gp_model.GPModel
+
+
+Module Contents
+---------------
+
+.. py:class:: GPModel(mean_module: gpytorch.means.Mean, covar_module: gpytorch.kernels.Kernel, likelihood: gpytorch.likelihoods._GaussianLikelihoodBase, train_x: torch.Tensor, train_y: torch.Tensor)
+
+   Bases: :py:obj:`gpytorch.models.ExactGP`
+
+
+   Gaussian Process model class.
+
+
+   .. py:attribute:: mean_module
+
+
+   .. py:attribute:: covar_module
+
+
+   .. py:method:: forward(x: torch.Tensor, **kwargs: Any) -> gpytorch.distributions.MultivariateNormal
+
+
+   .. py:method:: predict(x_context: torch.Tensor, y_context: torch.Tensor, x_target: torch.Tensor | None = None) -> gpytorch.distributions.MultivariateNormal
+
+
+   .. py:method:: predict_prior(x_context: torch.Tensor, y_context: torch.Tensor) -> gpytorch.distributions.MultivariateNormal
+
+
+   .. py:method:: predict_posterior(x_context: torch.Tensor, y_context: torch.Tensor, x_target: torch.Tensor) -> gpytorch.distributions.MultivariateNormal
+
+

@@ -1,0 +1,80 @@
+obsweatherscale.training.trainer
+================================
+
+.. py:module:: obsweatherscale.training.trainer
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.training.trainer.Trainer
+
+
+Module Contents
+---------------
+
+.. py:class:: Trainer(model: gpytorch.models.ExactGP, likelihood: gpytorch.likelihoods._GaussianLikelihoodBase, train_loss_fct: Callable, val_loss_fct: Callable, device: torch.device, optimizer: torch.optim.optimizer.Optimizer)
+
+   Trainer class for Gaussian Process models.
+
+
+   .. py:attribute:: model
+
+
+   .. py:attribute:: best_model
+
+
+   .. py:attribute:: likelihood
+
+
+   .. py:attribute:: train_loss_fct
+
+
+   .. py:attribute:: val_loss_fct
+
+
+   .. py:attribute:: device
+
+
+   .. py:attribute:: optimizer
+
+
+   .. py:method:: fit(train: obsweatherscale.data.GPDataset, val_context: obsweatherscale.data.GPDataset, val_target: obsweatherscale.data.GPDataset, batch_size: int, n_iter: int, random_masking: bool = True, seed: int | None = None, nan_policy: str = 'fill', prec_size: int = 100, output_dir: pathlib.Path | None = None, verbose: bool = True, loggers: list[obsweatherscale.logger.Logger] | None = None) -> tuple[gpytorch.models.ExactGP, dict[str, list]]
+
+      Train the Gaussian Process model.
+
+      :Parameters: * **train** (*GPDataset*) -- The training dataset.
+                   * **val_context** (*GPDataset*) -- The validation dataset (context).
+                   * **val_target** (*GPDataset*) -- The validation dataset (target).
+                   * **batch_size** (*int*) -- The size of the batches for training.
+                   * **n_iter** (*int*) -- The number of iterations for training.
+                   * **random_masking** (*bool, default=True*) -- Whether to apply random masking to the training data.
+                   * **seed** (*int, optional, default=None*) -- The random seed for reproducibility.
+                   * **nan_policy** (*str, default='fill'*) --
+
+                     The policy for handling NaN values in the data. Options are
+                         - 'mask': removes all data points where the y is nan
+                         - 'fill': replaces nan values and keeps data points
+                   * **prec_size** (*int, default=100*) -- The size of the preconditioner for the optimizer.
+                   * **output_dir** (*Path, optional, default=None*) -- The directory to save the model checkpoints. If None, the
+                     model does not get saved during training.
+                   * **verbose** (*bool, default=True*) -- If True, prints training status (loss function values, iter,
+                     time)
+                   * **loggers** (*Sequence of TrainingLogger, optional, default=None*) -- Sequence of :class:`TrainingLogger` instances (e.g.
+                     :class:`TerminalLogger`, :class:`CSVLogger`,
+                     :class:`MLflowLogger`).  Each logger receives
+                     hyperparameters once before training and per-iteration
+                     metrics.  When *None*, no additional logging is performed.
+
+      :returns: * **model** (*ExactGP*) -- The trained Gaussian Process model.
+                * **train_progression** (*dict[str, list]*) -- Dictionary with training progression metrics with keys:
+                  - 'iter': List of iteration numbers
+                  - 'train loss': List of training loss values
+                  - 'val loss': List of validation loss values
+                  - 'train time': List of training step durations (seconds)
+                  - 'iter time': List of total iteration durations (seconds)
+
+
+

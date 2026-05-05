@@ -1,0 +1,39 @@
+obsweatherscale.models.mlp
+==========================
+
+.. py:module:: obsweatherscale.models.mlp
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.models.mlp.MLP
+
+
+Module Contents
+---------------
+
+.. py:class:: MLP(dimensions: list[int], output_activation_fct: Callable | None = None, active_dims: list[int] | None = None)
+
+   Bases: :py:obj:`torch.nn.Module`
+
+
+   Multi-Layer Perceptron (MLP) class.
+
+   This class implements a simple multi-layer perceptron with ReLU
+   activation functions and an optional output activation function.
+
+
+   .. py:attribute:: mlp
+
+
+   .. py:attribute:: output_activation_fct
+      :value: None
+
+
+
+   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
+
+

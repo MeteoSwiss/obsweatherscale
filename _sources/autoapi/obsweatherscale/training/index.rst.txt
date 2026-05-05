@@ -1,0 +1,169 @@
+obsweatherscale.training
+========================
+
+.. py:module:: obsweatherscale.training
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/training/losses/index
+   /autoapi/obsweatherscale/training/trainer/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.training.Trainer
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   obsweatherscale.training.crps_normal
+   obsweatherscale.training.make_crps_loss
+   obsweatherscale.training.make_mll_loss
+
+
+Package Contents
+----------------
+
+.. py:class:: Trainer(model: gpytorch.models.ExactGP, likelihood: gpytorch.likelihoods._GaussianLikelihoodBase, train_loss_fct: Callable, val_loss_fct: Callable, device: torch.device, optimizer: torch.optim.optimizer.Optimizer)
+
+   Trainer class for Gaussian Process models.
+
+
+   .. py:attribute:: model
+
+
+   .. py:attribute:: best_model
+
+
+   .. py:attribute:: likelihood
+
+
+   .. py:attribute:: train_loss_fct
+
+
+   .. py:attribute:: val_loss_fct
+
+
+   .. py:attribute:: device
+
+
+   .. py:attribute:: optimizer
+
+
+   .. py:method:: fit(train: obsweatherscale.data.GPDataset, val_context: obsweatherscale.data.GPDataset, val_target: obsweatherscale.data.GPDataset, batch_size: int, n_iter: int, random_masking: bool = True, seed: int | None = None, nan_policy: str = 'fill', prec_size: int = 100, output_dir: pathlib.Path | None = None, verbose: bool = True, loggers: list[obsweatherscale.logger.Logger] | None = None) -> tuple[gpytorch.models.ExactGP, dict[str, list]]
+
+      Train the Gaussian Process model.
+
+      :Parameters: * **train** (*GPDataset*) -- The training dataset.
+                   * **val_context** (*GPDataset*) -- The validation dataset (context).
+                   * **val_target** (*GPDataset*) -- The validation dataset (target).
+                   * **batch_size** (*int*) -- The size of the batches for training.
+                   * **n_iter** (*int*) -- The number of iterations for training.
+                   * **random_masking** (*bool, default=True*) -- Whether to apply random masking to the training data.
+                   * **seed** (*int, optional, default=None*) -- The random seed for reproducibility.
+                   * **nan_policy** (*str, default='fill'*) --
+
+                     The policy for handling NaN values in the data. Options are
+                         - 'mask': removes all data points where the y is nan
+                         - 'fill': replaces nan values and keeps data points
+                   * **prec_size** (*int, default=100*) -- The size of the preconditioner for the optimizer.
+                   * **output_dir** (*Path, optional, default=None*) -- The directory to save the model checkpoints. If None, the
+                     model does not get saved during training.
+                   * **verbose** (*bool, default=True*) -- If True, prints training status (loss function values, iter,
+                     time)
+                   * **loggers** (*Sequence of TrainingLogger, optional, default=None*) -- Sequence of :class:`TrainingLogger` instances (e.g.
+                     :class:`TerminalLogger`, :class:`CSVLogger`,
+                     :class:`MLflowLogger`).  Each logger receives
+                     hyperparameters once before training and per-iteration
+                     metrics.  When *None*, no additional logging is performed.
+
+      :returns: * **model** (*ExactGP*) -- The trained Gaussian Process model.
+                * **train_progression** (*dict[str, list]*) -- Dictionary with training progression metrics with keys:
+                  - 'iter': List of iteration numbers
+                  - 'train loss': List of training loss values
+                  - 'val loss': List of validation loss values
+                  - 'train time': List of training step durations (seconds)
+                  - 'iter time': List of total iteration durations (seconds)
+
+
+
+.. py:function:: crps_normal(obs: torch.Tensor, mu: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor
+
+   Wrapper to compute the Continuous Ranked Probability Score (CRPS)
+   for a Normal distribution.
+
+   :Parameters: * **obs** (*torch.Tensor*) -- Observed values.
+                * **mu** (*torch.Tensor*) -- Mean of the Normal distribution.
+                * **sigma** (*torch.Tensor*) -- Standard deviation of the Normal distribution.
+
+   :returns: The CRPS for the normal distribution, averaged across all
+             observations.
+   :rtype: torch.Tensor
+
+   .. rubric:: Notes
+
+   The CRPS is a proper scoring rule that measures the compatibility
+   between a probability distribution and an observation. It's defined
+   as the integrated squared difference between the CDF of the forecast
+   distribution and the empirical CDF of the observation.
+
+   For a normal distribution, the CRPS has the closed form:
+   CRPS(N(μ, σ), y) =
+       σ * [y_norm * (2*Φ(y_norm) - 1) + 2*φ(y_norm) - 1/√π]
+   where y_norm = (y - μ)/σ, Φ is the CDF and φ is the PDF of the
+   standard normal.
+
+
+.. py:function:: make_crps_loss(likelihood: gpytorch.likelihoods._GaussianLikelihoodBase | None = None) -> Callable[[gpytorch.distributions.MultivariateNormal, torch.Tensor], torch.Tensor]
+
+   Wrapper to create a CRPS loss function for normal distributions
+   that handles missing values and optionally transforms the
+   distribution.
+
+   :Parameters: **likelihood** (*_GaussianLikelihoodBase or None, optional*) -- A Gaussian likelihood transformation to apply to the
+                distribution. If provided, transforms the distribution before
+                computing the CRPS.
+
+   :returns: A function that computes the CRPS loss between a multivariate
+             Normal distribution and observed values.
+   :rtype: Callable
+
+   .. rubric:: Notes
+
+   The returned loss function handles missing values by masking them
+   and treats them specially in the computation. For missing values,
+   the parameters are set to produce a neutral contribution to the loss.
+
+
+.. py:function:: make_mll_loss(mll: gpytorch.ExactMarginalLogLikelihood) -> Callable[[gpytorch.distributions.MultivariateNormal, torch.Tensor], torch.Tensor]
+
+   Wrapper to create a negative log-likelihood loss function
+   of a multivariate normal distribution, optionally transformed by a
+   likelihood function.
+
+   :Parameters: **mll** (*ExactMarginalLogLikelihood*) -- The marginal log likelihood object that computes the log
+                likelihood of the observations given the distribution.
+
+   :returns: A function that computes the negative log likelihood loss
+             between a multivariate normal distribution and observed values.
+   :rtype: Callable
+
+   .. rubric:: Notes
+
+   The returned loss function negates and averages the log likelihood
+   to create a loss suitable for minimization in optimization problems.
+
+   :raises TypeError: If the mll doesn't return a torch.Tensor.
+
+
