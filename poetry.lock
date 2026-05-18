@@ -1277,25 +1277,26 @@ files = [
 
 [[package]]
 name = "gpytorch"
-version = "1.15.2"
+version = "1.13"
 description = "An implementation of Gaussian Processes in Pytorch"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "gpytorch-1.15.2-py3-none-any.whl", hash = "sha256:2112fdc7c0c0bf56a7f2444663cfc80fdfc3e19724399d6303a83d8efdd71e9e"},
-    {file = "gpytorch-1.15.2.tar.gz", hash = "sha256:380625e93f851b85f772b25c5fb0a6c6d2e3eb2ef667f1e566ab4f95b8775361"},
+    {file = "gpytorch-1.13-py3-none-any.whl", hash = "sha256:97da5b07a524952612e8d265ec89d4a5ec0ef0587e76d6178961ce26ef9679d1"},
+    {file = "gpytorch-1.13.tar.gz", hash = "sha256:f4a488633a2a7a4ab37d12553d1d1dd39690043dbceef14ca428b7d5f89f73ba"},
 ]
 
 [package.dependencies]
-linear_operator = ">=0.6.1"
+jaxtyping = "0.2.19"
+linear-operator = ">=0.5.3"
 mpmath = ">=0.19,<=1.3"
 scikit-learn = "*"
 scipy = ">=1.6.0"
 
 [package.extras]
-dev = ["pre-commit", "setuptools_scm", "twine", "ufmt"]
-docs = ["ipykernel (<=6.17.1)", "ipython (<=8.6.0)", "lxml_html_clean", "m2r2 (<=0.3.3.post2)", "nbclient (<=0.7.3)", "nbformat (<=5.8.0)", "nbsphinx (<=0.9.1)", "platformdirs (<=3.2.0)", "setuptools_scm (<=7.1.0)", "sphinx (<=6.2.1)", "sphinx_autodoc_typehints (<=1.23.0)", "sphinx_rtd_theme (<0.5)"]
+dev = ["pre-commit", "setuptools-scm", "twine", "ufmt"]
+docs = ["ipykernel (<=6.17.1)", "ipython (<=8.6.0)", "lxml-html-clean", "m2r2 (<=0.3.3.post2)", "nbclient (<=0.7.3)", "nbformat (<=5.8.0)", "nbsphinx (<=0.9.1)", "platformdirs (<=3.2.0)", "setuptools-scm (<=7.1.0)", "sphinx (<=6.2.1)", "sphinx-autodoc-typehints (<=1.23.0)", "sphinx-rtd-theme (<0.5)", "uncompyle6 (<=3.9.0)"]
 examples = ["ipython", "jupyter", "matplotlib", "scipy", "torchvision", "tqdm"]
 keops = ["pykeops (>=1.1.1)"]
 pyro = ["pyro-ppl (>=1.8)"]
@@ -1563,6 +1564,23 @@ files = [
 ]
 
 [[package]]
+name = "jaxtyping"
+version = "0.2.19"
+description = "Type annotations and runtime checking for shape and dtype of JAX arrays, and PyTrees."
+optional = false
+python-versions = "~=3.8"
+groups = ["main"]
+files = [
+    {file = "jaxtyping-0.2.19-py3-none-any.whl", hash = "sha256:651352032799d422987e783fd1b77699b53c3bb28ffa644bbca5f75ec4fbb843"},
+    {file = "jaxtyping-0.2.19.tar.gz", hash = "sha256:21ff4c3caec6781cadfe980b019dde856c1011e17d11dfe8589298040056325a"},
+]
+
+[package.dependencies]
+numpy = ">=1.20.0"
+typeguard = ">=2.13.3"
+typing-extensions = ">=3.7.4.1"
+
+[[package]]
 name = "jinja2"
 version = "3.1.6"
 description = "A very fast and expressive template engine."
@@ -1822,24 +1840,26 @@ files = [
 
 [[package]]
 name = "linear-operator"
-version = "0.6.1"
+version = "0.5.3"
 description = "A linear operator implementation, primarily designed for finite-dimensional positive definite operators (i.e. kernel matrices)."
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "linear_operator-0.6.1-py3-none-any.whl", hash = "sha256:a5981c1fcda08df3a210dffb6e8019b4751f4afaf3ffc822c24eaaf56b11eed9"},
-    {file = "linear_operator-0.6.1.tar.gz", hash = "sha256:3fba49a8080d16f822a5d870f462279cd6afbcf4ed670f4511b38fad96f61831"},
+    {file = "linear_operator-0.5.3-py3-none-any.whl", hash = "sha256:908df4e64e25312edfa5502b30b71df97383cb604a13f420921030ae40c47838"},
+    {file = "linear_operator-0.5.3.tar.gz", hash = "sha256:16122661cd8b8a89ea965c845f650affe0f688f315893bb8dfa1182f148a1a41"},
 ]
 
 [package.dependencies]
+jaxtyping = "0.2.19"
+mpmath = ">=0.19,<=1.3"
 scipy = "*"
-torch = ">=2.0"
+torch = ">=1.11"
 
 [package.extras]
-dev = ["pre-commit", "setuptools_scm", "twine", "ufmt"]
-docs = ["myst-parser", "setuptools_scm", "six", "sphinx", "sphinx-autodoc-typehints", "sphinx_rtd_theme"]
-test = ["flake8 (==5.0.4)", "flake8-print (==5.0.0)", "pytest"]
+dev = ["pre-commit", "setuptools-scm", "twine", "ufmt"]
+docs = ["myst-parser", "setuptools-scm", "six", "sphinx", "sphinx-autodoc-typehints", "sphinx-rtd-theme", "uncompyle6 (<=3.9.0)"]
+test = ["flake8 (==5.0.4)", "flake8-print (==5.0.0)", "pytest", "typeguard (>=2.13.3,<2.14.0)"]
 
 [[package]]
 name = "llvmlite"
@@ -4299,6 +4319,21 @@ tests = ["autopep8", "isort", "llnl-hatchet", "numpy", "pytest", "pytest-forked"
 tutorials = ["matplotlib", "pandas", "tabulate"]
 
 [[package]]
+name = "typeguard"
+version = "4.5.2"
+description = "Run-time type checker for Python"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "typeguard-4.5.2-py3-none-any.whl", hash = "sha256:fcf9de18bd945cdb4c7b996e12b4c51ce83f92f191314a6d7cf1739586ec98cf"},
+    {file = "typeguard-4.5.2.tar.gz", hash = "sha256:5a16dcac23502039299c97c8941651bc33d7ea8cc4b2f7d6bbb1b528f6eea423"},
+]
+
+[package.dependencies]
+typing_extensions = ">=4.14.0"
+
+[[package]]
 name = "typing-extensions"
 version = "4.15.0"
 description = "Backported and Experimental Type Hints for Python 3.9+"
@@ -4618,4 +4653,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "3f0e5a198d40f67250d34cfb3d07edce672611832405d1e2ec18f11dd3a7f22d"
+content-hash = "9883d8e5c5bf088f0a95e61fee194ba1625a1bd9ae81bbe50c92588f3c719f6b"
