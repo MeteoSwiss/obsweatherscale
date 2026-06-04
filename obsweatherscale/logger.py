@@ -129,13 +129,16 @@ class CSVLogger(Logger):
             writer.writerow([step, *metrics.values()])
 
     def close(self) -> None:
-        """No-op: the CSV file is opened and closed within each :meth:`log_metrics` call."""
+        """No-op: the CSV file is opened and closed within each
+        :meth:`log_metrics` call.
+        """
 
 
 class MLflowLogger(Logger):
-    """Logger that records parameters and metrics to MLflow.
+    """Logger that records parameters and metrics to MLflow in
+    optionally nested runs.
 
-    Requires the optional ``mlflow`` package.  If no active MLflow run
+    Requires the optional ``mlflow`` package. If no active MLflow run
     exists when the logger is constructed, a new run is started
     automatically and ended on :meth:`close`.
 
