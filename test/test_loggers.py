@@ -218,10 +218,19 @@ class TestCSVLogger:
 class TestMLflowLogger:
     """Tests for MLflowLogger using a fully mocked mlflow module."""
 
-    def _make_mlflow_mock(self, active_run: bool = False) -> MagicMock:
+    def _make_mlflow_mock(
+        self,
+        active_run: bool = False,
+        existing_runs: list | None = None,
+    ) -> MagicMock:
         """Return a mock mlflow module."""
         mock = MagicMock()
         mock.active_run.return_value = MagicMock() if active_run else None
+
+        if existing_runs is None:
+            existing_runs = []
+        mock.MlflowClient.return_value.search_runs.return_value = existing_runs
+
         return mock
 
     def _make_logger(
@@ -229,63 +238,159 @@ class TestMLflowLogger:
         mock_mlflow: MagicMock,
         experiment_name: str | None = None,
         run_name: str | None = None,
+        parent_run_name: str | None = None,
     ) -> MLflowLogger:
-        """Instantiate MLflowLogger with mlflow patched."""
+        """Instantiate MLflowNestedLogger with mlflow patched."""
 
         with patch.dict("sys.modules", {"mlflow": mock_mlflow}):
-            # Re-import to pick up the patched module inside __init__
-            logger = MLflowLogger.__new__(MLflowLogger)
-            logger._mlflow = mock_mlflow  # type: ignore[assignment]  # pyright: ignore[reportPrivateUsage]
-            logger._managed_run = False  # pyright: ignore[reportPrivateUsage]
-            if experiment_name is not None:
-                mock_mlflow.set_experiment(experiment_name)
-            if mock_mlflow.active_run() is None:
-                mock_mlflow.start_run(run_name=run_name)
-                logger._managed_run = True  # pyright: ignore[reportPrivateUsage]
-        return logger
+            return MLflowLogger(
+                experiment_name=experiment_name,
+                run_name=run_name,
+                parent_run_name=parent_run_name,
+            )
 
+    # mock test
+    def test_mlflow_is_mocked(self):
+        mock = MagicMock()
+
+        with patch.dict("sys.modules", {"mlflow": mock}):
+            logger = MLflowLogger(experiment_name=None, run_name="x")
+            assert logger._mlflow is mock
+
+        assert logger._mlflow is mock # should still be the mock
+
+    # mlflow import test
     def test_import_error_without_mlflow(self) -> None:
         with patch.dict("sys.modules", {"mlflow": None}):  # type: ignore[dict-item]
             with pytest.raises(ImportError, match="mlflow is required"):
                 MLflowLogger()
 
-    def test_starts_run_when_no_active_run(self) -> None:
-        mock = self._make_mlflow_mock(active_run=False)
-        self._make_logger(mock)
-        mock.start_run.assert_called()
-
-    def test_no_new_run_when_active_run_exists(self) -> None:
-        mock = self._make_mlflow_mock(active_run=True)
-        logger = self._make_logger(mock)
-        # close() must not call end_run if the run was started externally
-        logger.close()
-        mock.end_run.assert_not_called()
-
-    def test_log_params_delegates_to_mlflow(self) -> None:
+    # log_params() and log_metrics() tests
+    def test_standard_mode_log_params_delegates_to_mlflow(self) -> None:
         mock = self._make_mlflow_mock()
         logger = self._make_logger(mock)
         logger.log_params(SAMPLE_PARAMS)
         mock.log_params.assert_called_once_with(SAMPLE_PARAMS)
 
-    def test_log_metrics_delegates_to_mlflow(self) -> None:
+    def test_nested_mode_log_params_delegates_to_mlflow(self) -> None:
+        mock = self._make_mlflow_mock()
+        logger = self._make_logger(mock, run_name="child", parent_run_name="parent")
+        logger.log_params(SAMPLE_PARAMS)
+        mock.log_params.assert_called_once_with(SAMPLE_PARAMS)
+
+    def test_standard_mode_log_metrics_delegates_to_mlflow(self) -> None:
         mock = self._make_mlflow_mock()
         logger = self._make_logger(mock)
         logger.log_metrics(SAMPLE_METRICS, step=5)
         mock.log_metrics.assert_called_once_with(SAMPLE_METRICS, step=5)
 
-    def test_close_ends_managed_run(self) -> None:
+    def test_nested_mode_log_metrics_delegates_to_mlflow(self) -> None:
+        mock = self._make_mlflow_mock()
+        logger = self._make_logger(mock, run_name="child", parent_run_name="parent")
+        logger.log_metrics(SAMPLE_METRICS, step=5)
+        mock.log_metrics.assert_called_once_with(SAMPLE_METRICS, step=5)
+
+    # experiment creation tests
+    def test_standard_mode_set_experiment_called_when_provided(self) -> None:
+        mock = self._make_mlflow_mock()
+        self._make_logger(mock, experiment_name="my_experiment")
+        mock.set_experiment.assert_called_with("my_experiment")
+
+    def test_nested_mode_set_experiment_called_when_provided(self) -> None:
+        mock = self._make_mlflow_mock()
+        self._make_logger(
+            mock,
+            experiment_name="my_experiment",
+            run_name="child",
+            parent_run_name="parent"
+        )
+        mock.set_experiment.assert_called_with("my_experiment")
+
+    # Run creation tests
+    def test_standard_mode_starts_run_when_no_active_run(self) -> None:
+        mock = self._make_mlflow_mock(active_run=False)
+        self._make_logger(mock)
+        mock.start_run.assert_called()
+
+    def test_standard_mode_starts_named_run_when_no_active_run(self) -> None:
+        mock = self._make_mlflow_mock(active_run=False)
+        self._make_logger(mock, run_name="run", parent_run_name=None)
+        mock.start_run.assert_called_once_with(run_name="run")
+
+    def test_standard_mode_no_new_run_when_active_run_exists(self) -> None:
+        mock = self._make_mlflow_mock(active_run=True)
+        self._make_logger(mock)
+        mock.start_run.assert_not_called()
+
+    def test_nested_mode_starts_parent_and_child_runs(self) -> None:
+        mock = self._make_mlflow_mock(active_run=False)
+
+        self._make_logger(mock, run_name="child", parent_run_name="parent")
+
+        assert mock.start_run.call_count == 2
+        mock.start_run.assert_any_call(run_name="parent")
+        mock.start_run.assert_any_call(run_name="child", nested=True)
+
+    def test_nested_mode_reuses_matching_parent(self) -> None:
+        active_run = MagicMock()
+        active_run.data.tags.get.return_value = "parent"
+
+        mock = MagicMock()
+        mock.active_run.return_value = active_run
+
+        self._make_logger(mock, run_name="child", parent_run_name="parent")
+
+        mock.start_run.assert_called_once_with(run_name="child", nested=True)
+
+    def test_nested_mode_raises_for_wrong_parent(self) -> None:
+        mock = self._make_mlflow_mock(active_run=True)
+
+        with pytest.raises(RuntimeError, match="does not match"):
+            self._make_logger(
+                mock,
+                run_name="child",
+                parent_run_name="expected_parent",
+            )
+
+    # close() tests
+    def test_standard_mode_close_ends_managed_run(self) -> None:
         mock = self._make_mlflow_mock(active_run=False)
         logger = self._make_logger(mock)
         logger.close()
         mock.end_run.assert_called_once()
 
-    def test_close_does_not_end_external_run(self) -> None:
+    def test_nested_mode_close_ends_child_and_parent_runs(self) -> None:
+        mock = self._make_mlflow_mock(active_run=False)
+
+        logger = self._make_logger(
+            mock,
+            parent_run_name="parent",
+            run_name="child",
+        )
+        logger.close()
+
+        assert mock.end_run.call_count == 2
+
+    def test_standard_mode_close_does_not_end_external_run(self) -> None:
+        """ close() must not call end_run if the run was started externally"""
         mock = self._make_mlflow_mock(active_run=True)
+
         logger = self._make_logger(mock)
         logger.close()
         mock.end_run.assert_not_called()
 
-    def test_set_experiment_called_when_provided(self) -> None:
-        mock = self._make_mlflow_mock()
-        self._make_logger(mock, experiment_name="my_experiment")
-        mock.set_experiment.assert_called_with("my_experiment")
+    def test_nested_mode_close_ends_only_child_if_external_parent(self) -> None:
+        active_run = MagicMock()
+        active_run.data.tags.get.return_value = "parent"
+
+        mock = MagicMock()
+        mock.active_run.return_value = active_run
+
+        logger = self._make_logger(
+            mock,
+            parent_run_name="parent",
+            run_name="child",
+        )
+        logger.close()
+
+        assert mock.end_run.call_count == 1

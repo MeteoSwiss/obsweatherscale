@@ -139,37 +139,126 @@ class MLflowLogger(Logger):
     exists when the logger is constructed, a new run is started
     automatically and ended on :meth:`close`.
 
+    Modes
+    -----
+    Standard mode
+        parent_run_name=None
+
+        Behaves in a non-nested way:
+        - uses the active run if one exists
+        - otherwise creates a run named run_name
+
+    Nested mode
+        parent_run_name=<name>
+
+        - creates/reuses a parent run named parent_run_name
+        - starts a nested child run named run_name
+        - logs everything to the child run
+    
     Parameters
     ----------
     experiment_name : str, optional
-        MLflow experiment name.  If provided,
+        MLflow experiment name. If provided,
         :func:`mlflow.set_experiment` is called.
     run_name : str, optional
         Name for the MLflow run (used only when a new run is started).
+    parent_run_name : str, optional
+        Name for the parent MLflow run (used only in nested mode).
     """
 
     def __init__(
         self,
         experiment_name: str | None = None,
         run_name: str | None = None,
+        parent_run_name: str | None = None,
+        run_tags: dict[str, str] | None = None,
+        parent_tags: dict[str, str] | None = None,
     ) -> None:
         try:
             import mlflow  # pylint: disable=import-outside-toplevel
         except ImportError as exc:
             raise ImportError(
                 "mlflow is required for MLflowLogger. "
-                "Install it with:  pip install mlflow"
+                "Install it with: pip install mlflow"
             ) from exc
 
         self._mlflow = mlflow
-        self._managed_run = False
+        self._managed_parent = False
+        self._managed_child = False
 
+        # Set and get active experiment
         if experiment_name is not None:
             self._mlflow.set_experiment(experiment_name)
 
-        if self._mlflow.active_run() is None:
-            self._mlflow.start_run(run_name=run_name)
-            self._managed_run = True
+        active_experiment = self._mlflow.get_experiment_by_name(
+            experiment_name or "Default"
+        )
+        experiment_id = (
+            active_experiment.experiment_id
+            if active_experiment is not None else None
+        )
+
+        # Set run kwargs
+        run_kwargs: dict[str, Any] = {"run_name": run_name}
+        if run_tags is not None:
+            run_kwargs["tags"] = run_tags
+
+        parent_run_kwargs: dict[str, Any] = {"run_name": parent_run_name}
+        if parent_tags is not None:
+            parent_run_kwargs["tags"] = parent_tags
+
+        # ---- Standard mode ----
+        if parent_run_name is None:
+            if self._mlflow.active_run() is None:
+                self._mlflow.start_run(**run_kwargs)
+                self._managed_child = True
+
+        # ---- Nested mode ----
+        else:
+            active = self._mlflow.active_run()
+
+            if active is not None:
+                # Validate that the active run is the expected parent
+                active_name = active.data.tags.get("mlflow.runName")
+                if active_name != parent_run_name:
+                    raise RuntimeError(
+                        f"Active MLflow run '{active_name}' does not match "
+                        f"requested parent run '{parent_run_name}'."
+                    )
+                parent_run_id = active.info.run_id
+
+            else:
+                # Search for an existing RUNNING parent run with this name
+                parent_run_id = self._find_run_by_name(
+                    parent_run_name, experiment_id
+                )
+
+                if parent_run_id is not None:
+                    # Re-activate the parent so the child can nest under it
+                    self._mlflow.start_run(run_id=parent_run_id)
+                else:
+                    # Create a fresh parent
+                    self._mlflow.start_run(**parent_run_kwargs)
+                    self._managed_parent = True
+
+            self._mlflow.start_run(nested=True, **run_kwargs)
+            self._managed_child = True
+
+    def _find_run_by_name(
+        self,
+        run_name: str,
+        experiment_id: str | None
+    ) -> str | None:
+        client = self._mlflow.MlflowClient()
+        search_kwargs: dict = {
+            "filter_string": f"attributes.run_name = '{run_name}'",
+            "max_results": 1,
+        }
+        if experiment_id is not None:
+            search_kwargs["experiment_ids"] = [experiment_id]
+
+        results = client.search_runs(**search_kwargs)
+        return results[0].info.run_id if results else None
 
     def log_params(self, params: dict[str, Any]) -> None:
         """Log hyperparameters to the active MLflow run."""
@@ -180,6 +269,16 @@ class MLflowLogger(Logger):
         self._mlflow.log_metrics(metrics, step=step)
 
     def close(self) -> None:
-        """End the MLflow run if it was started by this logger."""
-        if self._managed_run:
+        """End MLflow run if it was started by this logger.
+
+        If used in standard mode, this will end the run provided it was
+        started by this logger.
+
+        If used in nested mode, this will end the child run that was
+        started, and the parent run if it was started by this logger.
+        """
+        if self._managed_child:  # end child run first
+            self._mlflow.end_run()
+
+        if self._managed_parent:
             self._mlflow.end_run()
