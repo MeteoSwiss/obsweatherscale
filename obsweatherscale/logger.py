@@ -174,22 +174,26 @@ class MLflowLogger(Logger):
 
         - if a run named parent_run_name is currently active, reuses it
           as parent run
+        - otherwise, if a parent_run_id is provided, it is used as
+          parent run
         - otherwise, if a run named parent_run_name already exists in
           the experiment, the most recent one is reused (looked up by
           name, latest start time wins)
         - otherwise a new parent run named parent_run_name is created
-        - creates/reuses a parent run named parent_run_name
         - a new child run named run_name is always created under the
           parent
         - all logging goes to the child run
         - on :meth:`close`, only runs that were started by this logger
           are ended; externally started runs are left open
-    
+
     Notes
     -----
     Run names are not unique in MLflow. If multiple runs share the same
-    parent_run_name, the most recently started one is used.
-    
+    parent_run_name, the most recently started one is used. For
+    unambiguous parent selection across script restarts, retrieve the
+    parent run ID from a previous child run's ``parent_run_id`` tag and
+    pass it explicitly via ``parent_run_id``.
+
     Parameters
     ----------
     experiment_name : str, optional
@@ -199,6 +203,9 @@ class MLflowLogger(Logger):
         Name for the MLflow run (used only when a new run is started).
     parent_run_name : str, optional
         Name for the parent MLflow run (used only in nested mode).
+    parent_run_id : str, optional
+        Run ID of an existing parent run. When provided in nested mode,
+        skips the name-based search and attaches directly to this run.
     run_tags : dict[str, str], optional
         Tags to set on the child (or only) run.
     parent_tags : dict[str, str], optional
@@ -211,6 +218,7 @@ class MLflowLogger(Logger):
         experiment_name: str | None = None,
         run_name: str | None = None,
         parent_run_name: str | None = None,
+        parent_run_id: str | None = None,
         run_tags: dict[str, str] | None = None,
         parent_tags: dict[str, str] | None = None,
     ) -> None:
@@ -249,14 +257,15 @@ class MLflowLogger(Logger):
 
         # ---- Standard mode ----
         if parent_run_name is None:
-            self._start_standard_mode(run_kwargs)
+            self._start_standard_mode(run_kwargs=run_kwargs)
 
         # ---- Nested mode ----
         else:
             self._start_nested_mode(
-                experiment_id,
-                run_kwargs,
-                parent_run_kwargs,
+                experiment_id=experiment_id,
+                parent_run_id=parent_run_id,
+                run_kwargs=run_kwargs,
+                parent_run_kwargs=parent_run_kwargs,
             )
 
     def _start_standard_mode(self, run_kwargs: dict[str, Any]) -> None:
@@ -269,6 +278,7 @@ class MLflowLogger(Logger):
     def _start_nested_mode(
         self,
         experiment_id: str | None,
+        parent_run_id: str | None,
         run_kwargs: dict[str, Any],
         parent_run_kwargs: dict[str, Any],
     ) -> None:
@@ -286,8 +296,14 @@ class MLflowLogger(Logger):
                     f"requested parent run '{parent_run_name}'."
                 )
 
+        elif parent_run_id is not None:
+            # Caller pinned an exact run —> skip name search entirely
+            active = self._mlflow.start_run(
+                run_id=parent_run_id, run_name=parent_run_name,
+            )
+
         else:
-            # Search for an existing RUNNING parent run with this name
+            # Fall back to name-based search (ambiguous if duplicates)
             found_parent_run_id = self._find_run_by_name(
                 parent_run_name, experiment_id,
             )
@@ -308,7 +324,7 @@ class MLflowLogger(Logger):
     def _find_run_by_name(
         self,
         run_name: str,
-        experiment_id: str | None
+        experiment_id: str | None,
     ) -> str | None:
         client = self._mlflow.MlflowClient()
         search_kwargs: dict = {

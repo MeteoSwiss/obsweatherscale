@@ -239,6 +239,7 @@ class TestMLflowLogger:
         experiment_name: str | None = None,
         run_name: str | None = None,
         parent_run_name: str | None = None,
+        parent_run_id: str | None = None,
         run_tags: dict[str, str] | None = None,
         parent_tags: dict[str, str] | None = None,
     ) -> MLflowLogger:
@@ -249,6 +250,7 @@ class TestMLflowLogger:
                 experiment_name=experiment_name,
                 run_name=run_name,
                 parent_run_name=parent_run_name,
+                parent_run_id=parent_run_id,
                 run_tags=run_tags,
                 parent_tags=parent_tags,
             )
@@ -335,7 +337,7 @@ class TestMLflowLogger:
         mock.start_run.assert_any_call(run_name="parent")
         mock.start_run.assert_any_call(run_name="child", nested=True)
 
-    def test_nested_mode_reuses_matching_parent(self) -> None:
+    def test_nested_mode_reuses_matching_active_parent(self) -> None:
         active_run = MagicMock()
         active_run.data.tags.get.return_value = "parent"
 
@@ -345,6 +347,61 @@ class TestMLflowLogger:
         self._make_logger(mock, run_name="child", parent_run_name="parent")
 
         mock.start_run.assert_called_once_with(run_name="child", nested=True)
+
+    def test_nested_mode_reuses_existing_matching_parent_by_name(self) -> None:
+        """When no active run exists but a previous run with
+        parent_run_name is found, it should be resumed by run_id rather
+        than recreated.
+        """
+        existing_parent_name = "parent"
+        child_name = "child"
+
+        existing_parent = MagicMock()
+        existing_parent.data.tags.get.return_value = existing_parent_name
+
+        mock = self._make_mlflow_mock(
+            active_run=False,
+            existing_runs=[existing_parent],
+        )
+
+        self._make_logger(
+            mock,
+            run_name=child_name,
+            parent_run_name=existing_parent_name,
+        )
+
+        mock.start_run.assert_any_call(run_name=child_name, nested=True)
+
+    def test_nested_mode_parent_run_id_skips_name_search(self) -> None:
+        """When parent_run_id is provided, search_runs should not be
+        called, and the run parent_run_id should be restarted.
+        """
+        existing_parent_name = "parent"
+        existing_parent_id = "existing-parent-id"
+        child_name = "child"
+
+        existing_parent = MagicMock()
+        existing_parent.data.tags.get.return_value = existing_parent_name
+        existing_parent.info.run_id = existing_parent_id
+
+        mock = self._make_mlflow_mock(
+            active_run=False,
+            existing_runs=[existing_parent],
+        )
+
+        self._make_logger(
+            mock,
+            run_name=child_name,
+            parent_run_name=existing_parent_name,
+            parent_run_id=existing_parent_id,
+        )
+
+        mock.MlflowClient.return_value.search_runs.assert_not_called()
+        mock.start_run.assert_any_call(
+            run_id=existing_parent_id,
+            run_name=existing_parent_name,
+        )
+        mock.start_run.assert_any_call(run_name=child_name, nested=True)
 
     def test_nested_mode_raises_for_wrong_parent(self) -> None:
         mock = self._make_mlflow_mock(active_run=True)
