@@ -231,40 +231,61 @@ class MLflowLogger(Logger):
 
         # ---- Standard mode ----
         if parent_run_name is None:
-            if self._mlflow.active_run() is None:
-                self._mlflow.start_run(**run_kwargs)
-                self._managed_child = True
+            self._start_standard_mode(run_kwargs)
 
         # ---- Nested mode ----
         else:
-            active = self._mlflow.active_run()
+            self._start_nested_mode(
+                experiment_id,
+                run_kwargs,
+                parent_run_kwargs,
+            )
 
-            if active is not None:
-                # Validate that the active run is the expected parent
-                active_name = active.data.tags.get("mlflow.runName")
-                if active_name != parent_run_name:
-                    raise RuntimeError(
-                        f"Active MLflow run '{active_name}' does not match "
-                        f"requested parent run '{parent_run_name}'."
-                    )
-                parent_run_id = active.info.run_id
+    def _start_standard_mode(self, run_kwargs: dict[str, Any]) -> None:
+        if self._mlflow.active_run() is None:
+            self._mlflow.start_run(**run_kwargs)
+            self._managed_child = True
 
-            else:
-                # Search for an existing RUNNING parent run with this name
-                parent_run_id = self._find_run_by_name(
-                    parent_run_name, experiment_id
+        self._parent_run_id = None
+
+    def _start_nested_mode(
+        self,
+        experiment_id: str | None,
+        run_kwargs: dict[str, Any],
+        parent_run_kwargs: dict[str, Any],
+    ) -> None:
+        # Retrieve parent_run_name
+        parent_run_name: str = parent_run_kwargs["run_name"]
+
+        active = self._mlflow.active_run()
+
+        if active is not None:
+            # Validate that the active run is the expected parent
+            active_name = active.data.tags.get("mlflow.runName")
+            if active_name != parent_run_name:
+                raise RuntimeError(
+                    f"Active MLflow run '{active_name}' does not match "
+                    f"requested parent run '{parent_run_name}'."
                 )
 
-                if parent_run_id is not None:
-                    # Re-activate the parent so the child can nest under it
-                    self._mlflow.start_run(run_id=parent_run_id)
-                else:
-                    # Create a fresh parent
-                    self._mlflow.start_run(**parent_run_kwargs)
-                    self._managed_parent = True
+        else:
+            # Search for an existing RUNNING parent run with this name
+            found_parent_run_id = self._find_run_by_name(
+                parent_run_name, experiment_id,
+            )
 
-            self._mlflow.start_run(nested=True, **run_kwargs)
-            self._managed_child = True
+            if found_parent_run_id is not None:
+                # Re-activate the parent so the child can nest under it
+                active = self._mlflow.start_run(run_id=found_parent_run_id)
+            else:
+                # Create a fresh parent
+                active = self._mlflow.start_run(**parent_run_kwargs)
+                self._managed_parent = True
+
+        self._parent_run_id = active.info.run_id
+
+        self._mlflow.start_run(nested=True, **run_kwargs)
+        self._managed_child = True
 
     def _find_run_by_name(
         self,
