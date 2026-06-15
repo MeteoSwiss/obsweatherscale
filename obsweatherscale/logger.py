@@ -36,15 +36,20 @@ class Logger(ABC):
         """
 
     @abstractmethod
-    def log_metrics(self, metrics: dict[str, float], step: int) -> None:
-        """Log metrics for a single training iteration.
+    def log_metrics(
+        self,
+        metrics: dict[str, float],
+        step: int | None = None,
+    ) -> None:
+        """Log metrics for a single training iteration if step is not
+        None, or for the entire run if step is None.
 
         Parameters
         ----------
         metrics : dict[str, float]
             Dictionary of metric names and values.
-        step : int
-            Current iteration number (1-based).
+        step : int | None
+            Current iteration number (1-based) or None if global metric.
         """
 
     @abstractmethod
@@ -83,11 +88,18 @@ class TerminalLogger(Logger):
         self._n_iter = params.get("n_iter")
         self._logger.info("Training parameters: %s", params)
 
-    def log_metrics(self, metrics: dict[str, float], step: int) -> None:
-        """Log per-iteration metrics to the terminal."""
-        n_iter_str = f"/{self._n_iter}" if self._n_iter else ""
+    def log_metrics(
+        self,
+        metrics: dict[str, float],
+        step: int | None = None,
+    ) -> None:
+        """Log global or per-iteration metrics to the terminal."""
         metrics_str = "   ".join(f"{k}: {v:.3f}" for k, v in metrics.items())
-        self._logger.info("Iter %d%s - %s", step, n_iter_str, metrics_str)
+        if step is not None:
+            n_iter_str = f"/{self._n_iter}" if self._n_iter else ""
+            self._logger.info("Iter %d%s - %s", step, n_iter_str, metrics_str)
+        else:
+            self._logger.info(metrics_str)
 
     def close(self) -> None:
         """No-op for terminal logging."""
@@ -117,7 +129,11 @@ class CSVLogger(Logger):
         with open(params_path, "w", encoding="utf-8") as f:
             json.dump(params, f, indent=2, default=str)
 
-    def log_metrics(self, metrics: dict[str, float], step: int) -> None:
+    def log_metrics(
+        self,
+        metrics: dict[str, float],
+        step: int | None = None,
+    ) -> None:
         """Append one row of metrics to the CSV file."""
         self._filepath.parent.mkdir(parents=True, exist_ok=True)
         mode = "w" if not self._header_written else "a"
@@ -126,7 +142,9 @@ class CSVLogger(Logger):
             if not self._header_written:
                 writer.writerow(["step", *metrics.keys()])
                 self._header_written = True
-            writer.writerow([step, *metrics.values()])
+            writer.writerow(
+                [step if step is not None else "", *metrics.values()]
+            )
 
     def close(self) -> None:
         """No-op: the CSV file is opened and closed within each
@@ -307,8 +325,13 @@ class MLflowLogger(Logger):
         """Log hyperparameters to the active MLflow run."""
         self._mlflow.log_params(params)
 
-    def log_metrics(self, metrics: dict[str, float], step: int) -> None:
-        """Log per-iteration metrics to the active MLflow run."""
+    def log_metrics(
+        self,
+        metrics: dict[str, float],
+        step: int | None = None,
+    ) -> None:
+        """Log global or per-iteration metrics to the active MLflow run.
+        """
         self._mlflow.log_metrics(metrics, step=step)
 
     def close(self) -> None:
