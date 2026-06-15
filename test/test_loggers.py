@@ -239,6 +239,8 @@ class TestMLflowLogger:
         experiment_name: str | None = None,
         run_name: str | None = None,
         parent_run_name: str | None = None,
+        run_tags: dict[str, str] | None = None,
+        parent_tags: dict[str, str] | None = None,
     ) -> MLflowLogger:
         """Instantiate MLflowNestedLogger with mlflow patched."""
 
@@ -247,6 +249,8 @@ class TestMLflowLogger:
                 experiment_name=experiment_name,
                 run_name=run_name,
                 parent_run_name=parent_run_name,
+                run_tags=run_tags,
+                parent_tags=parent_tags,
             )
 
     # mock test

@@ -167,6 +167,11 @@ class MLflowLogger(Logger):
         Name for the MLflow run (used only when a new run is started).
     parent_run_name : str, optional
         Name for the parent MLflow run (used only in nested mode).
+    run_tags : dict[str, str], optional
+        Tags to set on the child (or only) run.
+    parent_tags : dict[str, str], optional
+        Tags to set on the parent run (only applied when a new parent
+        is created).
     """
 
     def __init__(
