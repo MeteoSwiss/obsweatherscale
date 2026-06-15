@@ -154,9 +154,23 @@ class MLflowLogger(Logger):
     Nested mode
         parent_run_name=<name>
 
+        - if a run named parent_run_name is currently active, reuses it
+          as parent run
+        - otherwise, if a run named parent_run_name already exists in
+          the experiment, the most recent one is reused (looked up by
+          name, latest start time wins)
+        - otherwise a new parent run named parent_run_name is created
         - creates/reuses a parent run named parent_run_name
-        - starts a nested child run named run_name
-        - logs everything to the child run
+        - a new child run named run_name is always created under the
+          parent
+        - all logging goes to the child run
+        - on :meth:`close`, only runs that were started by this logger
+          are ended; externally started runs are left open
+    
+    Notes
+    -----
+    Run names are not unique in MLflow. If multiple runs share the same
+    parent_run_name, the most recently started one is used.
     
     Parameters
     ----------
