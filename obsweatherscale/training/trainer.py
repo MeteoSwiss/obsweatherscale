@@ -274,6 +274,9 @@ class Trainer:
                 train_progression[k].append(v)
 
         for logger in loggers_list:
+            logger.log_metrics({"best_val_loss": best_val_loss}, step=None)
+
+        for logger in loggers_list:
             logger.close()
 
         return self.best_model, train_progression
