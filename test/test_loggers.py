@@ -338,15 +338,25 @@ class TestMLflowLogger:
         mock.start_run.assert_any_call(run_name="child", nested=True)
 
     def test_nested_mode_reuses_matching_active_parent(self) -> None:
+        existing_parent_name = "parent"
+        existing_parent_id = "parent-run-id"
+        child_name = "child"
+
         active_run = MagicMock()
-        active_run.data.tags.get.return_value = "parent"
+        active_run.info.run_name = existing_parent_name
+        active_run.info.run_id = existing_parent_id
 
         mock = MagicMock()
         mock.active_run.return_value = active_run
 
-        self._make_logger(mock, run_name="child", parent_run_name="parent")
+        self._make_logger(
+            mock,
+            parent_run_name=existing_parent_name,
+            parent_run_id=existing_parent_id,
+            run_name=child_name,
+        )
 
-        mock.start_run.assert_called_once_with(run_name="child", nested=True)
+        mock.start_run.assert_called_once_with(run_name=child_name, nested=True)
 
     def test_nested_mode_reuses_existing_matching_parent_by_name(self) -> None:
         """When no active run exists but a previous run with
@@ -354,10 +364,12 @@ class TestMLflowLogger:
         than recreated.
         """
         existing_parent_name = "parent"
+        existing_parent_id = "parent-run-id"
         child_name = "child"
 
         existing_parent = MagicMock()
-        existing_parent.data.tags.get.return_value = existing_parent_name
+        existing_parent.info.run_name = existing_parent_id
+        existing_parent.info.run_id = existing_parent_id
 
         mock = self._make_mlflow_mock(
             active_run=False,
@@ -441,16 +453,22 @@ class TestMLflowLogger:
         mock.end_run.assert_not_called()
 
     def test_nested_mode_close_ends_only_child_if_external_parent(self) -> None:
+        existing_parent_name = "parent"
+        existing_parent_id = "parent-run-id"
+        child_name = "child"
+
         active_run = MagicMock()
-        active_run.data.tags.get.return_value = "parent"
+        active_run.info.run_name = existing_parent_name
+        active_run.info.run_id = existing_parent_id
 
         mock = MagicMock()
         mock.active_run.return_value = active_run
 
         logger = self._make_logger(
             mock,
-            parent_run_name="parent",
-            run_name="child",
+            parent_run_name=existing_parent_name,
+            parent_run_id=existing_parent_id,
+            run_name=child_name,
         )
         logger.close()
 

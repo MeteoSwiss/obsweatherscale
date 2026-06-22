@@ -289,11 +289,18 @@ class MLflowLogger(Logger):
 
         if active is not None:
             # Validate that the active run is the expected parent
-            active_name = active.data.tags.get("mlflow.runName")
+            active_name = active.info.run_name
             if active_name != parent_run_name:
                 raise RuntimeError(
                     f"Active MLflow run '{active_name}' does not match "
-                    f"requested parent run '{parent_run_name}'."
+                    f"requested parent run name '{parent_run_name}'."
+                )
+
+            active_id = active.info.run_id
+            if active_id != parent_run_id:
+                raise RuntimeError(
+                    f"Active MLflow run '{active_id}' does not match "
+                    f"requested parent run id '{parent_run_id}'."
                 )
 
         elif parent_run_id is not None:
