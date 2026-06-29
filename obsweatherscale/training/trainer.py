@@ -75,8 +75,8 @@ class Trainer:
         self,
         model: ExactGP,
         likelihood: _GaussianLikelihoodBase,
-        train_loss_fct: Callable,
-        val_loss_fct: Callable,
+        train_loss_fn: Callable,
+        val_loss_fn: Callable,
         device: torch.device,
         optimizer: Optimizer,
     ) -> None:
@@ -88,9 +88,9 @@ class Trainer:
             The Gaussian Process prior model.
         likelihood : _GaussianLikelihoodBase
             The likelihood function for the model.
-        train_loss_fct : Callable
+        train_loss_fn : Callable
             The loss function to use for training.
-        val_loss_fct : Callable
+        val_loss_fn : Callable
             The loss function to use for validation.
         device : torch.device
             The device to use for training (CPU or GPU).
@@ -100,8 +100,8 @@ class Trainer:
         self.model = model
         self.best_model = model
         self.likelihood = likelihood
-        self.train_loss_fct = train_loss_fct
-        self.val_loss_fct = val_loss_fct
+        self.train_loss_fn = train_loss_fn
+        self.val_loss_fn = val_loss_fn
         self.device = device
         self.optimizer = optimizer
 
@@ -175,7 +175,9 @@ class Trainer:
         length = len(train)
         val_length = len(val_context)
         train_progression : dict[str, list] = {
-            "iter": [], "train loss": [], "val loss": [], "iter time": [], "train time": []
+            "iter": [],
+            "train loss": [], "val loss": [],
+            "iter time": [], "train time": [],
         }
 
         torch.manual_seed(seed)
@@ -272,6 +274,9 @@ class Trainer:
                 train_progression[k].append(v)
 
         for logger in loggers_list:
+            logger.log_metrics({"best_val_loss": best_val_loss}, step=None)
+
+        for logger in loggers_list:
             logger.close()
 
         return self.best_model, train_progression
@@ -302,7 +307,7 @@ class Trainer:
             inputs=batch_x, targets=batch_y, strict=False
         )
         distribution = self.model(batch_x)
-        loss = self.train_loss_fct(distribution, batch_y)
+        loss = self.train_loss_fn(distribution, batch_y)
 
         loss.backward()
 
@@ -344,7 +349,7 @@ class Trainer:
             batch_x_context, batch_y_context, strict=False
         )
         distribution_val = self.model(batch_x_target)
-        loss = self.val_loss_fct(distribution_val, batch_y_target)
+        loss = self.val_loss_fn(distribution_val, batch_y_target)
 
         return loss.item()
 

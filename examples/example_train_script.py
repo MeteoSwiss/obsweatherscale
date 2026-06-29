@@ -20,7 +20,7 @@ class MyDataset(ows.GPDataset):
     def __getitem__(
         self,
         idx: int | list[int] | slice,
-    ) -> tuple[torch.Tensor, ...]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         return self.x[idx, ...], self.y[idx, ...]
 
     def __len__(self) -> int:
@@ -37,12 +37,12 @@ class MyDataset(ows.GPDataset):
 def generate_toy_data(
     n_stations: int,
     n_times: int,
-    noise_var: float
+    noise_var: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     def true_signal(
         x: torch.Tensor,
         y: torch.Tensor,
-        t: torch.Tensor
+        t: torch.Tensor,
     ) -> torch.Tensor:
         """Simulated true weather signal."""
         return (
@@ -162,10 +162,15 @@ def main() -> None:
     # --- Loggers ---
     loggers: list[ows.Logger] = [ows.CSVLogger("training_log.csv")]
     # To also log to MLflow (requires `pip install mlflow`):
-    # loggers.append(ows.training.MLflowLogger(experiment_name="obsweatherscale", run_name="run_1"))
+    # loggers.append(
+    #     ows.training.MLflowLogger(
+    #         experiment_name="obsweatherscale",
+    #         run_name="run_1",
+    #     )
+    # )
 
     trainer = ows.Trainer(
-        model, likelihood, train_loss_fct, val_loss_fct, device, optimizer
+        model, likelihood, train_loss_fct, val_loss_fct, device, optimizer,
     )
     model, train_progress = trainer.fit(
         dataset_train,
@@ -182,10 +187,10 @@ def main() -> None:
     # Get the iteration of best model
     min_val_loss = min(train_progress["val loss"])
     best_val_loss_idx = train_progress["val loss"].index(min_val_loss)
+    best_val_loss_iter = train_progress["iter"][best_val_loss_idx]
 
     print(
-        f"Best model found at "
-        f"iteration {train_progress["iter"][best_val_loss_idx]} with "
+        f"Best model found at iteration {best_val_loss_iter} with "
         f"validation loss: {min_val_loss:.4f}"
     )
 
