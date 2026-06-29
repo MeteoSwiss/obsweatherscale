@@ -1,0 +1,52 @@
+obsweatherscale.transformations.transformer
+===========================================
+
+.. py:module:: obsweatherscale.transformations.transformer
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.transformations.transformer.Transformer
+
+
+Module Contents
+---------------
+
+.. py:class:: Transformer
+
+   .. py:property:: description
+      :type: str
+
+      :abstractmethod:
+
+
+      Return a short description of the transformation.
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply transformation to the input data.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply inverse transformation to input data.
+
+
+
+   .. py:method:: noise_transform(data: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply noise transformation to input data.
+
+
+

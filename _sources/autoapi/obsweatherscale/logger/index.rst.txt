@@ -1,0 +1,219 @@
+obsweatherscale.logger
+======================
+
+.. py:module:: obsweatherscale.logger
+
+.. autoapi-nested-parse::
+
+   Loggers for obsweatherscale.
+
+   Provides a base :class:`Logger` interface and three concrete
+   implementations:
+
+   - :class:`TerminalLogger` — logs via Python's :mod:`logging` module.
+   - :class:`CSVLogger` — writes per-iteration metrics to a CSV file and
+     hyperparameters to a JSON sidecar.
+   - :class:`MLflowLogger` — logs parameters and metrics to an MLflow
+     tracking server.  Requires the optional ``mlflow`` dependency.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.logger.Logger
+   obsweatherscale.logger.TerminalLogger
+   obsweatherscale.logger.CSVLogger
+   obsweatherscale.logger.MLflowLogger
+
+
+Module Contents
+---------------
+
+.. py:class:: Logger
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   Abstract base class for training loggers.
+
+   Subclasses must implement :meth:`log_params`, :meth:`log_metrics`,
+   and :meth:`close`.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+      :abstractmethod:
+
+
+      Log training hyperparameters and configuration.
+
+      :Parameters: **params** (*dict[str, Any]*) -- Dictionary of hyperparameter names and values.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int | None = None) -> None
+      :abstractmethod:
+
+
+      Log metrics for a single training iteration if step is not
+      None, or for the entire run if step is None.
+
+      :Parameters: * **metrics** (*dict[str, float]*) -- Dictionary of metric names and values.
+                   * **step** (*int | None*) -- Current iteration number (1-based) or None if global metric.
+
+
+
+   .. py:method:: close() -> None
+      :abstractmethod:
+
+
+      Finalize and release any resources held by the logger.
+
+
+
+.. py:class:: TerminalLogger(name: str = 'obsweatherscale.training', level: int = logging.INFO)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that writes training progress via Python's :mod:`logging`.
+
+   :Parameters: * **name** (*str, default='obsweatherscale.training'*) -- Name of the Python logger instance.
+                * **level** (*int, default=logging.INFO*) -- Logging level.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Log hyperparameters to the terminal.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int | None = None) -> None
+
+      Log global or per-iteration metrics to the terminal.
+
+
+
+   .. py:method:: close() -> None
+
+      No-op for terminal logging.
+
+
+
+.. py:class:: CSVLogger(filepath: pathlib.Path | str)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that writes per-iteration metrics to a CSV file.
+
+   Hyperparameters are stored in a JSON sidecar file with the same
+   stem (e.g. ``log.csv`` → ``log.json``).
+
+   :Parameters: **filepath** (*Path or str*) -- Path to the CSV output file.  Parent directories are created
+                automatically.
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Write hyperparameters to a JSON sidecar file.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int | None = None) -> None
+
+      Append one row of metrics to the CSV file.
+
+
+
+   .. py:method:: close() -> None
+
+      No-op: the CSV file is opened and closed within each
+      :meth:`log_metrics` call.
+
+
+
+.. py:class:: MLflowLogger(experiment_name: str | None = None, run_name: str | None = None, parent_run_name: str | None = None, parent_run_id: str | None = None, run_tags: dict[str, str] | None = None, parent_tags: dict[str, str] | None = None)
+
+   Bases: :py:obj:`Logger`
+
+
+   Logger that records parameters and metrics to MLflow in
+   optionally nested runs.
+
+   Requires the optional ``mlflow`` package. If no active MLflow run
+   exists when the logger is constructed, a new run is started
+   automatically and ended on :meth:`close`.
+
+   Modes
+   -----
+   Standard mode
+       parent_run_name=None
+
+       Behaves in a non-nested way:
+       - uses the active run if one exists
+       - otherwise creates a run named run_name
+
+   Nested mode
+       parent_run_name=<name>
+
+       - if a run named parent_run_name is currently active, reuses it
+         as parent run
+       - otherwise, if a parent_run_id is provided, it is used as
+         parent run
+       - otherwise, if a run named parent_run_name already exists in
+         the experiment, the most recent one is reused (looked up by
+         name, latest start time wins)
+       - otherwise a new parent run named parent_run_name is created
+       - a new child run named run_name is always created under the
+         parent
+       - all logging goes to the child run
+       - on :meth:`close`, only runs that were started by this logger
+         are ended; externally started runs are left open
+
+   .. rubric:: Notes
+
+   Run names are not unique in MLflow. If multiple runs share the same
+   parent_run_name, the most recently started one is used. For
+   unambiguous parent selection across script restarts, retrieve the
+   parent run ID from a previous child run's ``parent_run_id`` tag and
+   pass it explicitly via ``parent_run_id``.
+
+   :Parameters: * **experiment_name** (*str, optional*) -- MLflow experiment name. If provided,
+                  :func:`mlflow.set_experiment` is called.
+                * **run_name** (*str, optional*) -- Name for the MLflow run (used only when a new run is started).
+                * **parent_run_name** (*str, optional*) -- Name for the parent MLflow run (used only in nested mode).
+                * **parent_run_id** (*str, optional*) -- Run ID of an existing parent run. When provided in nested mode,
+                  skips the name-based search and attaches directly to this run.
+                * **run_tags** (*dict[str, str], optional*) -- Tags to set on the child (or only) run.
+                * **parent_tags** (*dict[str, str], optional*) -- Tags to set on the parent run (only applied when a new parent
+                  is created).
+
+
+   .. py:method:: log_params(params: dict[str, Any]) -> None
+
+      Log hyperparameters to the active MLflow run.
+
+
+
+   .. py:method:: log_metrics(metrics: dict[str, float], step: int | None = None) -> None
+
+      Log global or per-iteration metrics to the active MLflow run.
+
+
+
+
+   .. py:method:: close() -> None
+
+      End MLflow run if it was started by this logger.
+
+      If used in standard mode, this will end the run provided it was
+      started by this logger.
+
+      If used in nested mode, this will end the child run that was
+      started, and the parent run if it was started by this logger.
+
+
+
