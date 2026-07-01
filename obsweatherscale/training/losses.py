@@ -1,3 +1,21 @@
+"""Loss functions for Gaussian Process models.
+
+This module provides loss functions for training and validating
+GPyTorch-based Gaussian Process models.
+
+Functions
+---------
+crps_normal
+    Computes the Continuous Ranked Probability Score (CRPS) for a
+    univariate normal distribution.
+make_crps_loss
+    Wrapper to create a CRPS loss function for normal distributions that
+    handles missing values and optionally transforms the distribution.
+make_mll_loss
+    Wrapper to create a negative log-likelihood loss function of a
+    multivariate normal distribution, optionally transformed by a
+    likelihood function.
+"""
 from typing import Callable, cast
 
 import torch
@@ -109,8 +127,8 @@ def make_crps_loss(
 def make_mll_loss(
     mll: ExactMarginalLogLikelihood,
 ) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
-    """Wrapper to create a negative log-likelihood loss function
-    of a multivariate normal distribution, optionally transformed by a
+    """Wrapper to create a negative log-likelihood loss function of a
+    multivariate normal distribution, optionally transformed by a
     likelihood function.
 
     Parameters
@@ -132,9 +150,13 @@ def make_mll_loss(
 
     Raises
     ------
+    ValueError
+        If mll is None.
     TypeError
         If the mll doesn't return a torch.Tensor.
     """
+    if mll is None:
+        raise ValueError("mll must be provided when loss_type='mll'")
 
     def loss_fn(
         distribution: MultivariateNormal,

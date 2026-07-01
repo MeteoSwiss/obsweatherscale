@@ -1,3 +1,15 @@
+"""Transformed likelihood functionalities for obsweatherscale.
+
+Classes
+-------
+ExactMarginalLogLikelihoodFill
+    Extension of :class:`~gpytorch.ExactMarginalLogLikelihood` with
+    support for handling NaN values by filling instead of masking.
+
+TransformedGaussianLikelihood
+    A Gaussian likelihood with a transformed noise model.
+"""
+
 import math
 from typing import Any
 
@@ -323,14 +335,14 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
 
 
 class ExactMarginalLogLikelihoodFill(ExactMarginalLogLikelihood):
-    """Extension of ExactMarginalLogLikelihood with support for handling
-    NaN values by filling.
+    """Extension of ExactMarginalLogLikelihood that fills NaN values
+    with default value instead of masking.
 
-    This class extends the ExactMarginalLogLikelihood class to handle
-    missing values (represented as NaNs) through a filling mechanism.
-    It computes the exact marginal log likelihood for Gaussian
-    Processes, which is crucial for model selection and hyperparameter
-    optimization in GP models.
+    This class extends :class:`~gpytorch.ExactMarginalLogLikelihood` to
+    handle missing values (represented as NaNs) through a filling
+    mechanism. It computes the exact marginal log likelihood for
+    Gaussian Processes, which is crucial for model selection and
+    hyperparameter optimization in GP models.
 
     Parameters
     ----------

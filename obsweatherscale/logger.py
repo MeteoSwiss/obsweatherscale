@@ -1,13 +1,20 @@
 """Loggers for obsweatherscale.
 
 Provides a base :class:`Logger` interface and three concrete
-implementations:
+implementations.
 
-- :class:`TerminalLogger` — logs via Python's :mod:`logging` module.
-- :class:`CSVLogger` — writes per-iteration metrics to a CSV file and
-  hyperparameters to a JSON sidecar.
-- :class:`MLflowLogger` — logs parameters and metrics to an MLflow
-  tracking server.  Requires the optional ``mlflow`` dependency.
+Classes
+-------
+Logger
+    Abstract base class for training loggers.
+TerminalLogger
+    Logs via Python's :mod:`logging` module.
+CSVLogger
+    Writes per-iteration metrics to a CSV file and hyperparameters to a
+    JSON sidecar.
+MLflowLogger
+    Logs parameters and metrics to an MLflow tracking server. Requires
+    the optional ``mlflow`` dependency.
 """
 
 import csv
@@ -114,7 +121,7 @@ class CSVLogger(Logger):
     Parameters
     ----------
     filepath : Path or str
-        Path to the CSV output file.  Parent directories are created
+        Path to the CSV output file. Parent directories are created
         automatically.
     """
 

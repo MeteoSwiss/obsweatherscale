@@ -1,3 +1,22 @@
+"""Noise models for obsweatherscale.
+
+Provides a base :class:`TransformedNoise` and three concrete noise model
+implementations.
+
+Classes
+-------
+TransformedNoise
+    Base class for noise models that incorporate a transformation of the
+    target data.
+TransformedFixedGaussianNoise
+    Fixed (non-trainable) Gaussian noise across all inputs.
+TransformedHeteroskedasticNoise
+    A different, trainable noise variance for each data point
+    (heteroskedastic).
+TransformedHomoskedasticNoise
+    Constant, trainable noise across all inputs (homoskedastic).
+"""
+
 import abc
 from typing import Any
 
@@ -25,7 +44,8 @@ __all__ = [
 
 
 class TransformedNoise(Noise):
-    """Noise model incorporating a transformation of the target data.
+    """Base class for noise models that incorporate a transformation of
+    the target data.
 
     This is useful when the model is trained on transformed targets and
     the noise must be expressed in the transformed space (e.g., log).It
@@ -49,14 +69,6 @@ class TransformedNoise(Noise):
     """
 
     def __init__(self, transformer: Transformer) -> None:
-        """Initialize the TransformedNoise model with data transformer.
-
-        Parameters
-        ----------
-        transformer : Transformer
-            Object representing the transformation to be applied to
-            the target data.
-        """
         Noise.__init__(self)
         self.transformer = transformer
 
@@ -136,6 +148,10 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
     appropriate when it is trained on transformed outputs, and noise
     must be adjusted accordingly.
 
+    This class sets up both the trainable constant noise module and the
+    transformation-aware wrapper that ensures proper scaling in
+    transformed target space.
+
     Inherits from:
     - `TransformedNoise`: Applies the appropriate correction for target
     transformations.
@@ -166,29 +182,6 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
         noise_constraint: torch.nn.Module | None = None,
         batch_shape: torch.Size = torch.Size(),
     ) -> None:
-        """Initializes the TransformedHomoskedasticNoise model.
-
-        Sets up both the trainable constant noise module and the
-        transformation-aware wrapper that ensures proper scaling in
-        transformed target space.
-
-        Parameters
-        ----------
-        transformer : Transformer
-            A callable or object representing the transformation applied
-            to the target variable (e.g., logarithmic, standardization).
-
-        noise_prior : Prior, optional
-            Prior distribution placed over the constant noise variance.
-
-        noise_constraint : nn.Module, optional
-            Optional constraint to ensure valid noise variance
-            (e.g., positivity).
-
-        batch_shape : torch.Size, optional
-            The shape of batches for which independent noise parameters
-            are maintained.
-        """
         HomoskedasticNoise.__init__(
             self,
             noise_prior=noise_prior,
@@ -254,6 +247,10 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
     noise model is appropriate when it is trained on transformed
     outputs, and noise must be adjusted accordingly.
 
+    This class sets up both the heteroskedastic noise module and the
+    transformation-aware wrapper that ensures proper scaling in
+    transformed target space.
+
     Inherits from both:
     - `TransformedNoise`: Handles transformations on noise in the target
     space.
@@ -285,29 +282,6 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
         noise_indices: list[int] | None = None,
         noise_constraint: torch.nn.Module | None = None,
     ) -> None:
-        """Initializes the TransformedHeteroskedasticNoise model.
-
-        Sets up both the heteroskedastic noise module and the
-        transformation-aware wrapper that ensures proper scaling in
-        transformed target space.
-
-        Parameters
-        ----------
-        transformer : Transformer
-            A callable or object representing the transformation applied
-            to the target variable (e.g., logarithmic, standardization).
-
-        noise_model : nn.Module
-            A module that maps inputs to noise variances.
-
-        noise_indices : list[int], optional
-            A list of indices specifying which input dimensions are used
-            for modeling the noise. If None, all dimensions are used.
-
-        noise_constraint : nn.Module, optional
-            Optional constraint to ensure valid noise variance
-            (e.g., positivity).
-        """
         HeteroskedasticNoise.__init__(
             self,
             noise_model=noise_model,
@@ -381,6 +355,10 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
     when the model is trained on transformed targets, and noise must be
     adjusted accordingly.
 
+    This class sets up both the fixed constant noise module and the
+    transformation-aware wrapper that ensures proper scaling in
+    transformed target space.
+
     Inherits from:
     - `TransformedNoise`: Applies the appropriate correction for target
     transformations.
@@ -399,23 +377,6 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
         transformer: Transformer,
         obs_noise_var: torch.Tensor | int | float = 1.0,
     ) -> None:
-        """Initializes the TransformedFixedGaussianNoise model.
-
-        Sets up both the fixed constant noise module and the
-        transformation-aware wrapper that ensures proper scaling in
-        transformed target space.
-
-        Parameters
-        ----------
-        transformer : Transformer
-            A callable or object representing the transformation applied
-            to the target variable (e.g., logarithmic, standardization).
-
-        obs_noise_var : torch.Tensor or float or int
-            The fixed variance of the Gaussian noise. Can be a scalar,
-            a tensor of shape (N,), or a tensor matching the shape of
-            the input data.
-        """
         if isinstance(obs_noise_var, torch.Tensor):
             obs_noise_var = obs_noise_var.clone().detach().float()
         else: # for scalars (int or float)

@@ -1,3 +1,19 @@
+"""ScaledRBFKernel class.
+
+This module provides :class:`ScaledRBFKernel`, a GPyTorch-compatible
+kernel that wraps an :class:`~gpytorch.kernels.RBFKernel` inside a
+:class:`~gpytorch.kernels.ScaleKernel` to produce a fully parameterised
+squared-exponential kernel with controllable lengthscale(s) and output
+variance. Both hyperparameters can be initialised to fixed values and
+optionally frozen during optimisation.
+
+Classes
+-------
+ScaledRBFKernel
+    A scaled RBF kernel with optional ARD, priors, constraints, and
+    parameter freezing.
+"""
+
 from typing import Any
 
 import torch
@@ -8,10 +24,100 @@ from linear_operator.operators import LinearOperator
 
 
 class ScaledRBFKernel(Kernel):
-    """Scaled RBF Kernel class.
+    """A scaled radial basis function (RBF) kernel.
 
-    This class implements a scaled radial basis function (RBF) kernel
-    with the option to set the lengthscale and variance parameters.
+    Wraps :class:`~gpytorch.kernels.RBFKernel` inside a
+    :class:`~gpytorch.kernels.ScaleKernel` to implement the kernel:
+
+    .. math::
+        k(\\mathbf{x}_1, \\mathbf{x}_2) =
+            \\sigma^2 \\exp\\!\\left(
+                -\\frac{1}{2}
+                (\\mathbf{x}_1 - \\mathbf{x}_2)^{\\top}
+                \\mathbf{L}^{-2}
+                (\\mathbf{x}_1 - \\mathbf{x}_2)
+            \\right)
+
+    where :math:`\\sigma^2` is the output variance and :math:`\\mathbf{L}`
+    is a diagonal lengthscale matrix (scalar when ARD is disabled).
+
+    Both hyperparameters can be initialised to a fixed value and
+    optionally frozen (i.e. made non-trainable) during training, which
+    is useful for partially-fixed kernel configurations.
+
+    Parameters
+    ----------
+    variance : torch.Tensor, optional
+        Initial value for the output variance :math:`\\sigma^2`.
+        If ``None``, the GPyTorch default initialisation is used.
+    lengthscale : torch.Tensor, optional
+        Initial value for the lengthscale(s). A scalar tensor sets a
+        single shared lengthscale; a 1-D tensor of length ``D``
+        activates ARD with one lengthscale per dimension (and
+        ``ard_num_dims`` is inferred automatically). If ``None``, the
+        GPyTorch default initialisation is used.
+    ard_num_dims : int, optional
+        Number of ARD lengthscale dimensions. Ignored when *lengthscale*
+        is a multi-element tensor, in which case ``ard_num_dims`` is
+        inferred from ``lengthscale.numel()``.
+    batch_shape : torch.Size, optional
+        Batch shape for kernel, enabling independent kernel instances
+        across a batch dimension (e.g. for multi-output GPs).
+    active_dims : tuple[int, ...], optional
+        Indices of the input dimensions this kernel should operate on.
+        When provided alongside a multi-element *lengthscale*, the
+        tensor length must match ``len(active_dims)``.
+    lengthscale_prior : Prior, optional
+        GPyTorch prior placed on the lengthscale parameter.
+    lengthscale_constraint : Interval, optional
+        GPyTorch constraint applied to the lengthscale parameter (e.g.
+        :class:`~gpytorch.constraints.Positive`)
+    outputscale_prior : Prior, optional
+        GPyTorch prior placed on the output variance parameter.
+    outputscale_constraint : Interval, optional
+        GPyTorch constraint applied to the output variance parameter.
+    train_lengthscale : bool, default=True
+        If ``False``, the lengthscale is frozen and will not receive
+        gradient updates. *lengthscale* must be provided when this is
+        ``False``.
+    train_variance : bool, default=True
+        If ``False``, the output variance is frozen and will not receive
+        gradient updates. *variance* must be provided when this is
+        ``False``.
+    eps : float, default=1e-6
+        Numerical jitter added to the diagonal of the kernel matrix for
+        stability. Forwarded directly to
+        :class:`~gpytorch.kernels.RBFKernel`.
+    **kwargs : Any
+        Additional keyword arguments forwarded to
+        :class:`~gpytorch.kernels.RBFKernel`.
+
+    Attributes
+    ----------
+    kernel : ScaleKernel
+        The composed kernel: a :class:`~gpytorch.kernels.ScaleKernel`
+        wrapping an :class:`~gpytorch.kernels.RBFKernel`. Access inner
+        RBF kernel via ``self.kernel.base_kernel``.
+
+    Raises
+    ------
+    ValueError
+        If *active_dims* is provided alongside a multi-element
+        *lengthscale* whose length does not match ``len(active_dims)``.
+    ValueError
+        If ``train_lengthscale=False`` but *lengthscale* is ``None`` (no
+        initial value to freeze to).
+    ValueError
+        If ``train_variance=False`` but *variance* is ``None`` (no
+        initial value to freeze to).
+
+    Notes
+    -----
+    Freezing a parameter is implemented by calling
+    ``requires_grad_(False)`` on the corresponding raw (unconstrained)
+    parameter tensor. This means the parameter is still present in the
+    model's ``state_dict`` and can be saved/loaded normally, but it will
+    not appear in ``model.parameters()`` for gradient-based optimisers.
     """
 
     def __init__(
@@ -30,37 +136,6 @@ class ScaledRBFKernel(Kernel):
         eps: float = 1e-06,
         **kwargs: Any,
     ) -> None:
-        """Initialize the ScaledRBFKernel.
-
-        Parameters
-        ----------
-        variance : torch.Tensor, optional
-            The variance parameter for the kernel.
-        lengthscale : torch.Tensor, optional
-            The lengthscale parameter for the kernel.
-        ard_num_dims : int, optional
-            The number of dimensions for the lengthscale parameter.
-        batch_shape : torch.Size, optional
-            The batch shape of the kernel.
-        active_dims : tuple[int, ...], optional
-            The active dimensions for the kernel.
-        lengthscale_prior : Prior, optional
-            The prior for the lengthscale parameter.
-        lengthscale_constraint : Interval, optional
-            The constraint for the lengthscale parameter.
-        outputscale_prior : Prior, optional
-            The prior for the outputscale parameter.
-        outputscale_constraint : Interval, optional
-            The constraint for the outputscale parameter.
-        train_lengthscale : bool, default=True
-            Whether to train the lengthscale parameter.
-        train_variance : bool, default=True
-            Whether to train the variance parameter.
-        eps : float, default=1e-06
-            A small value to prevent numerical instability.
-        **kwargs : Any
-            Additional keyword arguments for the kernel.
-        """
         super().__init__()
 
         if (

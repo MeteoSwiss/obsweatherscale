@@ -1,3 +1,11 @@
+"""Datasets for Gaussian Process models.
+
+Classes
+-------
+GPDataset
+    Abstract base class for Gaussian Process datasets.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -8,12 +16,22 @@ from torch.utils.data import Dataset
 class GPDataset(Dataset, ABC):
     """Abstract base class for Gaussian Process datasets.
 
-    This class extends PyTorch's Dataset class to provide a standardized
-    interface for datasets used in Gaussian Process models. It defines
-    required methods for data access, transformation, and device
-    management.
+    Extends :class:`torch.utils.data.Dataset` with a standardized
+    interface for datasets consumed by Gaussian Process models. Beyond
+    the standard PyTorch ``__len__`` / ``__getitem__`` protocol,
+    subclasses are expected to expose the full dataset (input tensor
+    ``x`` and target tensor ``y``), and implement device transfer so
+    that dataset tensors can be moved alongside a model.
 
-    All subclasses must implement the abstract methods defined here.
+    Notes
+    -----
+    Subclasses must implement all methods decorated with
+    ``@abstractmethod``. Attempting to instantiate ``GPDataset``
+    directly will raise :class:`TypeError`.
+
+    Subclasses should call ``super().__init__()`` in their own
+    ``__init__`` if they rely on any initialisation logic defined by
+    :class:`torch.utils.data.Dataset`.
 
     See Also
     --------

@@ -1,3 +1,15 @@
+"""MLP class.
+
+This module provides :class:`MLP`, a :class:`~torch.nn.Module` subclass
+implementing a MLP.
+
+Classes
+-------
+MLP
+    A simple MLP with ReLU activation functions and an optional output
+    activation function.
+"""
+
 from typing import Callable
 
 import torch
@@ -9,6 +21,25 @@ class MLP(nn.Module):
 
     This class implements a simple multi-layer perceptron with ReLU
     activation functions and an optional output activation function.
+
+    Parameters
+    ----------
+    dimensions : list of int
+        List of integers representing the dimensions of each layer.
+        The first element is the input dimension, the last element
+        is the output dimension, and the intermediate elements are
+        hidden layer dimensions.
+    output_activation_fct : callable, optional
+        Activation function to apply to the output.
+        If None, no activation function is applied.
+    active_dims : list of int, optional
+        List of indices specifying which dimensions of the input to
+        use. If None, all dimensions are used.
+
+    Examples
+    --------
+    # 10D input, 1D output with sigmoid
+    >>> mlp = MLP([10, 64, 32, 1], torch.sigmoid)
     """
 
     def __init__(
@@ -17,27 +48,6 @@ class MLP(nn.Module):
         output_activation_fct: Callable | None = None,
         active_dims: list[int] | None = None,
     ) -> None:
-        """Initialize the MLP model.
-
-        Parameters
-        ----------
-        dimensions : list of int
-            List of integers representing the dimensions of each layer.
-            The first element is the input dimension, the last element
-            is the output dimension, and the intermediate elements are
-            hidden layer dimensions.
-        output_activation_fct : callable, optional
-            Activation function to apply to the output.
-            If None, no activation function is applied.
-        active_dims : list of int, optional
-            List of indices specifying which dimensions of the input to
-            use. If None, all dimensions are used.
-
-        Examples
-        --------
-        # 10D input, 1D output with sigmoid
-        >>> mlp = MLP([10, 64, 32, 1], torch.sigmoid)
-        """
         super().__init__()
 
         layers: list[nn.Linear | nn.ReLU] = []
@@ -55,6 +65,18 @@ class MLP(nn.Module):
             self.active_dims = torch.tensor(active_dims, requires_grad=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Transform input locations *x* into a learned feature space.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape ``(*, D_in)``.
+
+        Returns
+        -------
+        torch.Tensor
+            Transformed data of shape ``(*, D_out)``.
+        """
         x = self.mlp(x[..., self.active_dims])
         if self.output_activation_fct is not None:
             return self.output_activation_fct(x)

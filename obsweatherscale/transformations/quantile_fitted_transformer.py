@@ -1,35 +1,35 @@
+"""QuantileFittedTransformer class.
+
+Classes
+-------
+QuantileFittedTransformer
+    Continuous approximation of a quantile transform.
+"""
+
 import torch
 
 from .transformer import Transformer
 
 
 class QuantileFittedTransformer(Transformer):
-    """QuantileFittedTransformer class.
+    """Continuous approximation of a quantile transform.
 
-    This class implements a quantile fitted transformation for continuous
-    functions. It approximates the quantile transform using a continuous
-    function defined by the formula: f(y) = log(a / y - c) / b, where
-    a, b, and c are parameters of the transformation. The inverse
-    transformation is defined by the formula:
-    f^-1(z) = a / (c + exp(-b * z)).
+    Approximates the quantile transform using:
+        f(y)    = -log(a / y - c) / b
+        f⁻¹(z) =  a / (c + exp(-b * z))
+
+    Parameters
+    ----------
+    a, b, c : float
+        Shape parameters of the transformation. Defaults are fitted to
+        a reference quantile distribution.
     """
 
     def __init__(
         self, a: float = 4.66628594,
         b: float = 0.73680252,
-        c: float = 0.07385268
+        c: float = 0.07385268,
     ) -> None:
-        """Initializes the QuantileFittedTransformer.
-
-        Parameters
-        ----------
-        a : float, default=4.66628594
-            The parameter a for the transformation.
-        b : float, default=0.73680252
-            The parameter b for the transformation.
-        c : float, default=0.07385268
-            The parameter c for the transformation.
-        """
         self.a = a
         self.b = b
         self.c = c
@@ -52,14 +52,28 @@ class QuantileFittedTransformer(Transformer):
         return self.a / (self.c + torch.exp(-self.b * z))
 
     def transform_derivative(self, y: torch.Tensor) -> torch.Tensor:
-        """Compute derivative of quantile fitted transformation."""
+        """Compute df/dy."""
         return self.a / (self.b * y * (self.a - self.c * y))
 
     def inv_transform_derivative(self, z: torch.Tensor) -> torch.Tensor:
-        """Compute derivative of inverse quantile fitted transformation."""
+        """Compute df⁻¹/dz."""
         exp_neg_bz = torch.exp(-self.b * z)
         return (self.a * self.b * exp_neg_bz) / ((self.c + exp_neg_bz) ** 2)
 
-    def noise_transform(self, data: torch.Tensor) -> torch.Tensor:
-        """Apply noise transformation to input data."""
-        return self.transform_derivative(self.inverse_transform(data))
+    def noise_transform(self, z: torch.Tensor) -> torch.Tensor:
+        """Return the Jacobian factor for noise propagation at z.
+
+        Evaluates f'(f⁻¹(z)), the derivative of the forward transform at
+        the original-space value corresponding to z.
+
+        Parameters
+        ----------
+        z : torch.Tensor
+            Targets in the transformed space.
+
+        Returns
+        -------
+        torch.Tensor
+            Pointwise Jacobian factor f'(f⁻¹(z)), same shape as z.
+        """
+        return self.transform_derivative(self.inverse_transform(z))
