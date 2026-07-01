@@ -1,3 +1,18 @@
+"""Trainer class for Gaussian Process models.
+
+This module provides utilities for training and validating GPyTorch-
+based Gaussian Process models, including a random state context manager
+for reproducible evaluation and a ``Trainer`` class that encapsulates
+the training loop logic.
+
+Classes
+-------
+RandomStateContext
+    Context manager for preserving and restoring PyTorch's RNG state.
+Trainer
+    Orchestrates training and validation of an ``ExactGP`` model.
+"""
+
 import random
 import time
 from pathlib import Path
@@ -37,7 +52,7 @@ class RandomStateContext:
         self.current_state: torch.Tensor
 
     def __enter__(self) -> 'RandomStateContext':
-        """Enter the context, saving the current RNG state and reseeding.
+        """Enter the context, save the current RNG state and reseed.
 
         Returns
         -------
@@ -69,7 +84,64 @@ class RandomStateContext:
 
 
 class Trainer:
-    """Trainer class for Gaussian Process models."""
+    """Orchestrates training and validation of a GPyTorch ``ExactGP``
+    model.
+
+    ``Trainer`` wraps an ``ExactGP`` model together with its likelihood,
+    loss functions, optimiser, and target device into a single object
+    that manages the training loop. It tracks the best validation loss
+    seen so far and keeps a snapshot of the corresponding model weights.
+
+    Parameters
+    ----------
+    model : ExactGP
+        The Gaussian Process prior model to be trained.
+    likelihood : _GaussianLikelihoodBase
+        The likelihood function for the model.
+    train_loss_fn : Callable
+        Loss function used during training. Expected signature::
+            loss = train_loss_fn(output, target)
+    val_loss_fn : Callable
+        Loss function used during validation. Expected signature::
+            loss = val_loss_fn(output, target)
+    device : torch.device
+        The device (``"cpu"`` or ``"cuda"``) on which tensors and the
+        model will reside during training.
+    optimizer : Optimizer
+        A PyTorch-compatible optimizer responsible for updating the
+        model and likelihood parameters.
+
+    Attributes
+    ----------
+    model : ExactGP
+        The GP model being trained.
+    best_model : ExactGP
+        A snapshot of *model* at the epoch with the lowest validation
+        loss. Initialized to *model* at construction time.
+    likelihood : _GaussianLikelihoodBase
+        The Gaussian likelihood used for training and evaluation.
+    train_loss_fn : Callable
+        The training loss function.
+    val_loss_fn : Callable
+        The validation loss function.
+    device : torch.device
+        The compute device used for training.
+    optimizer : Optimizer
+        The parameter optimiser.
+    best_val_loss : float
+        The lowest validation loss recorded across all training epochs.
+        Initialized to ``torch.inf``.
+
+    Examples
+    --------
+    >>> trainer = Trainer(
+    ...     model=gp_model,
+    ...     train_loss_fn=mll,
+    ...     val_loss_fn=rmse,
+    ...     optimizer=torch.optim.Adam(gp_model.parameters(), lr=0.01),
+    ...     device=torch.device("cuda"),
+    ... )
+    """
 
     def __init__(
         self,
@@ -80,23 +152,6 @@ class Trainer:
         device: torch.device,
         optimizer: Optimizer,
     ) -> None:
-        """Initialize the Trainer class.
-
-        Parameters
-        ----------
-        model : ExactGP
-            The Gaussian Process prior model.
-        likelihood : _GaussianLikelihoodBase
-            The likelihood function for the model.
-        train_loss_fn : Callable
-            The loss function to use for training.
-        val_loss_fn : Callable
-            The loss function to use for validation.
-        device : torch.device
-            The device to use for training (CPU or GPU).
-        optimizer : Optimizer
-            The optimizer to use for training the model.
-        """
         self.model = model
         self.best_model = model
         self.likelihood = likelihood
@@ -156,6 +211,7 @@ class Trainer:
             :class:`MLflowLogger`).  Each logger receives
             hyperparameters once before training and per-iteration
             metrics.  When *None*, no additional logging is performed.
+
         Returns
         -------
         model : ExactGP
@@ -246,7 +302,7 @@ class Trainer:
                         batch_x_context,
                         batch_y_context,
                         batch_x_target,
-                        batch_y_target
+                        batch_y_target,
                     )
 
             # Logging
@@ -265,7 +321,7 @@ class Trainer:
                 "train loss": train_loss,
                 "val loss": val_loss,
                 "train time": stop_targetrain - start,
-                "iter time": stop - start
+                "iter time": stop - start,
             }
             for logger in loggers_list:
                 logger.log_metrics(iter_metrics, step=i + 1)
@@ -304,7 +360,7 @@ class Trainer:
         self.likelihood.train()
 
         self.model.set_train_data(
-            inputs=batch_x, targets=batch_y, strict=False
+            inputs=batch_x, targets=batch_y, strict=False,
         )
         distribution = self.model(batch_x)
         loss = self.train_loss_fn(distribution, batch_y)
@@ -346,7 +402,7 @@ class Trainer:
         self.likelihood.eval()
 
         self.model.set_train_data(
-            batch_x_context, batch_y_context, strict=False
+            batch_x_context, batch_y_context, strict=False,
         )
         distribution_val = self.model(batch_x_target)
         loss = self.val_loss_fn(distribution_val, batch_y_target)
@@ -393,9 +449,11 @@ class Trainer:
         mask_shape = (1, *data.shape[1:])
 
         with RandomStateContext():
-            random_mask = torch.bernoulli(
-                torch.ones(mask_shape) * p
-            ).bool().expand_as(data)
+            random_mask = (
+                torch.bernoulli(torch.ones(mask_shape) * p)
+                .bool()
+                .expand_as(data)
+            )
             data[random_mask] = torch.nan
 
         return data

@@ -1,3 +1,32 @@
+"""obsweatherscale - Gaussian Process models for downscaling of weather
+fields, with conditioning on in-situ observations.
+
+Provides GP model components, kernels, likelihoods, training utilities,
+and data interfaces tailored for weather-scale observational datasets.
+
+Subpackages
+-----------
+data
+    Dataset abstractions and loaders (``GPDataset`` and subclasses).
+kernels
+    Custom GP kernels (``ScaledRBFKernel`, ``NeuralKernel``).
+likelihoods
+    Custom likelihood functions.
+logger
+    Terminal and file logging interfaces.
+means
+    Custom mean functions (``NeuralMean``).
+models
+    GP model definitions built on GPyTorch's ``ExactGP``.
+training
+    Training utilities (``Trainer``).
+transformations
+    Input and output data transformation abstractions and concrete
+    implementations (``Standardizer``, ``QuantileFittedTransformer``).
+sampling
+    Distribution sampling utilities.
+"""
+
 from .data import GPDataset
 from .kernels import NeuralKernel, ScaledRBFKernel
 from .likelihoods import (

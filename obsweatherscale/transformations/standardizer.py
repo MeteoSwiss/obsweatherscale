@@ -1,37 +1,44 @@
+"""Standardization transformation class.
+
+Classes
+-------
+Standardizer
+    Standardization transformation (zero mean, unit variance).
+"""
+
 import torch
 
 
 class Standardizer:
-    """Standardization transformation class."""
+    """Standardization transformation (zero mean, unit variance).
+
+    Parameters
+    ----------
+    data : torch.Tensor
+        The data to be standardized.
+    variables : tuple[int, ...] or int, optional
+        The dimensions to be used for standardization.
+        If None, all dimensions will be used.
+    """
 
     def __init__(
         self,
         data: torch.Tensor,
-        variables: tuple[int, ...] | int | None = None
+        variables: tuple[int, ...] | int | None = None,
     ) -> None:
-        """Initialize the Standardizer.
-
-        Parameters
-        ----------
-        data : torch.Tensor
-            The data to be standardized.
-        variables : tuple[int, ...] or int, optional
-            The dimensions to be used for standardization.
-            If None, all dimensions will be used.
-        """
         self.fit(data, variables)
 
     @property
     def description(self) -> str:
         """Return a short description of the sandard normalization."""
-        return "Standard normalization: f(y) = (y - mean(y) / stddev(y))"
+        return "Standard normalization: f(y) = (y - mean(y)) / std(y)"
 
     def fit(
         self,
         data: torch.Tensor,
         variables: tuple[int, ...] | int | None = None
     ) -> None:
-        """Fit standardization transformation to input data.
+        """Fit mean and standard deviation from input data.
 
         Parameters
         ----------
@@ -45,7 +52,7 @@ class Standardizer:
         self.std = data.std(dim=variables).squeeze()
 
     def transform(self, y: torch.Tensor, copy: bool = False) -> torch.Tensor:
-        """Apply standardization transformation to input data."""
+        """Apply standardization: z = (y - mean) / std."""
         if copy:
             y = y.detach().clone()
         return (y - self.mean) / self.std
@@ -55,7 +62,7 @@ class Standardizer:
         z: torch.Tensor,
         copy: bool = False
     ) -> torch.Tensor:
-        """Apply inverse standardization transformation to input data."""
+        """Invert standardization: y = z * std + mean."""
         if copy:
             z = z.detach().clone()
         return z * self.std + self.mean
