@@ -9,6 +9,11 @@ Classes
 -------
 Transformer
     Abstract base class for all data transformations.
+ParametricTransformer
+    Base class for transformers with fixed parameters (no fitting
+    needed).
+FittedTransformer
+    Base class for transformers that learn parameters from data.
 QuantileFittedTransformer
     Continuous approximation of a quantile transform.
 Standardizer
@@ -17,6 +22,12 @@ Standardizer
 
 from .quantile_fitted_transformer import QuantileFittedTransformer
 from .standardizer import Standardizer
-from .transformer import Transformer
+from .transformer import Transformer, FittedTransformer, ParametricTransformer
 
-__all__ = ["QuantileFittedTransformer", "Standardizer", "Transformer"]
+__all__ = [
+    "Transformer",
+    "FittedTransformer",
+    "ParametricTransformer",
+    "QuantileFittedTransformer",
+    "Standardizer",
+]

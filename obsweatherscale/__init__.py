@@ -43,7 +43,10 @@ from .sampling import sample
 from .training import (
     Trainer, crps_normal, make_crps_loss, make_mll_loss, make_loss,
 )
-from .transformations import QuantileFittedTransformer, Standardizer, Transformer
+from .transformations import (
+    Transformer, FittedTransformer, ParametricTransformer,
+    QuantileFittedTransformer, Standardizer,
+)
 
 __all__ = [
     "GPDataset",
@@ -55,6 +58,8 @@ __all__ = [
     "Logger", "TerminalLogger", "CSVLogger", "MLflowLogger",
     "NeuralMean",
     "GPModel", "MLP",
+    "sample",
     "Trainer", "crps_normal", "make_crps_loss", "make_mll_loss", "make_loss",
-    "QuantileFittedTransformer", "Standardizer", "Transformer",
+    "Transformer", "FittedTransformer", "ParametricTransformer",
+    "QuantileFittedTransformer", "Standardizer",
 ]

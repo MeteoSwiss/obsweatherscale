@@ -8,10 +8,10 @@ QuantileFittedTransformer
 
 import torch
 
-from .transformer import Transformer
+from .transformer import ParametricTransformer
 
 
-class QuantileFittedTransformer(Transformer):
+class QuantileFittedTransformer(ParametricTransformer):
     """Continuous approximation of a quantile transform.
 
     Approximates the quantile transform using:
