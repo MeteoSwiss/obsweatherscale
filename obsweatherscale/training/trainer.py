@@ -13,10 +13,12 @@ Trainer
     Orchestrates training and validation of an ``ExactGP`` model.
 """
 
+import copy
 import random
 import time
 from pathlib import Path
 from typing import Callable
+import warnings
 
 import torch
 from gpytorch import settings
@@ -83,7 +85,7 @@ class RandomStateContext:
         torch.random.set_rng_state(self.current_state)
 
 
-class Trainer:
+class Trainer:  # pylint: disable=too-many-instance-attributes
     """Orchestrates training and validation of a GPyTorch ``ExactGP``
     model.
 
@@ -96,8 +98,6 @@ class Trainer:
     ----------
     model : ExactGP
         The Gaussian Process prior model to be trained.
-    likelihood : _GaussianLikelihoodBase
-        The likelihood function for the model.
     train_loss_fn : Callable
         Loss function used during training. Expected signature::
             loss = train_loss_fn(output, target)
@@ -129,8 +129,10 @@ class Trainer:
     optimizer : Optimizer
         The parameter optimiser.
     best_val_loss : float
-        The lowest validation loss recorded across all training epochs.
-        Initialized to ``torch.inf``.
+        The lowest validation loss recorded across all training
+        iterations. Initialized to ``torch.inf``.
+    history : list[dict]
+        Per-iteration metrics recorded during last call to ``fit()``.
 
     Examples
     --------
@@ -146,19 +148,28 @@ class Trainer:
     def __init__(
         self,
         model: ExactGP,
-        likelihood: _GaussianLikelihoodBase,
         train_loss_fn: Callable,
         val_loss_fn: Callable,
         device: torch.device,
         optimizer: Optimizer,
     ) -> None:
         self.model = model
-        self.best_model = model
-        self.likelihood = likelihood
+        self.likelihood: _GaussianLikelihoodBase = model.likelihood # type: ignore
         self.train_loss_fn = train_loss_fn
         self.val_loss_fn = val_loss_fn
         self.device = device
         self.optimizer = optimizer
+
+        self.history: list[dict] = []
+        self.best_val_loss = torch.inf
+        self._best_state: dict = copy.deepcopy(self.model.state_dict())
+
+    @property
+    def best_model(self) -> ExactGP:
+        """The model, holding best-validation-loss weights post-fit."""
+        best_model = copy.deepcopy(self.model)
+        best_model.load_state_dict(self._best_state)
+        return best_model
 
     def fit(
         self,
@@ -168,13 +179,13 @@ class Trainer:
         batch_size: int,
         n_iter: int,
         random_masking: bool = True,
-        seed: int | None = None,
+        seed: int = 123,
         nan_policy: str = "fill",
         prec_size: int = 100,
         output_dir: Path | None = None,
         verbose: bool = True,
         loggers: list[Logger] | None = None,
-    ) -> tuple[ExactGP, dict[str, list]]:
+    ) -> "Trainer":
         """Train the Gaussian Process model.
 
         Parameters
@@ -191,7 +202,7 @@ class Trainer:
             The number of iterations for training.
         random_masking : bool, default=True
             Whether to apply random masking to the training data.
-        seed : int, optional, default=None
+        seed : int, default=123
             The random seed for reproducibility.
         nan_policy : str, default='fill'
             The policy for handling NaN values in the data. Options are
@@ -214,15 +225,11 @@ class Trainer:
 
         Returns
         -------
-        model : ExactGP
-            The trained Gaussian Process model.
-        train_progression : dict[str, list]
-            Dictionary with training progression metrics with keys:
-            - 'iter': List of iteration numbers
-            - 'train loss': List of training loss values
-            - 'val loss': List of validation loss values
-            - 'train time': List of training step durations (seconds)
-            - 'iter time': List of total iteration durations (seconds)
+        Trainer
+            ``self``, so calls can be chained (e.g.
+            ``trainer.fit(...).best_model``). The best model, its
+            validation loss, and per-iteration history are available
+            as attributes afterward.
         """
 
         if output_dir is not None:
@@ -230,11 +237,6 @@ class Trainer:
 
         length = len(train)
         val_length = len(val_context)
-        train_progression : dict[str, list] = {
-            "iter": [],
-            "train loss": [], "val loss": [],
-            "iter time": [], "train time": [],
-        }
 
         torch.manual_seed(seed)
 
@@ -244,8 +246,6 @@ class Trainer:
         train.to(self.device)
         val_context.to(self.device)
         val_target.to(self.device)
-
-        best_val_loss = torch.inf
 
         loggers_list: list[Logger] = list(loggers) if loggers else []
         if verbose:
@@ -262,11 +262,14 @@ class Trainer:
             "model": type(self.model).__name__,
             "optimizer": type(self.optimizer).__name__,
         }
-        for group in self.optimizer.param_groups:
-            log_params["learning_rate"] = group["lr"]
-            break
+        log_params["learning_rate"] = {
+            f"param_group_{i}": param_group['lr']
+            for i, param_group in enumerate(self.optimizer.param_groups)
+        }
         for logger in loggers_list:
             logger.log_params(log_params)
+
+        self.history = []
 
         for i in range(n_iter):
             start = time.time()
@@ -296,7 +299,7 @@ class Trainer:
 
                 with (
                     torch.no_grad(),
-                    settings.observation_nan_policy(nan_policy)
+                    settings.observation_nan_policy(nan_policy),
                 ):
                     val_loss = self._val_step(
                         batch_x_context,
@@ -306,36 +309,46 @@ class Trainer:
                     )
 
             # Logging
-            # Save best model so far
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                self.best_model = self.model
+            # Save checkpoint if output_dir is provided
+            if output_dir is not None:
+                torch.save(
+                    self.model.state_dict(),
+                    output_dir / f"model_{i}.pt",
+                )
 
-                if output_dir is not None:
-                    torch.save(self.model.state_dict(), output_dir / "model")
+            # Keep track of best validation loss and best model so far
+            if val_loss < self.best_val_loss:
+                self.best_val_loss = val_loss
+                self._best_state = copy.deepcopy(self.model.state_dict())
 
             stop = time.time()
 
             iter_metrics = {
-                "iter": i + 1,
+                "iter": i,
                 "train loss": train_loss,
                 "val loss": val_loss,
                 "train time": stop_targetrain - start,
                 "iter time": stop - start,
             }
             for logger in loggers_list:
-                logger.log_metrics(iter_metrics, step=i + 1)
+                logger.log_metrics(iter_metrics, step=i)
+            self.history.append(iter_metrics)
 
-            for k, v in iter_metrics.items():
-                train_progression[k].append(v)
+        # Restore best-validation-loss weights into self.model.
+        # No further training happens after this, so it's safe for
+        # `best_model` to simply alias `model` from here on.
+        self.model.load_state_dict(self._best_state)
 
         for logger in loggers_list:
-            logger.log_metrics({"best_val_loss": best_val_loss}, step=None)
+            logger.log_metrics(
+                {"best_val_loss": self.best_val_loss},
+                step=None,
+            )
 
         for logger in loggers_list:
             logger.close()
 
-        return self.best_model, train_progression
+        return self
 
     def _train_step(
         self,
@@ -425,6 +438,15 @@ class Trainer:
             A list of `batch_size` unique indices randomly sampled from
             the range [0, length).
         """
+        if batch_size > length:
+            warnings.warn(
+                f"batch_size {batch_size} exceeds dataset size ({length}). "
+                f"Using {length} as batch size.",
+                UserWarning,
+                stacklevel=3,
+            )
+            batch_size = length
+
         return random.sample(range(length), batch_size)
 
     def _apply_random_masking(
