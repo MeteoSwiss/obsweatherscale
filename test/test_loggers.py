@@ -409,10 +409,7 @@ class TestMLflowLogger:
         )
 
         mock.MlflowClient.return_value.search_runs.assert_not_called()
-        mock.start_run.assert_any_call(
-            run_id=existing_parent_id,
-            run_name=existing_parent_name,
-        )
+        mock.start_run.assert_any_call(run_id=existing_parent_id)
         mock.start_run.assert_any_call(run_name=child_name, nested=True)
 
     def test_nested_mode_raises_for_wrong_parent(self) -> None:

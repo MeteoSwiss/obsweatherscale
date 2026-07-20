@@ -304,7 +304,7 @@ class MLflowLogger(Logger):
                 )
 
             active_id = active.info.run_id
-            if active_id != parent_run_id:
+            if parent_run_id is not None and active_id != parent_run_id:
                 raise RuntimeError(
                     f"Active MLflow run '{active_id}' does not match "
                     f"requested parent run id '{parent_run_id}'."
@@ -312,9 +312,7 @@ class MLflowLogger(Logger):
 
         elif parent_run_id is not None:
             # Caller pinned an exact run —> skip name search entirely
-            active = self._mlflow.start_run(
-                run_id=parent_run_id, run_name=parent_run_name,
-            )
+            active = self._mlflow.start_run(run_id=parent_run_id)
 
         else:
             # Fall back to name-based search (ambiguous if duplicates)
