@@ -2,11 +2,37 @@ from typing import Any
 
 import gpytorch
 import torch
-from gpytorch import ExactMarginalLogLikelihood
+from gpytorch import settings
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import GaussianLikelihood
 
 import obsweatherscale as ows
+
+# Define a simple Exact GP model
+class ExactGPModel(gpytorch.models.ExactGP):
+    def __init__(
+        self,
+        train_x: torch.Tensor,
+        train_y: torch.Tensor,
+        likelihood: GaussianLikelihood,
+    ) -> None:
+        super().__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ConstantMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(
+            gpytorch.kernels.RBFKernel()
+        )
+
+    # pylint: disable=arguments-differ
+    def forward(
+        self,
+        x: torch.Tensor,
+        **kwargs: Any,
+    ) -> gpytorch.distributions.MultivariateNormal:
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(
+            mean_x, covar_x  # type: ignore
+        )
 
 
 def test_crps_normal() -> None:
@@ -22,14 +48,19 @@ def test_crps_normal() -> None:
 
 
 def test_crps_loss_fn() -> None:
+    # Prepare training data
+    train_x = torch.randn(10, 3)
+    train_y = torch.randn(10, 1)
 
     likelihood = GaussianLikelihood()
+    model = ExactGPModel(train_x, train_y, likelihood)
+
     mu = torch.tensor([0.0])
     sigma = torch.tensor([1.0])
     y = torch.tensor([0.5])
     dist = MultivariateNormal(mu, covariance_matrix=torch.diag_embed(sigma**2))
 
-    loss_fn = ows.make_crps_loss(likelihood)
+    loss_fn = ows.make_crps_loss(model)
 
     loss_value = loss_fn(dist, y)
 
@@ -38,49 +69,19 @@ def test_crps_loss_fn() -> None:
 
 
 def test_mll_loss_fn() -> None:
-    # Prepare training data
-    train_x = torch.randn(10, 3)
-    train_y = torch.randn(10, 1)
-
-    # Define a simple Exact GP model
-    class ExactGPModel(gpytorch.models.ExactGP):
-        def __init__(
-            self,
-            train_x: torch.Tensor,
-            train_y: torch.Tensor,
-            likelihood: GaussianLikelihood,
-        ) -> None:
-            super().__init__(train_x, train_y, likelihood)
-            self.mean_module = gpytorch.means.ConstantMean()
-            self.covar_module = gpytorch.kernels.ScaleKernel(
-                gpytorch.kernels.RBFKernel()
-            )
-
-        # pylint: disable=arguments-differ
-        def forward(
-            self,
-            x: torch.Tensor,
-            **kwargs: Any,
-        ) -> gpytorch.distributions.MultivariateNormal:
-            mean_x = self.mean_module(x)
-            covar_x = self.covar_module(x)
-            return gpytorch.distributions.MultivariateNormal(
-                mean_x, covar_x  # type: ignore
-            )
-
-    # Instantiate GP model, likelihood and the loss, then wrap it
-    likelihood = GaussianLikelihood()
-    model = ExactGPModel(train_x, train_y, likelihood)
-    mll = ExactMarginalLogLikelihood(likelihood, model)
-    loss_fn = ows.make_mll_loss(mll)
-
     # Generate a distribution to test
     mu = torch.tensor([0.0])
     sigma = torch.tensor([1.0])
     y = torch.tensor([0.5])
     dist = MultivariateNormal(mu, covariance_matrix=torch.diag_embed(sigma**2))
 
+    # Instantiate GP model, likelihood and the loss, then wrap it
+    likelihood = GaussianLikelihood()
+    model = ExactGPModel(mu, y, likelihood)
+    loss_fn = ows.make_mll_loss(model)
+
     # Compute the loss and check its properties
-    loss_value = loss_fn(dist, y)
+    with settings.observation_nan_policy("mask"):
+        loss_value = loss_fn(dist, y)
     assert loss_value.shape == (), "Loss value shape mismatch"
     assert loss_value.item() > 0, "Loss value should be positive"

@@ -22,11 +22,14 @@ make_mll_loss
     Creates a negative log-likelihood loss function for a multivariate
     normal distribution, optionally transformed by a likelihood
     function.
+make_loss
+    Factory function to create a loss function based on the specified
+    loss type.
 """
 
-from .losses import crps_normal, make_crps_loss, make_mll_loss
+from .losses import crps_normal, make_crps_loss, make_mll_loss, make_loss
 from .trainer import Trainer
 
 __all__ = [
-    "Trainer", "crps_normal", "make_crps_loss", "make_mll_loss",
+    "Trainer", "crps_normal", "make_crps_loss", "make_mll_loss", "make_loss",
 ]
