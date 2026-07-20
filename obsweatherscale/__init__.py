@@ -40,7 +40,9 @@ from .logger import Logger, TerminalLogger, CSVLogger, MLflowLogger
 from .means import NeuralMean
 from .models import GPModel, MLP
 from .sampling import sample
-from .training import Trainer, crps_normal, make_crps_loss, make_mll_loss
+from .training import (
+    Trainer, crps_normal, make_crps_loss, make_mll_loss, make_loss,
+)
 from .transformations import QuantileFittedTransformer, Standardizer, Transformer
 
 __all__ = [
@@ -53,6 +55,6 @@ __all__ = [
     "Logger", "TerminalLogger", "CSVLogger", "MLflowLogger",
     "NeuralMean",
     "GPModel", "MLP",
-    "Trainer", "crps_normal", "make_crps_loss", "make_mll_loss",
+    "Trainer", "crps_normal", "make_crps_loss", "make_mll_loss", "make_loss",
     "QuantileFittedTransformer", "Standardizer", "Transformer",
 ]

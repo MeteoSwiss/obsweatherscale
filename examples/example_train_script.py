@@ -147,9 +147,8 @@ def main() -> None:
     )
 
     #### Loss functions ####
-    mll = ows.ExactMarginalLogLikelihoodFill(likelihood, model)
-    train_loss_fct = ows.make_mll_loss(mll)
-    val_loss_fct = ows.make_crps_loss(likelihood)
+    train_loss_fct = ows.make_mll_loss(model)
+    val_loss_fct = ows.make_crps_loss(model)
 
     #### Train ####
     device = get_device()
