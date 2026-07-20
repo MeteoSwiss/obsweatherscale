@@ -169,9 +169,9 @@ def main() -> None:
     # )
 
     trainer = ows.Trainer(
-        model, likelihood, train_loss_fct, val_loss_fct, device, optimizer,
+        model, train_loss_fct, val_loss_fct, device, optimizer,
     )
-    model, train_progress = trainer.fit(
+    trainer.fit(
         dataset_train,
         dataset_val_c,
         dataset_val_t,
@@ -182,16 +182,9 @@ def main() -> None:
         verbose=True,
         loggers=loggers,
     )
+    model = trainer.best_model
 
-    # Get the iteration of best model
-    min_val_loss = min(train_progress["val loss"])
-    best_val_loss_idx = train_progress["val loss"].index(min_val_loss)
-    best_val_loss_iter = train_progress["iter"][best_val_loss_idx]
-
-    print(
-        f"Best model found at iteration {best_val_loss_iter} with "
-        f"validation loss: {min_val_loss:.4f}"
-    )
+    print(f"Best validation loss: {model.best_val_loss:.4f}")
 
     #### Free GPU ####
     torch.cuda.empty_cache()
