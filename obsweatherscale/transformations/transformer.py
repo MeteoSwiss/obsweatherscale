@@ -1,15 +1,24 @@
 """Data transformation classes for obsweatherscale.
 
-Provides a base :class:`Transformer`.
+Provides a base :class:`Transformer` and two child abstract
+implementations: one fitted transformations that learn parameters from
+data and one for parametric transformations with fixed parameters.
 
 Classes
 -------
 Transformer
     Abstract base class for all data transformations.
+ParametricTransformer
+    Base class for transformers with fixed parameters (no fitting
+    needed).
+FittedTransformer
+    Base class for transformers that learn parameters from data.
 """
 
 
 import abc
+import warnings
+
 import torch
 
 
@@ -60,3 +69,41 @@ class Transformer:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.description})"
+
+
+class ParametricTransformer(Transformer, abc.ABC):
+    """Base class for transformers with fixed parameters (no fitting needed).
+ 
+    Parameters are set at construction time. No data is required before
+    calling transform().
+    """
+
+
+class FittedTransformer(Transformer, abc.ABC):
+    """Base class for transformers that learn parameters from data.
+ 
+    Subclasses must call fit() before transform(), or provide sensible
+    defaults that make the unfitted state explicit.
+    """
+
+    _fitted: bool = False
+
+    @abc.abstractmethod
+    def fit(self, data: torch.Tensor) -> None:
+        """Fit transformation parameters to input data."""
+
+    @property
+    def is_fitted(self) -> bool:
+        """Getter of fitted state."""
+        return self._fitted
+
+    def _check_fitted(self) -> None:
+        """Warn if the transformer has not been fitted yet."""
+        if not self._fitted:
+            warnings.warn(
+                f"{self.__class__.__name__} has not been fitted. "
+                "Calling transform() will use default parameters. "
+                "Call fit() first to learn parameters from data.",
+                UserWarning,
+                stacklevel=3,
+            )
