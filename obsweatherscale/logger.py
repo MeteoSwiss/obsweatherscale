@@ -377,6 +377,8 @@ class MLflowLogger(Logger):
         """
         if self._managed_child:  # end child run first
             self._mlflow.end_run()
+            self._managed_child = False
 
         if self._managed_parent:
             self._mlflow.end_run()
+            self._managed_parent = False
