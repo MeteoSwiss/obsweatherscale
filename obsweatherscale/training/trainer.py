@@ -345,9 +345,6 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
                 step=None,
             )
 
-        for logger in loggers_list:
-            logger.close()
-
         return self
 
     def _train_step(
