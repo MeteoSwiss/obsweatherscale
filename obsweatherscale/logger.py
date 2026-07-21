@@ -224,6 +224,7 @@ class MLflowLogger(Logger):
         self,
         experiment_name: str | None = None,
         run_name: str | None = None,
+        run_id: str | None = None,
         parent_run_name: str | None = None,
         parent_run_id: str | None = None,
         run_tags: dict[str, str] | None = None,
@@ -254,7 +255,7 @@ class MLflowLogger(Logger):
         )
 
         # Set run kwargs
-        run_kwargs: dict[str, Any] = {"run_name": run_name}
+        run_kwargs: dict[str, Any] = {"run_id": run_id, "run_name": run_name}
         if run_tags is not None:
             run_kwargs["tags"] = run_tags
 
@@ -276,10 +277,12 @@ class MLflowLogger(Logger):
             )
 
     def _start_standard_mode(self, run_kwargs: dict[str, Any]) -> None:
-        if self._mlflow.active_run() is None:
-            self._mlflow.start_run(**run_kwargs)
+        active = self._mlflow.active_run()
+        if active is None:
+            active = self._mlflow.start_run(**run_kwargs)
             self._managed_child = True
 
+        self._run_id = active.info.run_id
         self._parent_run_id = None
 
     def _start_nested_mode(
@@ -330,8 +333,9 @@ class MLflowLogger(Logger):
 
         self._parent_run_id = active.info.run_id
 
-        self._mlflow.start_run(nested=True, **run_kwargs)
+        active_child = self._mlflow.start_run(nested=True, **run_kwargs)
         self._managed_child = True
+        self._run_id = active_child.info.run_id
 
     def _find_run_by_name(
         self,
