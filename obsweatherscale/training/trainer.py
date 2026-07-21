@@ -252,6 +252,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             loggers_list.append(TerminalLogger())
 
         log_params: dict = {
+            "learning_rate": self.optimizer.param_groups[0]["lr"],
             "batch_size": batch_size,
             "n_iter": n_iter,
             "seed": seed,
@@ -261,10 +262,6 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             "device": str(self.device),
             "model": type(self.model).__name__,
             "optimizer": type(self.optimizer).__name__,
-        }
-        log_params["learning_rate"] = {
-            f"param_group_{i}": param_group['lr']
-            for i, param_group in enumerate(self.optimizer.param_groups)
         }
         for logger in loggers_list:
             logger.log_params(log_params)
