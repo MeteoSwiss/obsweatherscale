@@ -17,6 +17,7 @@ from contextlib import contextmanager
 from typing import Any, cast, Generator
 
 import torch
+from gpytorch import settings
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.kernels import Kernel
 from gpytorch.likelihoods import _GaussianLikelihoodBase
@@ -60,6 +61,10 @@ class GPModel(ExactGP):
     train_y : torch.Tensor
         Initial training targets of shape ``(N,)``. Can be updated at
         prediction time via :meth:`predict`.
+    nan_policy : str, default='fill'
+        The policy for handling NaN values in the data. Options are
+            - 'mask': removes all data points where the y is nan
+            - 'fill': replaces nan values and keeps data points
 
     Attributes
     ----------
@@ -67,6 +72,10 @@ class GPModel(ExactGP):
         The prior mean function.
     covar_module : Kernel
         The prior covariance kernel.
+    nan_policy : str
+        The policy for handling NaN values in the data. Options are
+            - 'mask': removes all data points where the y is nan
+            - 'fill': replaces nan values and keeps data points
 
     Notes
     -----
@@ -90,10 +99,12 @@ class GPModel(ExactGP):
         likelihood: _GaussianLikelihoodBase,
         train_x: torch.Tensor,
         train_y: torch.Tensor,
+        nan_policy: str = "fill",
     ) -> None: # pylint: disable=arguments-differ
         super().__init__(train_x, train_y, likelihood)
         self.mean_module = mean_module
         self.covar_module = covar_module
+        self.nan_policy = nan_policy
 
     def forward( # pylint: disable=arguments-differ
         self,
@@ -172,10 +183,10 @@ class GPModel(ExactGP):
         if x_target is None:
             x_target = x_context
 
-        self.set_train_data(inputs=x_context, targets=y_context, strict=False)
-
-        distribution = self(x_target)
-        distribution_with_noise = self.likelihood(distribution)
+        with settings.observation_nan_policy(self.nan_policy):
+            self.set_train_data(inputs=x_context, targets=y_context, strict=False)
+            distribution = self(x_target)
+            distribution_with_noise = self.likelihood(distribution)
 
         return cast(MultivariateNormal, distribution_with_noise)
 

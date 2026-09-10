@@ -131,6 +131,12 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
     best_val_loss : float
         The lowest validation loss recorded across all training
         iterations. Initialized to ``torch.inf``.
+    nan_policy : str, (one of {'fill', 'mask'})
+        The policy for handling NaN values in the data. Options are
+            - 'mask': removes all data points where the y is nan
+            - 'fill': replaces nan values and keeps data points
+        Is taken as the model's nan_policy attribute, and if not
+        available, defaults to 'mask' (default gpytorch value).
     history : list[dict]
         Per-iteration metrics recorded during last call to ``fit()``.
 
@@ -159,6 +165,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         self.val_loss_fn = val_loss_fn
         self.device = device
         self.optimizer = optimizer
+        self.nan_policy = getattr(self.model, "nan_policy", "mask")
 
         self.history: list[dict] = []
         self.best_val_loss = torch.inf
@@ -180,7 +187,6 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         n_iter: int,
         random_masking: bool = True,
         seed: int = 123,
-        nan_policy: str = "fill",
         prec_size: int = 100,
         output_dir: Path | None = None,
         verbose: bool = True,
@@ -204,10 +210,6 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             Whether to apply random masking to the training data.
         seed : int, default=123
             The random seed for reproducibility.
-        nan_policy : str, default='fill'
-            The policy for handling NaN values in the data. Options are
-                - 'mask': removes all data points where the y is nan
-                - 'fill': replaces nan values and keeps data points
         prec_size : int, default=100
             The size of the preconditioner for the optimizer.
         output_dir : Path, optional, default=None
@@ -257,7 +259,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             "n_iter": n_iter,
             "seed": seed,
             "random_masking": random_masking,
-            "nan_policy": nan_policy,
+            "nan_policy": self.nan_policy,
             "prec_size": prec_size,
             "device": str(self.device),
             "model": type(self.model).__name__,
@@ -282,8 +284,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
                 if random_masking:
                     batch_y = self._apply_random_masking(batch_y)
 
-                with settings.observation_nan_policy(nan_policy):
-                    train_loss = self._train_step(batch_x, batch_y)
+                train_loss = self._train_step(batch_x, batch_y)
 
                 self.optimizer.step()
                 stop_targetrain = time.time()
@@ -294,16 +295,12 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
                 batch_x_context, batch_y_context = val_context[batch_idx]
                 batch_x_target, batch_y_target = val_target[batch_idx]
 
-                with (
-                    torch.no_grad(),
-                    settings.observation_nan_policy(nan_policy),
-                ):
-                    val_loss = self._val_step(
-                        batch_x_context,
-                        batch_y_context,
-                        batch_x_target,
-                        batch_y_target,
-                    )
+                val_loss = self._val_step(
+                    batch_x_context,
+                    batch_y_context,
+                    batch_x_target,
+                    batch_y_target,
+                )
 
             # Logging
             # Save checkpoint if output_dir is provided
@@ -366,11 +363,12 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         self.model.train()
         self.likelihood.train()
 
-        self.model.set_train_data(
-            inputs=batch_x, targets=batch_y, strict=False,
-        )
-        distribution = self.model(batch_x)
-        loss = self.train_loss_fn(distribution, batch_y)
+        with settings.observation_nan_policy(self.nan_policy):
+            self.model.set_train_data(
+                inputs=batch_x, targets=batch_y, strict=False,
+            )
+            distribution = self.model(batch_x)
+            loss = self.train_loss_fn(distribution, batch_y)
 
         loss.backward()
 
@@ -408,11 +406,15 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         self.model.eval()
         self.likelihood.eval()
 
-        self.model.set_train_data(
-            batch_x_context, batch_y_context, strict=False,
-        )
-        distribution_val = self.model(batch_x_target)
-        loss = self.val_loss_fn(distribution_val, batch_y_target)
+        with (
+            torch.no_grad(),
+            settings.observation_nan_policy(self.nan_policy),
+        ):
+            self.model.set_train_data(
+                batch_x_context, batch_y_context, strict=False,
+            )
+            distribution_val = self.model(batch_x_target)
+            loss = self.val_loss_fn(distribution_val, batch_y_target)
 
         return loss.item()
 
