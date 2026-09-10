@@ -106,7 +106,14 @@ def main() -> None:
         kernel=ows.ScaledRBFKernel()
     )
     # Load trained model (instantiated here, but it should be loaded)
-    model = ows.GPModel(mean_function, kernel, likelihood, context_x, context_y)
+    model = ows.GPModel(
+        mean_function,
+        kernel,
+        likelihood,
+        context_x,
+        context_y,
+        nan_policy="fill",
+    )
 
     ## Evaluate
     device = get_device()
@@ -119,11 +126,7 @@ def main() -> None:
     target_y = target_y.to(device)
 
     # 1. Predict distributions
-    with (
-        torch.no_grad(),
-        settings.memory_efficient(True),
-        settings.observation_nan_policy("fill"),
-    ):
+    with torch.no_grad(), settings.memory_efficient(True):
         posterior = model.predict_posterior(context_x, context_y, target_x)
         prior = model.predict_prior(target_x, target_y)
 

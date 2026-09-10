@@ -144,6 +144,7 @@ def main() -> None:
         kernel,
         likelihood,
         *dataset_train.get_dataset(), # train_x, train_y
+        nan_policy="fill",
     )
 
     #### Loss functions ####
