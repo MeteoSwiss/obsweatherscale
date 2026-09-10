@@ -277,7 +277,6 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
                 self.optimizer.zero_grad()
 
                 # Training
-                # Get iter data
                 batch_idx = self._sample_batch_idx(length, batch_size)
                 batch_x, batch_y = train[batch_idx]
 
@@ -287,10 +286,9 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
                 train_loss = self._train_step(batch_x, batch_y)
 
                 self.optimizer.step()
-                stop_targetrain = time.time()
+                stop_train = time.time()
 
                 # Validation
-                # Get iter data
                 batch_idx = self._sample_batch_idx(val_length, batch_size)
                 batch_x_context, batch_y_context = val_context[batch_idx]
                 batch_x_target, batch_y_target = val_target[batch_idx]
@@ -321,16 +319,14 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
                 "iter": i,
                 "train loss": train_loss,
                 "val loss": val_loss,
-                "train time": stop_targetrain - start,
+                "train time": stop_train - start,
                 "iter time": stop - start,
             }
             for logger in loggers_list:
                 logger.log_metrics(iter_metrics, step=i)
             self.history.append(iter_metrics)
 
-        # Restore best-validation-loss weights into self.model.
-        # No further training happens after this, so it's safe for
-        # `best_model` to simply alias `model` from here on.
+        # Restore best-validation-loss weights into self.model
         self.model.load_state_dict(self._best_state)
 
         for logger in loggers_list:

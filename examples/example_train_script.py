@@ -1,16 +1,13 @@
 # %%
 import math
-from typing import TypeAlias
 
 import torch
 from torch.optim.adam import Adam
 
 import obsweatherscale as ows
 
+
 # Custom dataset inheriting from GPDataset
-DataDict: TypeAlias = dict[str, dict[str, torch.Tensor]]
-
-
 class MyDataset(ows.GPDataset):
     def __init__(self, ds_x: torch.Tensor, ds_y: torch.Tensor) -> None:
         self.x = ds_x
@@ -70,7 +67,7 @@ def split_data(
     ds_y: torch.Tensor,
     frac_t_train: float = 0.7,
     frac_s_train: float = 0.8,
-) -> DataDict:
+) -> dict[str, dict[str, torch.Tensor]]:
     n_times, n_stations, _ = ds_x.shape
 
     nt_train = int(frac_t_train * n_times)
@@ -148,8 +145,8 @@ def main() -> None:
     )
 
     #### Loss functions ####
-    train_loss_fct = ows.make_mll_loss(model)
-    val_loss_fct = ows.make_crps_loss(model)
+    train_loss = ows.make_mll_loss(model)
+    val_loss = ows.make_crps_loss(model)
 
     #### Train ####
     device = get_device()
@@ -160,18 +157,16 @@ def main() -> None:
     )
 
     # --- Loggers ---
-    loggers: list[ows.Logger] = [ows.CSVLogger("training_log.csv")]
-    # To also log to MLflow (requires `pip install mlflow`):
-    # loggers.append(
-    #     ows.training.MLflowLogger(
-    #         experiment_name="obsweatherscale",
-    #         run_name="run_1",
-    #     )
-    # )
+    loggers: list[ows.Logger] = [
+        ows.CSVLogger("training_log.csv"),
+        # To also log to MLflow (requires `pip install mlflow`):
+        # ows.training.MLflowLogger(
+        #     experiment_name="obsweatherscale",
+        #     run_name="run_1",
+        # ),
+    ]
 
-    trainer = ows.Trainer(
-        model, train_loss_fct, val_loss_fct, device, optimizer,
-    )
+    trainer = ows.Trainer(model, train_loss, val_loss, device, optimizer)
     trainer.fit(
         dataset_train,
         dataset_val_c,
@@ -185,7 +180,7 @@ def main() -> None:
     )
     model = trainer.best_model
 
-    print(f"Best validation loss: {model.best_val_loss:.4f}")
+    print(f"Training complete. Best val loss: {trainer.best_val_loss:.4f}")
 
     #### Free GPU ####
     torch.cuda.empty_cache()
