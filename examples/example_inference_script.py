@@ -145,6 +145,11 @@ def main() -> None:
     samples_posterior = samples_posterior.reshape(n_times, n_x, n_y, n_samples)
     samples_prior = samples_prior.reshape(n_times, n_x, n_y, n_samples)
 
+    print("Inference complete.")
+
+    #### Free GPU ####
+    torch.cuda.empty_cache()
+
 
 if __name__ == "__main__":
     main()

@@ -15,13 +15,9 @@ from typing import Any
 
 import torch
 from gpytorch import ExactMarginalLogLikelihood, settings
-from gpytorch.distributions import (
-    base_distributions, MultivariateNormal
-)
+from gpytorch.distributions import base_distributions, MultivariateNormal
 from gpytorch.likelihoods import _GaussianLikelihoodBase
-from linear_operator.operators import (
-    LinearOperator, MaskedLinearOperator
-)
+from linear_operator.operators import LinearOperator, MaskedLinearOperator
 
 from obsweatherscale.likelihoods.noise_models import TransformedNoise
 
@@ -33,7 +29,7 @@ def _handle_nan_policy(
     """Apply the configured NaN handling policy to the target and
     input.
 
-    This method modifies the distribution and target tensor
+    This function modifies the distribution and target tensor
     based on the active `settings.observation_nan_policy` value.
     Supports masking or filling missing observations.
 
