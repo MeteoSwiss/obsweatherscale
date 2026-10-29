@@ -61,9 +61,11 @@ def crps_normal(
     as the integrated squared difference between the CDF of the forecast
     distribution and the empirical CDF of the observation.
 
-    For a normal distribution, the CRPS has the closed form:
-    CRPS(N(μ, σ), y) = 
-        σ * [y_norm * (2*Φ(y_norm) - 1) + 2*φ(y_norm) - 1/√π]
+    For a normal distribution, the CRPS has the closed form::
+
+        CRPS(N(μ, σ), y) =
+            σ * [y_norm * (2*Φ(y_norm) - 1) + 2*φ(y_norm) - 1/√π]
+
     where y_norm = (y - μ)/σ, Φ is the CDF and φ is the PDF of the
     standard normal.
     """
