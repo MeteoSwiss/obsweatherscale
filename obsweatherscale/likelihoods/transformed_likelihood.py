@@ -45,21 +45,22 @@ def _handle_nan_policy(
     -------
     tuple[MultivariateNormal, torch.Tensor, torch.Tensor]
         - distr: A modified MultivariateNormal distribution with
-        NaNs handled according to the policy.
+          NaNs handled according to the policy.
         - target: A tensor with NaNs masked or filled according to
-        the policy.
+          the policy.
         - mask: A tensor indicating which values to mask in the
-        resulting log prob.
+          resulting log prob.
 
     Notes
     -----
     Policies:
+
     - "mask": Remove (ignore) all observations where `target` is
-    NaN. This uses `MaskedLinearOperator` to exclude those entries
-    from the covariance.
+      NaN. This uses `MaskedLinearOperator` to exclude those entries
+      from the covariance.
     - "fill": Replace NaN values with zeros in `target` and adjust
-    the covariance accordingly, assigning small variance (1 / 2π) to
-    missing entries.
+      the covariance accordingly, assigning small variance (1 / 2π) to
+      missing entries.
 
     This method ensures that subsequent log-probability computations
     do not fail due to NaN values in the target tensor.
@@ -113,25 +114,6 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
     handling policies, including masking and filling, and is designed
     for compatibility with GPyTorch models using `MultivariateNormal`
     outputs.
-
-    Methods
-    -------
-    _shaped_noise_covar(base_shape, *params, y=None, **kwargs)
-        Returns a noise covariance object of the correct shape,
-        optionally based on `y`.
-
-    expected_log_prob(target, input, *params, **kwargs)
-        Computes the expected log probability of the target under the
-        input distribution, optionally handling NaNs according to the
-        active policy.
-
-    forward(function_samples, *params, **kwargs)
-        Returns a Normal distribution by applying transformed noise to
-        function samples.
-
-    marginal(function_dist, *params, **kwargs)
-        Returns the marginal distribution including the transformed
-        noise covariance.
     """
 
     def __init__(
@@ -148,9 +130,6 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         **kwargs : Any
             Additional keyword arguments passed to the base
             `_GaussianLikelihoodBase`.
-
-        Returns
-        -------
         """
         super().__init__(noise_covar=noise_covar)
 
@@ -189,16 +168,22 @@ class TransformedGaussianLikelihood(_GaussianLikelihoodBase):
         Notes
         -----
         - Missing values in `target` are handled according to the active
-        `settings.observation_nan_policy`:
-            - "mask": excludes NaNs from computation using a masked covariance.
-            - "fill": replaces NaNs with zeros and assigns small variance.
+          `settings.observation_nan_policy`:
+
+          - "mask": excludes NaNs from computation using a masked
+            covariance.
+          - "fill": replaces NaNs with zeros and assigns small variance.
+
         - Noise variance is computed using the transformed likelihood's
-        noise model (`self._shaped_noise_covar`) and scaled according to
-        any target transformation.
-        - The final log probability is computed as the Gaussian log-likelihood:
-            log P(y | μ, σ^2) = -0.5 * [(y - μ)^2 / σ^2 + log σ^2 + log 2π]
+          noise model (`self._shaped_noise_covar`) and scaled according
+          to any target transformation.
+        - The final log probability is computed as the Gaussian
+          log-likelihood::
+
+              log P(y | μ, σ^2) = -0.5 * [(y - μ)^2 / σ^2 + log σ^2 + log 2π]
+
         - For multitask outputs, the log probabilities are summed across
-        event dimensions.
+          event dimensions.
         """
         noise = self._shaped_noise_covar(
             input.mean.shape, *params, y=input.mean, **kwargs

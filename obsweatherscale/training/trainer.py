@@ -45,9 +45,9 @@ class RandomStateContext:
     Notes
     -----
     - The RNG state is retrieved and stored using
-    `torch.random.get_rng_state()` and `torch.random.set_rng_state()`.
+      `torch.random.get_rng_state()` and `torch.random.set_rng_state()`.
     - A new seed is set upon entering the context using
-    `torch.manual_seed(torch.seed())`.
+      `torch.manual_seed(torch.seed())`.
     """
 
     def __init__(self) -> None:
@@ -100,9 +100,11 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         The Gaussian Process prior model to be trained.
     train_loss_fn : Callable
         Loss function used during training. Expected signature::
+
             loss = train_loss_fn(output, target)
     val_loss_fn : Callable
         Loss function used during validation. Expected signature::
+
             loss = val_loss_fn(output, target)
     device : torch.device
         The device (``"cpu"`` or ``"cuda"``) on which tensors and the
@@ -132,9 +134,11 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         The lowest validation loss recorded across all training
         iterations. Initialized to ``torch.inf``.
     nan_policy : str, (one of {'fill', 'mask'})
-        The policy for handling NaN values in the data. Options are
-            - 'mask': removes all data points where the y is nan
-            - 'fill': replaces nan values and keeps data points
+        The policy for handling NaN values in the data. Options are:
+
+        - 'mask': removes all data points where the y is nan
+        - 'fill': replaces nan values and keeps data points
+
         Is taken as the model's nan_policy attribute, and if not
         available, defaults to 'mask' (default gpytorch value).
     history : list[dict]
