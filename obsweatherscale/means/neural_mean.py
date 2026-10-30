@@ -20,7 +20,7 @@ class NeuralMean(Mean):
 
     Wraps an arbitrary :class:`torch.nn.Module` as a GPyTorch
     :class:`~gpytorch.means.Mean`, enabling a fully learnable prior mean
-    function :math:`m(\\mathbf{x})`. 
+    function :math:`m(\\mathbf{x})`.
 
     Uses a neural network to compute the mean of the Gaussian process
     prior, starting from the input data.

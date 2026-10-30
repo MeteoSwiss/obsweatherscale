@@ -24,7 +24,7 @@ import torch
 
 class Transformer:
     """Abstract base class for all data transformations.
- 
+
     All transformers must implement:
       - transform: forward transformation y → z
       - inverse_transform: backward transformation z → y
@@ -73,7 +73,7 @@ class Transformer:
 
 class ParametricTransformer(Transformer, abc.ABC):
     """Base class for transformers with fixed parameters (no fitting needed).
- 
+
     Parameters are set at construction time. No data is required before
     calling transform().
     """
@@ -81,7 +81,7 @@ class ParametricTransformer(Transformer, abc.ABC):
 
 class FittedTransformer(Transformer, abc.ABC):
     """Base class for transformers that learn parameters from data.
- 
+
     Subclasses must call fit() before transform(), or provide sensible
     defaults that make the unfitted state explicit.
     """
