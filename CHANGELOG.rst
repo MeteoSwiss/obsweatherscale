@@ -14,8 +14,11 @@ Unreleased
   ``"fill"``) instead of a ``Trainer.fit`` argument.
 * Breaking: ``make_mll_loss`` and ``make_crps_loss`` take the model instead of
   an MLL object / likelihood. Added a ``make_loss`` factory.
-* ``Trainer.fit`` saves a checkpoint per iteration (``model_{i}.pt``) when
-  ``output_dir`` is set, and no longer closes the loggers.
+* ``Trainer.fit`` saves the best weights to ``output_dir/best_model.pt``;
+  per-iteration checkpoints (``model_{iter}.pt``) are opt-in via the new
+  ``checkpoint_every`` argument. Iterations are numbered from 1, consistently
+  across the terminal, CSV and MLflow loggers and ``Trainer.history``.
+  ``fit`` no longer closes the loggers.
 * ``MLflowLogger`` supports resuming a child run via ``run_id``; fixed run
   management bugs.
 * Refactored data transformations; added docstrings across the package.

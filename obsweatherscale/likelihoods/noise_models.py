@@ -54,7 +54,7 @@ class TransformedNoise(Noise):
 
     Attributes
     ----------
-    transformer : Transformer
+    transformer : ~obsweatherscale.transformations.Transformer
         Object representing the data transformation applied to the
         targets.
 
@@ -160,7 +160,7 @@ class TransformedHomoskedasticNoise(TransformedNoise, HomoskedasticNoise):
 
     Attributes
     ----------
-    transformer : Transformer
+    transformer : ~obsweatherscale.transformations.Transformer
         A transformation object (e.g., log, standard scaler, etc.) that
         defines the transformation applied to the target variable.
 
@@ -258,7 +258,7 @@ class TransformedHeteroskedasticNoise(TransformedNoise, HeteroskedasticNoise):
 
     Attributes
     ----------
-    transformer : Transformer
+    transformer : ~obsweatherscale.transformations.Transformer
         A transformation object (e.g., log, standard scaler, etc.) that
         defines the transformation applied to the target variable.
 
@@ -367,7 +367,7 @@ class TransformedFixedGaussianNoise(TransformedNoise, FixedGaussianNoise):
 
     Attributes
     ----------
-    transformer : Transformer
+    transformer : ~obsweatherscale.transformations.Transformer
         A transformation object (e.g., log, standard scaler, etc.) that
         defines the transformation applied to the target variable.
     """

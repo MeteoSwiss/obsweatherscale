@@ -193,6 +193,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         seed: int = 123,
         prec_size: int = 100,
         output_dir: Path | None = None,
+        checkpoint_every: int | None = None,
         verbose: bool = True,
         loggers: list[Logger] | None = None,
     ) -> "Trainer":
@@ -217,8 +218,15 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
         prec_size : int, default=100
             The size of the preconditioner for the optimizer.
         output_dir : Path, optional, default=None
-            The directory to save the model checkpoints. If None, the
-            model does not get saved during training.
+            The directory to save the model to. If given, the weights
+            with the lowest validation loss so far are saved to
+            ``best_model.pt`` whenever the validation loss improves. If
+            None, nothing gets saved during training.
+        checkpoint_every : int, optional, default=None
+            If given (and *output_dir* is set), additionally save the
+            current weights to ``model_{iter}.pt`` every
+            *checkpoint_every* iterations. If None, no per-iteration
+            checkpoints are saved.
         verbose : bool, default=True
             If True, prints training status (loss function values, iter,
             time)
@@ -238,6 +246,8 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
             as attributes afterward.
         """
 
+        if checkpoint_every is not None and checkpoint_every < 1:
+            raise ValueError("checkpoint_every must be a positive integer")
         if output_dir is not None:
             output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -274,7 +284,7 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
 
         self.history = []
 
-        for i in range(n_iter):
+        for step in range(1, n_iter + 1):
             start = time.time()
 
             with settings.max_preconditioner_size(prec_size):
@@ -304,31 +314,36 @@ class Trainer:  # pylint: disable=too-many-instance-attributes
                     batch_y_target,
                 )
 
-            # Logging
-            # Save checkpoint if output_dir is provided
-            if output_dir is not None:
+            # Save periodic checkpoint if requested
+            if (
+                output_dir is not None
+                and checkpoint_every is not None
+                and step % checkpoint_every == 0
+            ):
                 torch.save(
                     self.model.state_dict(),
-                    output_dir / f"model_{i}.pt",
+                    output_dir / f"model_{step}.pt",
                 )
 
             # Keep track of best validation loss and best model so far
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 self._best_state = copy.deepcopy(self.model.state_dict())
+                if output_dir is not None:
+                    torch.save(self._best_state, output_dir / "best_model.pt")
 
             stop = time.time()
 
+            # Logging (the iteration number is passed as the step)
             iter_metrics = {
-                "iter": i,
                 "train loss": train_loss,
                 "val loss": val_loss,
                 "train time": stop_train - start,
                 "iter time": stop - start,
             }
             for logger in loggers_list:
-                logger.log_metrics(iter_metrics, step=i)
-            self.history.append(iter_metrics)
+                logger.log_metrics(iter_metrics, step=step)
+            self.history.append({"iter": step, **iter_metrics})
 
         # Restore best-validation-loss weights into self.model
         self.model.load_state_dict(self._best_state)
