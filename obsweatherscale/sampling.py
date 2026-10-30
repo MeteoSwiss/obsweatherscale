@@ -1,3 +1,11 @@
+"""Sampling utilities for Gaussian processes and normal distributions.
+
+Functions
+---------
+sample
+    Draw samples from a Gaussian process or normal distribution.
+"""
+
 from typing import TypeAlias
 
 import torch

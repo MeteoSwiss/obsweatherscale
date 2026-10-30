@@ -6,5 +6,4 @@ Obsweatherscale Documentation
    :caption: Contents:
 
    readme
-   usage
    changelog

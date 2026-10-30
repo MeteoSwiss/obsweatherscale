@@ -1,7 +1,24 @@
+"""Trainer class for Gaussian Process models.
+
+This module provides utilities for training and validating GPyTorch-
+based Gaussian Process models, including a random state context manager
+for reproducible evaluation and a ``Trainer`` class that encapsulates
+the training loop logic.
+
+Classes
+-------
+RandomStateContext
+    Context manager for preserving and restoring PyTorch's RNG state.
+Trainer
+    Orchestrates training and validation of an ``ExactGP`` model.
+"""
+
+import copy
 import random
 import time
 from pathlib import Path
 from typing import Callable
+import warnings
 
 import torch
 from gpytorch import settings
@@ -28,16 +45,16 @@ class RandomStateContext:
     Notes
     -----
     - The RNG state is retrieved and stored using
-    `torch.random.get_rng_state()` and `torch.random.set_rng_state()`.
+      `torch.random.get_rng_state()` and `torch.random.set_rng_state()`.
     - A new seed is set upon entering the context using
-    `torch.manual_seed(torch.seed())`.
+      `torch.manual_seed(torch.seed())`.
     """
 
     def __init__(self) -> None:
         self.current_state: torch.Tensor
 
     def __enter__(self) -> 'RandomStateContext':
-        """Enter the context, saving the current RNG state and reseeding.
+        """Enter the context, save the current RNG state and reseed.
 
         Returns
         -------
@@ -68,42 +85,102 @@ class RandomStateContext:
         torch.random.set_rng_state(self.current_state)
 
 
-class Trainer:
-    """Trainer class for Gaussian Process models."""
+class Trainer:  # pylint: disable=too-many-instance-attributes
+    """Orchestrates training and validation of a GPyTorch ``ExactGP``
+    model.
+
+    ``Trainer`` wraps an ``ExactGP`` model together with its likelihood,
+    loss functions, optimiser, and target device into a single object
+    that manages the training loop. It tracks the best validation loss
+    seen so far and keeps a snapshot of the corresponding model weights.
+
+    Parameters
+    ----------
+    model : ExactGP
+        The Gaussian Process prior model to be trained.
+    train_loss_fn : Callable
+        Loss function used during training. Expected signature::
+
+            loss = train_loss_fn(output, target)
+    val_loss_fn : Callable
+        Loss function used during validation. Expected signature::
+
+            loss = val_loss_fn(output, target)
+    device : torch.device
+        The device (``"cpu"`` or ``"cuda"``) on which tensors and the
+        model will reside during training.
+    optimizer : Optimizer
+        A PyTorch-compatible optimizer responsible for updating the
+        model and likelihood parameters.
+
+    Attributes
+    ----------
+    model : ExactGP
+        The GP model being trained.
+    best_model : ExactGP
+        A snapshot of *model* at the epoch with the lowest validation
+        loss. Initialized to *model* at construction time.
+    likelihood : _GaussianLikelihoodBase
+        The Gaussian likelihood used for training and evaluation.
+    train_loss_fn : Callable
+        The training loss function.
+    val_loss_fn : Callable
+        The validation loss function.
+    device : torch.device
+        The compute device used for training.
+    optimizer : Optimizer
+        The parameter optimiser.
+    best_val_loss : float
+        The lowest validation loss recorded across all training
+        iterations. Initialized to ``torch.inf``.
+    nan_policy : str, (one of {'fill', 'mask'})
+        The policy for handling NaN values in the data. Options are:
+
+        - 'mask': removes all data points where the y is nan
+        - 'fill': replaces nan values and keeps data points
+
+        Is taken as the model's nan_policy attribute, and if not
+        available, defaults to 'mask' (default gpytorch value).
+    history : list[dict]
+        Per-iteration metrics recorded during last call to ``fit()``.
+
+    Examples
+    --------
+    >>> trainer = Trainer(
+    ...     model=gp_model,
+    ...     train_loss_fn=mll,
+    ...     val_loss_fn=rmse,
+    ...     optimizer=torch.optim.Adam(gp_model.parameters(), lr=0.01),
+    ...     device=torch.device("cuda"),
+    ... )
+    """
 
     def __init__(
         self,
         model: ExactGP,
-        likelihood: _GaussianLikelihoodBase,
         train_loss_fn: Callable,
         val_loss_fn: Callable,
         device: torch.device,
         optimizer: Optimizer,
     ) -> None:
-        """Initialize the Trainer class.
-
-        Parameters
-        ----------
-        model : ExactGP
-            The Gaussian Process prior model.
-        likelihood : _GaussianLikelihoodBase
-            The likelihood function for the model.
-        train_loss_fn : Callable
-            The loss function to use for training.
-        val_loss_fn : Callable
-            The loss function to use for validation.
-        device : torch.device
-            The device to use for training (CPU or GPU).
-        optimizer : Optimizer
-            The optimizer to use for training the model.
-        """
         self.model = model
-        self.best_model = model
-        self.likelihood = likelihood
+        self.likelihood: _GaussianLikelihoodBase = model.likelihood # type: ignore
         self.train_loss_fn = train_loss_fn
         self.val_loss_fn = val_loss_fn
         self.device = device
         self.optimizer = optimizer
+        self.nan_policy = getattr(self.model, "nan_policy", "mask")
+
+        self.history: list[dict] = []
+        self.best_val_loss = torch.inf
+        self._best_state: dict = copy.deepcopy(self.model.state_dict())
+
+    @property
+    def best_model(self) -> ExactGP:
+        """The model, holding best-validation-loss weights post-fit."""
+        best_model = copy.deepcopy(self.model)
+        best_model.load_state_dict(self._best_state)
+        return best_model
 
     def fit(
         self,
@@ -113,13 +190,13 @@ class Trainer:
         batch_size: int,
         n_iter: int,
         random_masking: bool = True,
-        seed: int | None = None,
-        nan_policy: str = "fill",
+        seed: int = 123,
         prec_size: int = 100,
         output_dir: Path | None = None,
+        checkpoint_every: int | None = None,
         verbose: bool = True,
         loggers: list[Logger] | None = None,
-    ) -> tuple[ExactGP, dict[str, list]]:
+    ) -> "Trainer":
         """Train the Gaussian Process model.
 
         Parameters
@@ -136,17 +213,20 @@ class Trainer:
             The number of iterations for training.
         random_masking : bool, default=True
             Whether to apply random masking to the training data.
-        seed : int, optional, default=None
+        seed : int, default=123
             The random seed for reproducibility.
-        nan_policy : str, default='fill'
-            The policy for handling NaN values in the data. Options are
-                - 'mask': removes all data points where the y is nan
-                - 'fill': replaces nan values and keeps data points
         prec_size : int, default=100
             The size of the preconditioner for the optimizer.
         output_dir : Path, optional, default=None
-            The directory to save the model checkpoints. If None, the
-            model does not get saved during training.
+            The directory to save the model to. If given, the weights
+            with the lowest validation loss so far are saved to
+            ``best_model.pt`` whenever the validation loss improves. If
+            None, nothing gets saved during training.
+        checkpoint_every : int, optional, default=None
+            If given (and *output_dir* is set), additionally save the
+            current weights to ``model_{iter}.pt`` every
+            *checkpoint_every* iterations. If None, no per-iteration
+            checkpoints are saved.
         verbose : bool, default=True
             If True, prints training status (loss function values, iter,
             time)
@@ -156,29 +236,23 @@ class Trainer:
             :class:`MLflowLogger`).  Each logger receives
             hyperparameters once before training and per-iteration
             metrics.  When *None*, no additional logging is performed.
+
         Returns
         -------
-        model : ExactGP
-            The trained Gaussian Process model.
-        train_progression : dict[str, list]
-            Dictionary with training progression metrics with keys:
-            - 'iter': List of iteration numbers
-            - 'train loss': List of training loss values
-            - 'val loss': List of validation loss values
-            - 'train time': List of training step durations (seconds)
-            - 'iter time': List of total iteration durations (seconds)
+        Trainer
+            ``self``, so calls can be chained (e.g.
+            ``trainer.fit(...).best_model``). The best model, its
+            validation loss, and per-iteration history are available
+            as attributes afterward.
         """
 
+        if checkpoint_every is not None and checkpoint_every < 1:
+            raise ValueError("checkpoint_every must be a positive integer")
         if output_dir is not None:
             output_dir.mkdir(parents=True, exist_ok=True)
 
         length = len(train)
         val_length = len(val_context)
-        train_progression : dict[str, list] = {
-            "iter": [],
-            "train loss": [], "val loss": [],
-            "iter time": [], "train time": [],
-        }
 
         torch.manual_seed(seed)
 
@@ -189,97 +263,98 @@ class Trainer:
         val_context.to(self.device)
         val_target.to(self.device)
 
-        best_val_loss = torch.inf
-
         loggers_list: list[Logger] = list(loggers) if loggers else []
         if verbose:
             loggers_list.append(TerminalLogger())
 
         log_params: dict = {
+            "learning_rate": self.optimizer.param_groups[0]["lr"],
             "batch_size": batch_size,
             "n_iter": n_iter,
             "seed": seed,
             "random_masking": random_masking,
-            "nan_policy": nan_policy,
+            "nan_policy": self.nan_policy,
             "prec_size": prec_size,
             "device": str(self.device),
             "model": type(self.model).__name__,
             "optimizer": type(self.optimizer).__name__,
         }
-        for group in self.optimizer.param_groups:
-            log_params["learning_rate"] = group["lr"]
-            break
         for logger in loggers_list:
             logger.log_params(log_params)
 
-        for i in range(n_iter):
+        self.history = []
+
+        for step in range(1, n_iter + 1):
             start = time.time()
 
             with settings.max_preconditioner_size(prec_size):
                 self.optimizer.zero_grad()
 
                 # Training
-                # Get iter data
                 batch_idx = self._sample_batch_idx(length, batch_size)
                 batch_x, batch_y = train[batch_idx]
 
                 if random_masking:
                     batch_y = self._apply_random_masking(batch_y)
 
-                with settings.observation_nan_policy(nan_policy):
-                    train_loss = self._train_step(batch_x, batch_y)
+                train_loss = self._train_step(batch_x, batch_y)
 
                 self.optimizer.step()
-                stop_targetrain = time.time()
+                stop_train = time.time()
 
                 # Validation
-                # Get iter data
                 batch_idx = self._sample_batch_idx(val_length, batch_size)
                 batch_x_context, batch_y_context = val_context[batch_idx]
                 batch_x_target, batch_y_target = val_target[batch_idx]
 
-                with (
-                    torch.no_grad(),
-                    settings.observation_nan_policy(nan_policy)
-                ):
-                    val_loss = self._val_step(
-                        batch_x_context,
-                        batch_y_context,
-                        batch_x_target,
-                        batch_y_target
-                    )
+                val_loss = self._val_step(
+                    batch_x_context,
+                    batch_y_context,
+                    batch_x_target,
+                    batch_y_target,
+                )
 
-            # Logging
-            # Save best model so far
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                self.best_model = self.model
+            # Save periodic checkpoint if requested
+            if (
+                output_dir is not None
+                and checkpoint_every is not None
+                and step % checkpoint_every == 0
+            ):
+                torch.save(
+                    self.model.state_dict(),
+                    output_dir / f"model_{step}.pt",
+                )
 
+            # Keep track of best validation loss and best model so far
+            if val_loss < self.best_val_loss:
+                self.best_val_loss = val_loss
+                self._best_state = copy.deepcopy(self.model.state_dict())
                 if output_dir is not None:
-                    torch.save(self.model.state_dict(), output_dir / "model")
+                    torch.save(self._best_state, output_dir / "best_model.pt")
 
             stop = time.time()
 
+            # Logging (the iteration number is passed as the step)
             iter_metrics = {
-                "iter": i + 1,
                 "train loss": train_loss,
                 "val loss": val_loss,
-                "train time": stop_targetrain - start,
-                "iter time": stop - start
+                "train time": stop_train - start,
+                "iter time": stop - start,
             }
             for logger in loggers_list:
-                logger.log_metrics(iter_metrics, step=i + 1)
+                logger.log_metrics(iter_metrics, step=step)
+            self.history.append({"iter": step, **iter_metrics})
 
-            for k, v in iter_metrics.items():
-                train_progression[k].append(v)
-
-        for logger in loggers_list:
-            logger.log_metrics({"best_val_loss": best_val_loss}, step=None)
+        # Restore best-validation-loss weights into self.model
+        self.model.load_state_dict(self._best_state)
 
         for logger in loggers_list:
-            logger.close()
+            logger.log_metrics(
+                {"best_val_loss": self.best_val_loss},
+                step=None,
+            )
 
-        return self.best_model, train_progression
+        return self
 
     def _train_step(
         self,
@@ -303,11 +378,12 @@ class Trainer:
         self.model.train()
         self.likelihood.train()
 
-        self.model.set_train_data(
-            inputs=batch_x, targets=batch_y, strict=False
-        )
-        distribution = self.model(batch_x)
-        loss = self.train_loss_fn(distribution, batch_y)
+        with settings.observation_nan_policy(self.nan_policy):
+            self.model.set_train_data(
+                inputs=batch_x, targets=batch_y, strict=False,
+            )
+            distribution = self.model(batch_x)
+            loss = self.train_loss_fn(distribution, batch_y)
 
         loss.backward()
 
@@ -345,11 +421,15 @@ class Trainer:
         self.model.eval()
         self.likelihood.eval()
 
-        self.model.set_train_data(
-            batch_x_context, batch_y_context, strict=False
-        )
-        distribution_val = self.model(batch_x_target)
-        loss = self.val_loss_fn(distribution_val, batch_y_target)
+        with (
+            torch.no_grad(),
+            settings.observation_nan_policy(self.nan_policy),
+        ):
+            self.model.set_train_data(
+                batch_x_context, batch_y_context, strict=False,
+            )
+            distribution_val = self.model(batch_x_target)
+            loss = self.val_loss_fn(distribution_val, batch_y_target)
 
         return loss.item()
 
@@ -369,6 +449,15 @@ class Trainer:
             A list of `batch_size` unique indices randomly sampled from
             the range [0, length).
         """
+        if batch_size > length:
+            warnings.warn(
+                f"batch_size {batch_size} exceeds dataset size ({length}). "
+                f"Using {length} as batch size.",
+                UserWarning,
+                stacklevel=3,
+            )
+            batch_size = length
+
         return random.sample(range(length), batch_size)
 
     def _apply_random_masking(
@@ -393,9 +482,11 @@ class Trainer:
         mask_shape = (1, *data.shape[1:])
 
         with RandomStateContext():
-            random_mask = torch.bernoulli(
-                torch.ones(mask_shape) * p
-            ).bool().expand_as(data)
+            random_mask = (
+                torch.bernoulli(torch.ones(mask_shape) * p)
+                .bool()
+                .expand_as(data)
+            )
             data[random_mask] = torch.nan
 
         return data

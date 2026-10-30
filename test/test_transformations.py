@@ -8,7 +8,7 @@ def test_standardizer() -> None:
     x = torch.randn(5, 3)
 
     # Create a simple Standardizer
-    standardizer = ows.Standardizer(x, 0)
+    standardizer = ows.Standardizer(x, dims=0)
 
     # Transform the data
     transformed_x = standardizer.transform(x)
@@ -21,7 +21,7 @@ def test_standardizer() -> None:
     inverse_transformed_x = standardizer.inverse_transform(transformed_x)
 
     assert torch.allclose(
-        x, inverse_transformed_x
+        x, inverse_transformed_x,
     ), "Inverse transform mismatch"
     assert standardizer.mean.shape == (3,), "Mean shape mismatch"
     assert standardizer.std.shape == (3,), "Std shape mismatch"

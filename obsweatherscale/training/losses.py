@@ -1,10 +1,34 @@
-from typing import Callable, cast
+"""Loss functions for Gaussian Process models.
+
+This module provides loss functions for training and validating
+GPyTorch-based Gaussian Process models.
+
+Functions
+---------
+crps_normal
+    Computes the Continuous Ranked Probability Score (CRPS) for a
+    univariate normal distribution.
+make_crps_loss
+    Wrapper to create a CRPS loss function for normal distributions that
+    handles missing values and optionally transforms the distribution.
+make_mll_loss
+    Wrapper to create a negative log-likelihood loss function of a
+    multivariate normal distribution, optionally transformed by a
+    likelihood function.
+make_loss
+    Factory function to create a loss function based on the specified
+    loss type.
+"""
+from typing import Any, Callable, cast
 
 import torch
 import torch.distributions as dist
-from gpytorch import ExactMarginalLogLikelihood
 from gpytorch.distributions import MultivariateNormal
-from gpytorch.likelihoods import _GaussianLikelihoodBase
+from gpytorch.models import ExactGP
+
+from obsweatherscale.likelihoods import ExactMarginalLogLikelihoodFill
+
+LossFn = Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]
 
 
 def crps_normal(
@@ -37,9 +61,11 @@ def crps_normal(
     as the integrated squared difference between the CDF of the forecast
     distribution and the empirical CDF of the observation.
 
-    For a normal distribution, the CRPS has the closed form:
-    CRPS(N(μ, σ), y) = 
-        σ * [y_norm * (2*Φ(y_norm) - 1) + 2*φ(y_norm) - 1/√π]
+    For a normal distribution, the CRPS has the closed form::
+
+        CRPS(N(μ, σ), y) =
+            σ * [y_norm * (2*Φ(y_norm) - 1) + 2*φ(y_norm) - 1/√π]
+
     where y_norm = (y - μ)/σ, Φ is the CDF and φ is the PDF of the
     standard normal.
     """
@@ -60,17 +86,16 @@ def crps_normal(
     return crps.mean()
 
 
-def make_crps_loss(
-    likelihood: _GaussianLikelihoodBase | None = None,
-) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
+def make_crps_loss(model: ExactGP | None = None) -> LossFn:
     """Wrapper to create a CRPS loss function for normal distributions
     that handles missing values and optionally transforms the
     distribution.
 
     Parameters
     ----------
-    likelihood : _GaussianLikelihoodBase or None, optional
-        A Gaussian likelihood transformation to apply to the
+    model : ExactGP or None, optional
+        The Gaussian Process prior model to be trained, which has a
+        Gaussian likelihood transformation to apply to the
         distribution. If provided, transforms the distribution before
         computing the CRPS.
 
@@ -89,10 +114,12 @@ def make_crps_loss(
 
     def loss_fn(
         distribution: MultivariateNormal,
-        obs: torch.Tensor
+        obs: torch.Tensor,
     ) -> torch.Tensor:
         mask = torch.isnan(obs)
         obs = torch.where(mask, 0.0, obs)
+
+        likelihood = getattr(model, "likelihood", None)
 
         if likelihood is not None:
             distribution = cast(MultivariateNormal, likelihood(distribution))
@@ -106,17 +133,16 @@ def make_crps_loss(
     return loss_fn
 
 
-def make_mll_loss(
-    mll: ExactMarginalLogLikelihood,
-) -> Callable[[MultivariateNormal, torch.Tensor], torch.Tensor]:
+def make_mll_loss(model: ExactGP | None = None) -> LossFn:
     """Wrapper to create a negative log-likelihood loss function
     of a multivariate normal distribution, optionally transformed by a
     likelihood function.
 
     Parameters
     ----------
-    mll : ExactMarginalLogLikelihood
-        The marginal log likelihood object that computes the log
+    model : ExactGP or None, optional
+        The Gaussian Process prior model to be trained. Used to build
+        the marginal log likelihood object that computes the log
         likelihood of the observations given the distribution.
 
     Returns
@@ -132,13 +158,19 @@ def make_mll_loss(
 
     Raises
     ------
+    ValueError
+        If mll is None.
     TypeError
         If the mll doesn't return a torch.Tensor.
     """
+    if model is None:
+        raise ValueError("model must be provided when loss_type='mll'")
+
+    mll = ExactMarginalLogLikelihoodFill(model.likelihood, model)
 
     def loss_fn(
         distribution: MultivariateNormal,
-        obs: torch.Tensor
+        obs: torch.Tensor,
     ) -> torch.Tensor:
         log_likelihood = mll(distribution, obs)
         if isinstance(log_likelihood, torch.Tensor):
@@ -150,3 +182,20 @@ def make_mll_loss(
         )
 
     return loss_fn
+
+
+# ── Factory ───────────────────────────────────────────────────────────
+_LOSSES = {
+    "mll": make_mll_loss,
+    "crps": make_crps_loss,
+}
+
+
+def make_loss(loss_type: str, **kwargs: Any) -> LossFn:
+    if loss_type not in _LOSSES:
+        raise ValueError(
+            f"Unknown loss type {loss_type!r}. "
+            f"Choose from {_LOSSES}."
+        )
+
+    return _LOSSES[loss_type](**kwargs)
