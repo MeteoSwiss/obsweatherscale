@@ -12,7 +12,7 @@ include = ["CHANGELOG.rst"]
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 torch = "^2.4.1"
-gpytorch = ">=1.13,<1.15.2" # TODO: remove pin after gpytorch fixes issue #2754
+gpytorch = ">=1.13,<1.15.2" # TODO: remove pin after https://github.com/cornellius-gp/gpytorch/issues/2754 is fixed
 xarray = ">=2025.1"
 zarr = ">=3.1.3"
 matplotlib = "^3.9.2"
