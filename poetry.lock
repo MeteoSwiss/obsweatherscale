@@ -1277,18 +1277,19 @@ files = [
 
 [[package]]
 name = "gpytorch"
-version = "1.15.2"
+version = "1.15.1"
 description = "An implementation of Gaussian Processes in Pytorch"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "gpytorch-1.15.2-py3-none-any.whl", hash = "sha256:2112fdc7c0c0bf56a7f2444663cfc80fdfc3e19724399d6303a83d8efdd71e9e"},
-    {file = "gpytorch-1.15.2.tar.gz", hash = "sha256:380625e93f851b85f772b25c5fb0a6c6d2e3eb2ef667f1e566ab4f95b8775361"},
+    {file = "gpytorch-1.15.1-py3-none-any.whl", hash = "sha256:30e882a78e8c81093fab33fde9bc0a550c8dbe4a6365ade3286c961685bb8504"},
+    {file = "gpytorch-1.15.1.tar.gz", hash = "sha256:76d84d4ec5c4c3e99785f1b36043dbac2ff2d867be4afa758d5202606f0d17f9"},
 ]
 
 [package.dependencies]
-linear_operator = ">=0.6.1"
+jaxtyping = "*"
+linear_operator = ">=0.6"
 mpmath = ">=0.19,<=1.3"
 scikit-learn = "*"
 scipy = ">=1.6.0"
@@ -1561,6 +1562,21 @@ files = [
     {file = "itsdangerous-2.2.0-py3-none-any.whl", hash = "sha256:c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef"},
     {file = "itsdangerous-2.2.0.tar.gz", hash = "sha256:e0050c0b7da1eea53ffaf149c0cfbb5c6e2e2b69c4bef22c81fa6eb73e5f6173"},
 ]
+
+[[package]]
+name = "jaxtyping"
+version = "0.3.10"
+description = "Type annotations and runtime checking for shape and dtype of JAX/NumPy/PyTorch/etc. arrays."
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = [
+    {file = "jaxtyping-0.3.10-py3-none-any.whl", hash = "sha256:e611a2b0a2fc3f867f01ceb3769dee6909a6d2075625dad07d3877e9e1297188"},
+    {file = "jaxtyping-0.3.10.tar.gz", hash = "sha256:7e79b050257bb1c757ee2c3d4ba246bd54422dc785b25f24797a8ce014f6daca"},
+]
+
+[package.dependencies]
+wadler-lindig = ">=0.1.3"
 
 [[package]]
 name = "jinja2"
@@ -4375,6 +4391,22 @@ h11 = ">=0.8"
 standard = ["colorama (>=0.4) ; sys_platform == \"win32\"", "httptools (>=0.6.3)", "python-dotenv (>=0.13)", "pyyaml (>=5.1)", "uvloop (>=0.15.1) ; sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\"", "watchfiles (>=0.20)", "websockets (>=10.4)"]
 
 [[package]]
+name = "wadler-lindig"
+version = "0.1.7"
+description = "A Wadler–Lindig pretty-printer for Python."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "wadler_lindig-0.1.7-py3-none-any.whl", hash = "sha256:e3ec83835570fd0a9509f969162aeb9c65618f998b1f42918cfc8d45122fe953"},
+    {file = "wadler_lindig-0.1.7.tar.gz", hash = "sha256:81d14d3fe77d441acf3ebd7f4aefac20c74128bf460e84b512806dccf7b2cd55"},
+]
+
+[package.extras]
+dev = ["numpy", "pre-commit", "pytest"]
+docs = ["hippogriffe (==0.1.0)", "mkdocs (==1.6.1)", "mkdocs-include-exclude-files (==0.1.0)", "mkdocs-ipynb (==0.1.0)", "mkdocs-material (==9.6.7)", "mkdocstrings[python] (==0.28.3)", "pymdown-extensions (==10.14.3)"]
+
+[[package]]
 name = "waitress"
 version = "3.0.2"
 description = "Waitress WSGI server"
@@ -4618,4 +4650,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "3f0e5a198d40f67250d34cfb3d07edce672611832405d1e2ec18f11dd3a7f22d"
+content-hash = "148cea3825b8addd86b84a1be7aee5caf0196400350c33b6df1b1e4f3805382b"
