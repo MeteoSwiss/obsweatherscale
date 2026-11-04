@@ -25,7 +25,8 @@ Features:
 - Neural-augmented GP models leveraging trainable mean and kernel functions.
 - Plug-and-play data transformations, including normal standardization and quantile fitting.
 - Modular architecture for easy experimentation and extension.
-- Training routines with support for random masking and batching.
+- Training routines with support for random masking, batching, and configurable handling of missing observations.
+- Training logging to the terminal, CSV files, or MLflow.
 - Inference routines.
 - Built on PyTorch for GPU acceleration and automatic differentiation.
 
@@ -74,7 +75,7 @@ To get started, check out the example scripts in the repository:
 * ``example_train_script.py``: Demonstrates how to preprocess data, build a dataset, construct a model with customized mean and kernel functions, and train a GP model using toy data.
 * ``example_inference_script.py``: Shows how to perform inference with a trained model to obtain prior and posterior distributions, and how to sample from the distributions.
 
-These examples can be found in the ``obsweatherscale/examples/`` directory and provide a practical introduction to the library's core functionality.
+These examples can be found in the ``examples/`` directory and provide a practical introduction to the library's core functionality.
 
 Documentation
 -------------
@@ -103,7 +104,7 @@ If you use obsweatherscale in your work, please cite both this library and GPyTo
 **obsweatherscale**
 
 Lloréns Jover, I., & Zanetta, F (2024).
-obswetherscale: observation-conditioned ML downscaling of surface weather fields.
+obsweatherscale: observation-conditioned ML downscaling of surface weather fields.
 *GitHub repository: https://github.com/MeteoSwiss/obsweatherscale.*
 
 **GPyTorch**

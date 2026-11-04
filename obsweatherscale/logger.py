@@ -1,13 +1,20 @@
 """Loggers for obsweatherscale.
 
 Provides a base :class:`Logger` interface and three concrete
-implementations:
+implementations.
 
-- :class:`TerminalLogger` — logs via Python's :mod:`logging` module.
-- :class:`CSVLogger` — writes per-iteration metrics to a CSV file and
-  hyperparameters to a JSON sidecar.
-- :class:`MLflowLogger` — logs parameters and metrics to an MLflow
-  tracking server.  Requires the optional ``mlflow`` dependency.
+Classes
+-------
+Logger
+    Abstract base class for training loggers.
+TerminalLogger
+    Logs via Python's :mod:`logging` module.
+CSVLogger
+    Writes per-iteration metrics to a CSV file and hyperparameters to a
+    JSON sidecar.
+MLflowLogger
+    Logs parameters and metrics to an MLflow tracking server. Requires
+    the optional ``mlflow`` dependency.
 """
 
 import csv
@@ -114,7 +121,7 @@ class CSVLogger(Logger):
     Parameters
     ----------
     filepath : Path or str
-        Path to the CSV output file.  Parent directories are created
+        Path to the CSV output file. Parent directories are created
         automatically.
     """
 
@@ -217,6 +224,7 @@ class MLflowLogger(Logger):
         self,
         experiment_name: str | None = None,
         run_name: str | None = None,
+        run_id: str | None = None,
         parent_run_name: str | None = None,
         parent_run_id: str | None = None,
         run_tags: dict[str, str] | None = None,
@@ -247,7 +255,7 @@ class MLflowLogger(Logger):
         )
 
         # Set run kwargs
-        run_kwargs: dict[str, Any] = {"run_name": run_name}
+        run_kwargs: dict[str, Any] = {"run_id": run_id, "run_name": run_name}
         if run_tags is not None:
             run_kwargs["tags"] = run_tags
 
@@ -269,10 +277,12 @@ class MLflowLogger(Logger):
             )
 
     def _start_standard_mode(self, run_kwargs: dict[str, Any]) -> None:
-        if self._mlflow.active_run() is None:
-            self._mlflow.start_run(**run_kwargs)
+        active = self._mlflow.active_run()
+        if active is None:
+            active = self._mlflow.start_run(**run_kwargs)
             self._managed_child = True
 
+        self._run_id = active.info.run_id
         self._parent_run_id = None
 
     def _start_nested_mode(
@@ -297,7 +307,7 @@ class MLflowLogger(Logger):
                 )
 
             active_id = active.info.run_id
-            if active_id != parent_run_id:
+            if parent_run_id is not None and active_id != parent_run_id:
                 raise RuntimeError(
                     f"Active MLflow run '{active_id}' does not match "
                     f"requested parent run id '{parent_run_id}'."
@@ -305,9 +315,7 @@ class MLflowLogger(Logger):
 
         elif parent_run_id is not None:
             # Caller pinned an exact run —> skip name search entirely
-            active = self._mlflow.start_run(
-                run_id=parent_run_id, run_name=parent_run_name,
-            )
+            active = self._mlflow.start_run(run_id=parent_run_id)
 
         else:
             # Fall back to name-based search (ambiguous if duplicates)
@@ -325,8 +333,9 @@ class MLflowLogger(Logger):
 
         self._parent_run_id = active.info.run_id
 
-        self._mlflow.start_run(nested=True, **run_kwargs)
+        active_child = self._mlflow.start_run(nested=True, **run_kwargs)
         self._managed_child = True
+        self._run_id = active_child.info.run_id
 
     def _find_run_by_name(
         self,
@@ -368,6 +377,8 @@ class MLflowLogger(Logger):
         """
         if self._managed_child:  # end child run first
             self._mlflow.end_run()
+            self._managed_child = False
 
         if self._managed_parent:
             self._mlflow.end_run()
+            self._managed_parent = False
