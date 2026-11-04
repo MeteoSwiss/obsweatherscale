@@ -1,0 +1,102 @@
+obsweatherscale.transformations.quantile_fitted_transformer
+===========================================================
+
+.. py:module:: obsweatherscale.transformations.quantile_fitted_transformer
+
+.. autoapi-nested-parse::
+
+   QuantileFittedTransformer class.
+
+   Classes
+   -------
+   QuantileFittedTransformer
+       Continuous approximation of a quantile transform.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.transformations.quantile_fitted_transformer.QuantileFittedTransformer
+
+
+Module Contents
+---------------
+
+.. py:class:: QuantileFittedTransformer(a: float = 4.66628594, b: float = 0.73680252, c: float = 0.07385268)
+
+   Bases: :py:obj:`obsweatherscale.transformations.transformer.ParametricTransformer`
+
+
+   Continuous approximation of a quantile transform.
+
+   Approximates the quantile transform using:
+       f(y)    = -log(a / y - c) / b
+       f⁻¹(z) =  a / (c + exp(-b * z))
+
+   :Parameters: **a, b, c** (*float*) -- Shape parameters of the transformation. Defaults are fitted to
+                a reference quantile distribution.
+
+
+   .. py:attribute:: a
+      :value: 4.66628594
+
+
+
+   .. py:attribute:: b
+      :value: 0.73680252
+
+
+
+   .. py:attribute:: c
+      :value: 0.07385268
+
+
+
+   .. py:property:: description
+      :type: str
+
+
+      Return a short description of the quantile fitted transformation.
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+
+      Apply quantile fitted transformation to input data.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+
+      Apply inverse quantile fitted transformation to input data.
+
+
+
+   .. py:method:: transform_derivative(y: torch.Tensor) -> torch.Tensor
+
+      Compute df/dy.
+
+
+
+   .. py:method:: inv_transform_derivative(z: torch.Tensor) -> torch.Tensor
+
+      Compute df⁻¹/dz.
+
+
+
+   .. py:method:: noise_transform(z: torch.Tensor) -> torch.Tensor
+
+      Return the Jacobian factor for noise propagation at z.
+
+      Evaluates f'(f⁻¹(z)), the derivative of the forward transform at
+      the original-space value corresponding to z.
+
+      :Parameters: **z** (*torch.Tensor*) -- Targets in the transformed space.
+
+      :returns: Pointwise Jacobian factor f'(f⁻¹(z)), same shape as z.
+      :rtype: torch.Tensor
+
+
+

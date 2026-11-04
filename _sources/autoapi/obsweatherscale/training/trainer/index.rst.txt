@@ -1,0 +1,175 @@
+obsweatherscale.training.trainer
+================================
+
+.. py:module:: obsweatherscale.training.trainer
+
+.. autoapi-nested-parse::
+
+   Trainer class for Gaussian Process models.
+
+   This module provides utilities for training and validating GPyTorch-
+   based Gaussian Process models, including a random state context manager
+   for reproducible evaluation and a ``Trainer`` class that encapsulates
+   the training loop logic.
+
+   Classes
+   -------
+   RandomStateContext
+       Context manager for preserving and restoring PyTorch's RNG state.
+   Trainer
+       Orchestrates training and validation of an ``ExactGP`` model.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.training.trainer.Trainer
+
+
+Module Contents
+---------------
+
+.. py:class:: Trainer(model: gpytorch.models.ExactGP, train_loss_fn: Callable, val_loss_fn: Callable, device: torch.device, optimizer: torch.optim.optimizer.Optimizer)
+
+   Orchestrates training and validation of a GPyTorch ``ExactGP``
+   model.
+
+   ``Trainer`` wraps an ``ExactGP`` model together with its likelihood,
+   loss functions, optimiser, and target device into a single object
+   that manages the training loop. It tracks the best validation loss
+   seen so far and keeps a snapshot of the corresponding model weights.
+
+   :Parameters: * **model** (*ExactGP*) -- The Gaussian Process prior model to be trained.
+                * **train_loss_fn** (*Callable*) --
+
+                  Loss function used during training. Expected signature::
+
+                      loss = train_loss_fn(output, target)
+                * **val_loss_fn** (*Callable*) --
+
+                  Loss function used during validation. Expected signature::
+
+                      loss = val_loss_fn(output, target)
+                * **device** (*torch.device*) -- The device (``"cpu"`` or ``"cuda"``) on which tensors and the
+                  model will reside during training.
+                * **optimizer** (*Optimizer*) -- A PyTorch-compatible optimizer responsible for updating the
+                  model and likelihood parameters.
+
+   :ivar model: The GP model being trained.
+   :vartype model: ExactGP
+   :ivar best_model: A snapshot of *model* at the epoch with the lowest validation
+                     loss. Initialized to *model* at construction time.
+   :vartype best_model: ExactGP
+   :ivar likelihood: The Gaussian likelihood used for training and evaluation.
+   :vartype likelihood: _GaussianLikelihoodBase
+   :ivar train_loss_fn: The training loss function.
+   :vartype train_loss_fn: Callable
+   :ivar val_loss_fn: The validation loss function.
+   :vartype val_loss_fn: Callable
+   :ivar device: The compute device used for training.
+   :vartype device: torch.device
+   :ivar optimizer: The parameter optimiser.
+   :vartype optimizer: Optimizer
+   :ivar best_val_loss: The lowest validation loss recorded across all training
+                        iterations. Initialized to ``torch.inf``.
+   :vartype best_val_loss: float
+   :ivar nan_policy: The policy for handling NaN values in the data. Options are:
+
+                     - 'mask': removes all data points where the y is nan
+                     - 'fill': replaces nan values and keeps data points
+
+                     Is taken as the model's nan_policy attribute, and if not
+                     available, defaults to 'mask' (default gpytorch value).
+   :vartype nan_policy: str, (one of {'fill', 'mask'})
+   :ivar history: Per-iteration metrics recorded during last call to ``fit()``.
+
+   :vartype history: list[dict]
+
+   .. rubric:: Examples
+
+   >>> trainer = Trainer(
+   ...     model=gp_model,
+   ...     train_loss_fn=mll,
+   ...     val_loss_fn=rmse,
+   ...     optimizer=torch.optim.Adam(gp_model.parameters(), lr=0.01),
+   ...     device=torch.device("cuda"),
+   ... )
+
+
+   .. py:attribute:: model
+
+
+   .. py:attribute:: likelihood
+      :type:  gpytorch.likelihoods._GaussianLikelihoodBase
+
+
+   .. py:attribute:: train_loss_fn
+
+
+   .. py:attribute:: val_loss_fn
+
+
+   .. py:attribute:: device
+
+
+   .. py:attribute:: optimizer
+
+
+   .. py:attribute:: nan_policy
+
+
+   .. py:attribute:: history
+      :type:  list[dict]
+      :value: []
+
+
+
+   .. py:attribute:: best_val_loss
+
+
+   .. py:property:: best_model
+      :type: gpytorch.models.ExactGP
+
+
+      The model, holding best-validation-loss weights post-fit.
+
+
+   .. py:method:: fit(train: obsweatherscale.data.GPDataset, val_context: obsweatherscale.data.GPDataset, val_target: obsweatherscale.data.GPDataset, batch_size: int, n_iter: int, random_masking: bool = True, seed: int = 123, prec_size: int = 100, output_dir: pathlib.Path | None = None, checkpoint_every: int | None = None, verbose: bool = True, loggers: list[obsweatherscale.logger.Logger] | None = None) -> Trainer
+
+      Train the Gaussian Process model.
+
+      :Parameters: * **train** (*GPDataset*) -- The training dataset.
+                   * **val_context** (*GPDataset*) -- The validation dataset (context).
+                   * **val_target** (*GPDataset*) -- The validation dataset (target).
+                   * **batch_size** (*int*) -- The size of the batches for training.
+                   * **n_iter** (*int*) -- The number of iterations for training.
+                   * **random_masking** (*bool, default=True*) -- Whether to apply random masking to the training data.
+                   * **seed** (*int, default=123*) -- The random seed for reproducibility.
+                   * **prec_size** (*int, default=100*) -- The size of the preconditioner for the optimizer.
+                   * **output_dir** (*Path, optional, default=None*) -- The directory to save the model to. If given, the weights
+                     with the lowest validation loss so far are saved to
+                     ``best_model.pt`` whenever the validation loss improves. If
+                     None, nothing gets saved during training.
+                   * **checkpoint_every** (*int, optional, default=None*) -- If given (and *output_dir* is set), additionally save the
+                     current weights to ``model_{iter}.pt`` every
+                     *checkpoint_every* iterations. If None, no per-iteration
+                     checkpoints are saved.
+                   * **verbose** (*bool, default=True*) -- If True, prints training status (loss function values, iter,
+                     time)
+                   * **loggers** (*Sequence of TrainingLogger, optional, default=None*) -- Sequence of :class:`TrainingLogger` instances (e.g.
+                     :class:`TerminalLogger`, :class:`CSVLogger`,
+                     :class:`MLflowLogger`).  Each logger receives
+                     hyperparameters once before training and per-iteration
+                     metrics.  When *None*, no additional logging is performed.
+
+      :returns: ``self``, so calls can be chained (e.g.
+                ``trainer.fit(...).best_model``). The best model, its
+                validation loss, and per-iteration history are available
+                as attributes afterward.
+      :rtype: Trainer
+
+
+

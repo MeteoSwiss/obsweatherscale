@@ -1,0 +1,198 @@
+obsweatherscale.models.gp_model
+===============================
+
+.. py:module:: obsweatherscale.models.gp_model
+
+.. autoapi-nested-parse::
+
+   GPModel class.
+
+   This module provides :class:`GPModel`, a GPyTorch
+   :class:`~gpytorch.models.ExactGP` subclass that composes an arbitrary
+   mean function and covariance kernel into a full GP model. It extends the
+   base class with convenience methods for prior and posterior prediction
+   that handle train/eval mode switching automatically.
+
+   Classes
+   -------
+   GPModel
+       An exact Gaussian Process model with flexible mean and covariance
+       modules.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.models.gp_model.GPModel
+
+
+Module Contents
+---------------
+
+.. py:class:: GPModel(mean_module: gpytorch.means.Mean, covar_module: gpytorch.kernels.Kernel, likelihood: gpytorch.likelihoods._GaussianLikelihoodBase, train_x: torch.Tensor, train_y: torch.Tensor, nan_policy: str = 'fill')
+
+   Bases: :py:obj:`gpytorch.models.ExactGP`
+
+
+   An exact Gaussian Process model with flexible mean and covariance
+   modules.
+
+   Composes an arbitrary :class:`~gpytorch.means.Mean` and
+   :class:`~gpytorch.kernels.Kernel` into a GPyTorch
+   :class:`~gpytorch.models.ExactGP`, and extends it with high-level
+   :meth:`predict_prior` and :meth:`predict_posterior` methods that
+   handle train/eval mode switching transparently.
+
+   The prior distribution over function values at inputs
+   :math:`\mathbf{X}` is:
+
+   .. math::
+       f(\mathbf{X}) \sim \mathcal{GP}\!
+           \left(m(\mathbf{X}),\, k(\mathbf{X}, \mathbf{X})\right)
+
+   and the posterior is conditioned on context observations
+   :math:`(\mathbf{X}_c, \mathbf{y}_c)` via exact GP inference.
+
+   :Parameters: * **mean_module** (*Mean*) -- The GP prior mean function :math:`m(\mathbf{x})`.
+                * **covar_module** (*Kernel*) -- The GP prior covariance kernel
+                  :math:`k(\mathbf{x}, \mathbf{x}')`.
+                * **likelihood** (*_GaussianLikelihoodBase*) -- Gaussian likelihood used both for training and for adding
+                  observation noise to predictive distributions.
+                * **train_x** (*torch.Tensor*) -- Initial training inputs of shape ``(N, D)``. Can be updated at
+                  prediction time via :meth:`predict`.
+                * **train_y** (*torch.Tensor*) -- Initial training targets of shape ``(N,)``. Can be updated at
+                  prediction time via :meth:`predict`.
+                * **nan_policy** (*str, default='fill'*) --
+
+                  The policy for handling NaN values in the data. Options are
+                      - 'mask': removes all data points where the y is nan
+                      - 'fill': replaces nan values and keeps data points
+
+   :ivar mean_module: The prior mean function.
+   :vartype mean_module: Mean
+   :ivar covar_module: The prior covariance kernel.
+   :vartype covar_module: Kernel
+   :ivar nan_policy: The policy for handling NaN values in the data. Options are
+                         - 'mask': removes all data points where the y is nan
+                         - 'fill': replaces nan values and keeps data points
+
+   :vartype nan_policy: str
+
+   .. rubric:: Notes
+
+   Calls :class:`~gpytorch.models.ExactGP`'s ``__init__`` with the
+   training data and likelihood, then stores the mean and covariance
+   modules as sub-modules so their parameters are included in the
+   model's parameter tree.
+
+   :meth:`predict_prior` and :meth:`predict_posterior` both call
+   :meth:`predict` internally but differ in the PyTorch training mode
+   used: ``train=True`` for the prior (no conditioning on context) and
+   ``train=False`` for the posterior (exact GP conditioning). Mode
+   switching is handled by :meth:`_set_mode`, which restores the
+   previous mode even if an exception is raised.
+
+
+   .. py:attribute:: mean_module
+
+
+   .. py:attribute:: covar_module
+
+
+   .. py:attribute:: nan_policy
+      :value: 'fill'
+
+
+
+   .. py:method:: forward(x: torch.Tensor, **kwargs: Any) -> gpytorch.distributions.MultivariateNormal
+
+      Computes the GP prior distribution at inputs ``x``.
+
+      :Parameters: * **x** (*torch.Tensor*) -- Input tensor of shape ``(*, N, D)``.
+                   * **\*\*kwargs** (*Any*) -- Additional keyword arguments forwarded to the mean and
+                     covariance modules.
+
+      :returns: The GP prior distribution over function values at *x*, with
+                mean of shape ``(*, N)`` and covariance of shape
+                ``(*, N, N)``.
+      :rtype: MultivariateNormal
+
+
+
+   .. py:method:: predict(x_context: torch.Tensor, y_context: torch.Tensor, x_target: torch.Tensor | None = None) -> gpytorch.distributions.MultivariateNormal
+
+      Update training data and return the noisy predictive
+      distribution.
+
+      Sets the model's training data to *(x_context, y_context)*,
+      evaluates the GP at *x_target*, and passes the result through
+      the likelihood to obtain the noise-inclusive predictive
+      distribution. The training mode (prior vs. posterior) is
+      determined by the caller. Use :meth:`predict_prior` or
+      :meth:`predict_posterior` for the common cases.
+
+      :Parameters: * **x_context** (*torch.Tensor*) -- Context (conditioning) inputs of shape ``(N_c, D)``.
+                   * **y_context** (*torch.Tensor*) -- Context (conditioning) targets of shape ``(N_c,)``.
+                   * **x_target** (*torch.Tensor, optional*) -- Target inputs at which to evaluate the predictive
+                     distribution of shape ``(N_t, D)``.
+                     Defaults to *x_context* when ``None``.
+
+      :returns: Noisy predictive distribution (likelihood-convolved) at
+                *x_target*, with mean of shape ``(N_t,)`` and covariance of
+                shape ``(N_t, N_t)``.
+      :rtype: MultivariateNormal
+
+      :raises AssertionError: If ``self.likelihood`` is ``None``.
+
+      .. rubric:: Notes
+
+      Training data is updated in-place via
+      :meth:`~gpytorch.models.ExactGP.set_train_data` with
+      ``strict=False``, which allows the context set to differ in size
+      from the original *train_x* supplied at construction.
+
+
+
+   .. py:method:: predict_prior(x_context: torch.Tensor, y_context: torch.Tensor) -> gpytorch.distributions.MultivariateNormal
+
+      Return the noisy GP prior distribution at the context inputs.
+
+      Evaluates the prior (i.e. without conditioning on context
+      observations) by temporarily switching both the model and
+      likelihood to training mode. The context data is still used to
+      set the training inputs, but no posterior conditioning is
+      performed.
+
+      :Parameters: * **x_context** (*torch.Tensor*) -- Context inputs of shape ``(N_c, D)``.
+                   * **y_context** (*torch.Tensor*) -- Context targets of shape ``(N_c,)``.
+
+      :returns: Noisy prior predictive distribution at *x_context*, with
+                mean of shape ``(N_c,)`` and covariance of shape
+                ``(N_c, N_c)``.
+      :rtype: MultivariateNormal
+
+
+
+   .. py:method:: predict_posterior(x_context: torch.Tensor, y_context: torch.Tensor, x_target: torch.Tensor) -> gpytorch.distributions.MultivariateNormal
+
+      Return the noisy GP posterior distribution at target inputs.
+
+      Conditions the GP on *(x_context, y_context)* and evaluates the
+      resulting posterior predictive distribution at *x_target* by
+      temporarily switching both the model and likelihood to eval
+      mode.
+
+      :Parameters: * **x_context** (*torch.Tensor*) -- Context (conditioning) inputs of shape ``(N_c, D)``.
+                   * **y_context** (*torch.Tensor*) -- Context (conditioning) targets of shape ``(N_c,)``.
+                   * **x_target** (*torch.Tensor*) -- Target inputs of shape ``(N_t, D)``.
+
+      :returns: Noisy posterior predictive distribution at *x_target*, with
+                mean of shape ``(N_t,)`` and covariance of shape
+                ``(N_t, N_t)``.
+      :rtype: MultivariateNormal
+
+
+

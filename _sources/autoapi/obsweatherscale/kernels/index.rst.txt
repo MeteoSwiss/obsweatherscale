@@ -1,0 +1,234 @@
+obsweatherscale.kernels
+=======================
+
+.. py:module:: obsweatherscale.kernels
+
+.. autoapi-nested-parse::
+
+   Custom GP kernels for obsweatherscale.
+
+   All kernels subclass :class:`gpytorch.kernels.Kernel` and are compatible
+   with GPyTorch's composable kernel algebra (addition, multiplication,
+   scaling).
+
+   Classes
+   -------
+   NeuralKernel
+       A GPyTorch kernel that applies a neural feature map before a base
+       kernel.
+   ScaledRBFKernel
+       A scaled RBF kernel with optional ARD, priors, constraints, and
+       parameter freezing.
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/kernels/neural_kernel/index
+   /autoapi/obsweatherscale/kernels/scaled_rbf_kernel/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.kernels.NeuralKernel
+   obsweatherscale.kernels.ScaledRBFKernel
+
+
+Package Contents
+----------------
+
+.. py:class:: NeuralKernel(net: torch.nn.Module, kernel: gpytorch.kernels.Kernel)
+
+   Bases: :py:obj:`gpytorch.kernels.Kernel`
+
+
+   A kernel that applies a learned neural feature map prior to a
+   base kernel.
+
+   ``NeuralKernel`` wraps an arbitrary :class:`torch.nn.Module` and a
+   GPyTorch :class:`~gpytorch.kernels.Kernel` into a single composable
+   kernel. On each forward pass, the input data is transformed by the
+   network into a learned feature space; the base kernel is then
+   applied on the resulting representations.
+
+   :Parameters: * **net** (*torch.nn.Module*) -- Neural network used to project inputs into the feature space.
+                  Must accept tensors of shape ``(*, D_in)`` and return tensors of
+                  shape ``(*, D_out)``, where ``D_out`` is compatible with the
+                  expected input dimensionality of *kernel*.
+                * **kernel** (*Kernel*) -- Base GPyTorch kernel evaluated on the projected representations.
+                  Any :class:`~gpytorch.kernels.Kernel` subclass is supported
+                  (e.g. :class:`~gpytorch.kernels.RBFKernel`,
+                  :class:`~gpytorch.kernels.MaternKernel`).
+
+   :ivar net: The neural feature extractor.
+   :vartype net: torch.nn.Module
+   :ivar kernel: The base kernel applied after the feature transformation.
+
+   :vartype kernel: Kernel
+
+   .. rubric:: Notes
+
+   ``NeuralKernel`` subclasses :class:`~gpytorch.kernels.Kernel`. Its
+   parameters (both ``net`` weights and ``kernel`` hyperparameters) are
+   registered as part of the GP model's parameter tree and are updated
+   jointly during optimisation.
+
+   The output dimensionality of *net* must match the input
+   dimensionality expected by *kernel*. No shape validation is
+   performed at construction time; a mismatch will surface as a runtime
+   error during the first forward pass.
+
+   .. todo::
+       Add literature reference for the neural kernel construction.
+
+
+   .. py:attribute:: net
+
+
+   .. py:attribute:: kernel
+
+
+   .. py:method:: forward(x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any) -> torch.Tensor | linear_operator.operators.LinearOperator
+
+      Computes the covariance between :math:`\mathbf x_1` and :math:`\mathbf x_2`.
+      This method should be implemented by all Kernel subclasses.
+
+      :param x1: First set of data (... x N x D).
+      :param x2: Second set of data (... x M x D).
+      :param diag: Should the Kernel compute the whole kernel, or just the diag?
+          If True, it must be the case that `x1 == x2`. (Default: False.)
+      :param last_dim_is_batch: If True, treat the last dimension
+          of `x1` and `x2` as another batch dimension.
+          (Useful for additive structure over the dimensions). (Default: False.)
+
+      :return: The kernel matrix or vector. The shape depends on the kernel's evaluation mode:
+
+          * `full_covar`: `... x N x M`
+          * `full_covar` with `last_dim_is_batch=True`: `... x K x N x M`
+          * `diag`: `... x N`
+          * `diag` with `last_dim_is_batch=True`: `... x K x N`
+
+
+
+.. py:class:: ScaledRBFKernel(variance: torch.Tensor | None = None, lengthscale: torch.Tensor | None = None, ard_num_dims: int | None = None, batch_shape: torch.Size | None = None, active_dims: tuple[int, Ellipsis] | None = None, lengthscale_prior: gpytorch.priors.Prior | None = None, lengthscale_constraint: gpytorch.constraints.Interval | None = None, outputscale_prior: gpytorch.priors.Prior | None = None, outputscale_constraint: gpytorch.constraints.Interval | None = None, train_lengthscale: bool = True, train_variance: bool = True, eps: float = 1e-06, **kwargs: Any)
+
+   Bases: :py:obj:`gpytorch.kernels.Kernel`
+
+
+   A scaled radial basis function (RBF) kernel.
+
+   Wraps :class:`~gpytorch.kernels.RBFKernel` inside a
+   :class:`~gpytorch.kernels.ScaleKernel` to implement the kernel:
+
+   .. math::
+       k(\mathbf{x}_1, \mathbf{x}_2) =
+           \sigma^2 \exp\!\left(
+               -\frac{1}{2}
+               (\mathbf{x}_1 - \mathbf{x}_2)^{\top}
+               \mathbf{L}^{-2}
+               (\mathbf{x}_1 - \mathbf{x}_2)
+           \right)
+
+   where :math:`\sigma^2` is the output variance and :math:`\mathbf{L}`
+   is a diagonal lengthscale matrix (scalar when ARD is disabled).
+
+   Both hyperparameters can be initialised to a fixed value and
+   optionally frozen (i.e. made non-trainable) during training, which
+   is useful for partially-fixed kernel configurations.
+
+   :Parameters: * **variance** (*torch.Tensor, optional*) -- Initial value for the output variance :math:`\sigma^2`.
+                  If ``None``, the GPyTorch default initialisation is used.
+                * **lengthscale** (*torch.Tensor, optional*) -- Initial value for the lengthscale(s). A scalar tensor sets a
+                  single shared lengthscale; a 1-D tensor of length ``D``
+                  activates ARD with one lengthscale per dimension (and
+                  ``ard_num_dims`` is inferred automatically). If ``None``, the
+                  GPyTorch default initialisation is used.
+                * **ard_num_dims** (*int, optional*) -- Number of ARD lengthscale dimensions. Ignored when *lengthscale*
+                  is a multi-element tensor, in which case ``ard_num_dims`` is
+                  inferred from ``lengthscale.numel()``.
+                * **batch_shape** (*torch.Size, optional*) -- Batch shape for kernel, enabling independent kernel instances
+                  across a batch dimension (e.g. for multi-output GPs).
+                * **active_dims** (*tuple[int, ...], optional*) -- Indices of the input dimensions this kernel should operate on.
+                  When provided alongside a multi-element *lengthscale*, the
+                  tensor length must match ``len(active_dims)``.
+                * **lengthscale_prior** (*Prior, optional*) -- GPyTorch prior placed on the lengthscale parameter.
+                * **lengthscale_constraint** (*Interval, optional*) -- GPyTorch constraint applied to the lengthscale parameter (e.g.
+                  :class:`~gpytorch.constraints.Positive`)
+                * **outputscale_prior** (*Prior, optional*) -- GPyTorch prior placed on the output variance parameter.
+                * **outputscale_constraint** (*Interval, optional*) -- GPyTorch constraint applied to the output variance parameter.
+                * **train_lengthscale** (*bool, default=True*) -- If ``False``, the lengthscale is frozen and will not receive
+                  gradient updates. *lengthscale* must be provided when this is
+                  ``False``.
+                * **train_variance** (*bool, default=True*) -- If ``False``, the output variance is frozen and will not receive
+                  gradient updates. *variance* must be provided when this is
+                  ``False``.
+                * **eps** (*float, default=1e-6*) -- Numerical jitter added to the diagonal of the kernel matrix for
+                  stability. Forwarded directly to
+                  :class:`~gpytorch.kernels.RBFKernel`.
+                * **\*\*kwargs** (*Any*) -- Additional keyword arguments forwarded to
+                  :class:`~gpytorch.kernels.RBFKernel`.
+
+   :ivar kernel: The composed kernel: a :class:`~gpytorch.kernels.ScaleKernel`
+                 wrapping an :class:`~gpytorch.kernels.RBFKernel`. Access inner
+                 RBF kernel via ``self.kernel.base_kernel``.
+
+   :vartype kernel: ScaleKernel
+
+   :raises ValueError: If *active_dims* is provided alongside a multi-element
+       *lengthscale* whose length does not match ``len(active_dims)``.
+   :raises ValueError: If ``train_lengthscale=False`` but *lengthscale* is ``None`` (no
+       initial value to freeze to).
+   :raises ValueError: If ``train_variance=False`` but *variance* is ``None`` (no
+       initial value to freeze to).
+
+   .. rubric:: Notes
+
+   Freezing a parameter is implemented by calling
+   ``requires_grad_(False)`` on the corresponding raw (unconstrained)
+   parameter tensor. This means the parameter is still present in the
+   model's ``state_dict`` and can be saved/loaded normally, but it will
+   not appear in ``model.parameters()`` for gradient-based optimisers.
+
+
+   .. py:attribute:: kernel
+
+
+   .. py:method:: forward(x1: torch.Tensor, x2: torch.Tensor, *params: Any, **kwargs: Any) -> torch.Tensor | linear_operator.operators.LinearOperator
+
+      Computes the covariance between :math:`\mathbf x_1` and :math:`\mathbf x_2`.
+      This method should be implemented by all Kernel subclasses.
+
+      :param x1: First set of data (... x N x D).
+      :param x2: Second set of data (... x M x D).
+      :param diag: Should the Kernel compute the whole kernel, or just the diag?
+          If True, it must be the case that `x1 == x2`. (Default: False.)
+      :param last_dim_is_batch: If True, treat the last dimension
+          of `x1` and `x2` as another batch dimension.
+          (Useful for additive structure over the dimensions). (Default: False.)
+
+      :return: The kernel matrix or vector. The shape depends on the kernel's evaluation mode:
+
+          * `full_covar`: `... x N x M`
+          * `full_covar` with `last_dim_is_batch=True`: `... x K x N x M`
+          * `diag`: `... x N`
+          * `diag` with `last_dim_is_batch=True`: `... x K x N`
+
+
+
+   .. py:method:: extra_repr() -> str
+
+      Return the extra representation of the module.
+
+      To print customized extra information, you should re-implement
+      this method in your own modules. Both single-line and multi-line
+      strings are acceptable.
+
+
+

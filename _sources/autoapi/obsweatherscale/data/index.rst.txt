@@ -1,0 +1,95 @@
+obsweatherscale.data
+====================
+
+.. py:module:: obsweatherscale.data
+
+.. autoapi-nested-parse::
+
+   Datasets for Gaussian Process models.
+
+   This module provides an abstract base class for datasets used in
+   Gaussian Process models. It extends the PyTorch Dataset class with
+   additional functionality specific to Gaussian Processes.
+
+   Classes
+   -------
+   GPDataset
+       Abstract base class for Gaussian Process datasets.
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/data/dataset/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.data.GPDataset
+
+
+Package Contents
+----------------
+
+.. py:class:: GPDataset
+
+   Bases: :py:obj:`torch.utils.data.Dataset`, :py:obj:`abc.ABC`
+
+
+   Abstract base class for Gaussian Process datasets.
+
+   Extends :class:`torch.utils.data.Dataset` with a standardized
+   interface for datasets consumed by Gaussian Process models. Beyond
+   the standard PyTorch ``__len__`` / ``__getitem__`` protocol,
+   subclasses are expected to expose the full dataset (input tensor
+   ``x`` and target tensor ``y``), and implement device transfer so
+   that dataset tensors can be moved alongside a model.
+
+   .. rubric:: Notes
+
+   Subclasses must implement all methods decorated with
+   ``@abstractmethod``. Attempting to instantiate ``GPDataset``
+   directly will raise :class:`TypeError`.
+
+   Subclasses should call ``super().__init__()`` in their own
+   ``__init__`` if they rely on any initialisation logic defined by
+   :class:`torch.utils.data.Dataset`.
+
+   .. seealso::
+
+      :obj:`torch.utils.data.Dataset`
+          PyTorch's base dataset class
+
+
+   .. py:method:: get_dataset() -> tuple[torch.Tensor, Ellipsis]
+      :abstractmethod:
+
+
+      Get the entire dataset as tensors.
+
+      :returns: A tuple of tensors representing the entire dataset.
+                Typically contains input features and target values.
+      :rtype: tuple[torch.Tensor, ...]
+
+
+
+   .. py:method:: to(device: torch.device) -> None
+      :abstractmethod:
+
+
+      Move the dataset to the specified device.
+
+      :Parameters: **device** (*torch.device*) -- The device to move the dataset to (e.g., CPU or CUDA).
+
+      :returns: The dataset instance moved to the specified device.
+      :rtype: self
+
+
+

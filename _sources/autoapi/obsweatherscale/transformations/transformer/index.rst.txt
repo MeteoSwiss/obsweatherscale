@@ -1,0 +1,131 @@
+obsweatherscale.transformations.transformer
+===========================================
+
+.. py:module:: obsweatherscale.transformations.transformer
+
+.. autoapi-nested-parse::
+
+   Data transformation classes for obsweatherscale.
+
+   Provides a base :class:`Transformer` and two child abstract
+   implementations: one fitted transformations that learn parameters from
+   data and one for parametric transformations with fixed parameters.
+
+   Classes
+   -------
+   Transformer
+       Abstract base class for all data transformations.
+   ParametricTransformer
+       Base class for transformers with fixed parameters (no fitting
+       needed).
+   FittedTransformer
+       Base class for transformers that learn parameters from data.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.transformations.transformer.Transformer
+   obsweatherscale.transformations.transformer.ParametricTransformer
+   obsweatherscale.transformations.transformer.FittedTransformer
+
+
+Module Contents
+---------------
+
+.. py:class:: Transformer
+
+   Abstract base class for all data transformations.
+
+   All transformers must implement:
+     - transform: forward transformation y → z
+     - inverse_transform: backward transformation z → y
+     - noise_transform: how noise scales under the transformation
+     - description: human-readable summary
+
+
+   .. py:property:: description
+      :type: str
+
+      :abstractmethod:
+
+
+      Return a short description of the transformation.
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply transformation to the input data.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply inverse transformation to input data.
+
+
+
+   .. py:method:: noise_transform(z: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Return the Jacobian factor for noise propagation at z.
+
+      Given targets in the transformed space z = f(y), returns
+      f'(f⁻¹(z)), the local derivative of the forward transform
+      evaluated at the corresponding original-space value. This factor
+      is used to scale noise variance under the transformation:
+
+          σ²_z = σ²_y · [f'(f⁻¹(z))]²
+
+      :Parameters: **z** (*torch.Tensor*) -- Targets in the transformed space.
+
+      :returns: Pointwise Jacobian factor f'(f⁻¹(z)), same shape as z.
+      :rtype: torch.Tensor
+
+
+
+.. py:class:: ParametricTransformer
+
+   Bases: :py:obj:`Transformer`, :py:obj:`abc.ABC`
+
+
+   Base class for transformers with fixed parameters (no fitting needed).
+
+   Parameters are set at construction time. No data is required before
+   calling transform().
+
+
+.. py:class:: FittedTransformer
+
+   Bases: :py:obj:`Transformer`, :py:obj:`abc.ABC`
+
+
+   Base class for transformers that learn parameters from data.
+
+   Subclasses must call fit() before transform(), or provide sensible
+   defaults that make the unfitted state explicit.
+
+
+   .. py:method:: fit(data: torch.Tensor) -> None
+      :abstractmethod:
+
+
+      Fit transformation parameters to input data.
+
+
+
+   .. py:property:: is_fitted
+      :type: bool
+
+
+      Getter of fitted state.
+
+

@@ -1,0 +1,103 @@
+obsweatherscale.transformations.standardizer
+============================================
+
+.. py:module:: obsweatherscale.transformations.standardizer
+
+.. autoapi-nested-parse::
+
+   Standardization transformation class.
+
+   Classes
+   -------
+   Standardizer
+       Standardization transformation (zero mean, unit variance).
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.transformations.standardizer.Standardizer
+
+
+Module Contents
+---------------
+
+.. py:class:: Standardizer(data: torch.Tensor | None = None, mean: float | torch.Tensor = 0.0, std: float | torch.Tensor = 1.0, dims: tuple[int, Ellipsis] | int | None = None)
+
+   Bases: :py:obj:`obsweatherscale.transformations.transformer.FittedTransformer`
+
+
+   Standardization transformation (zero mean, unit variance).
+
+   Can be initialized in two ways:
+     1. Pass ``data`` to fit immediately at construction time.
+     2. Pass explicit ``mean`` / ``std``, or leave as defaults and call
+        ``fit()`` later.
+
+   :Parameters: * **data** (*torch.Tensor, optional*) -- If provided, ``fit()`` is called immediately on this data.
+                * **mean** (*float or torch.Tensor*) -- Initial mean. Overwritten by ``fit()``. Default is 0.
+                * **std** (*float or torch.Tensor*) -- Initial standard deviation. Overwritten by ``fit()``. Default is 1.
+                * **dims** (*tuple[int, ...] or int, optional*) -- Dimensions over which to compute mean and std.
+                  If None, all dimensions are used.
+
+
+   .. py:attribute:: dims
+      :value: None
+
+
+
+   .. py:attribute:: mean
+
+
+   .. py:attribute:: std
+
+
+   .. py:property:: description
+      :type: str
+
+
+      Return a short description of the sandard normalization.
+
+
+   .. py:method:: fit(data: torch.Tensor) -> None
+
+      Fit mean and standard deviation from input data.
+
+      :Parameters: **data** (*torch.Tensor*) -- The data to be standardized.
+
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+
+      Apply standardization: z = (y - mean) / std.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+
+      Invert standardization: y = z * std + mean.
+
+
+
+   .. py:method:: transform_derivative(y: torch.Tensor) -> torch.Tensor
+
+
+   .. py:method:: noise_transform(z: torch.Tensor) -> torch.Tensor
+
+      Return the Jacobian factor for noise propagation at z.
+
+      For standardization f(y) = (y - μ) / σ, the derivative
+      f'(y) = 1/σ is constant, so the Jacobian factor is independent
+      of z.
+
+      :Parameters: **z** (*torch.Tensor*) -- Targets in the transformed space. Used only to determine the
+                   output shape; the values do not affect the result.
+
+      :returns: Tensor of shape matching z, filled with 1/σ.
+      :rtype: torch.Tensor
+
+
+

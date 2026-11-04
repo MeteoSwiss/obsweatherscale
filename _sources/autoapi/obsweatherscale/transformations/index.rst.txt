@@ -1,0 +1,300 @@
+obsweatherscale.transformations
+===============================
+
+.. py:module:: obsweatherscale.transformations
+
+.. autoapi-nested-parse::
+
+   Transformations for input and output Gaussian Processes data.
+
+   This module provides a set of transformations that can be applied to
+   the input and output data of Gaussian Process models. These
+   transformations include fitted transformations that learn parameters
+   from data, and parametric transformations with fixed parameters.
+
+   Classes
+   -------
+   Transformer
+       Abstract base class for all data transformations.
+   ParametricTransformer
+       Base class for transformers with fixed parameters (no fitting
+       needed).
+   FittedTransformer
+       Base class for transformers that learn parameters from data.
+   QuantileFittedTransformer
+       Continuous approximation of a quantile transform.
+   Standardizer
+       Standardization transformation (zero mean, unit variance).
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/obsweatherscale/transformations/quantile_fitted_transformer/index
+   /autoapi/obsweatherscale/transformations/standardizer/index
+   /autoapi/obsweatherscale/transformations/transformer/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   obsweatherscale.transformations.QuantileFittedTransformer
+   obsweatherscale.transformations.Standardizer
+   obsweatherscale.transformations.Transformer
+   obsweatherscale.transformations.FittedTransformer
+   obsweatherscale.transformations.ParametricTransformer
+
+
+Package Contents
+----------------
+
+.. py:class:: QuantileFittedTransformer(a: float = 4.66628594, b: float = 0.73680252, c: float = 0.07385268)
+
+   Bases: :py:obj:`obsweatherscale.transformations.transformer.ParametricTransformer`
+
+
+   Continuous approximation of a quantile transform.
+
+   Approximates the quantile transform using:
+       f(y)    = -log(a / y - c) / b
+       f⁻¹(z) =  a / (c + exp(-b * z))
+
+   :Parameters: **a, b, c** (*float*) -- Shape parameters of the transformation. Defaults are fitted to
+                a reference quantile distribution.
+
+
+   .. py:attribute:: a
+      :value: 4.66628594
+
+
+
+   .. py:attribute:: b
+      :value: 0.73680252
+
+
+
+   .. py:attribute:: c
+      :value: 0.07385268
+
+
+
+   .. py:property:: description
+      :type: str
+
+
+      Return a short description of the quantile fitted transformation.
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+
+      Apply quantile fitted transformation to input data.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+
+      Apply inverse quantile fitted transformation to input data.
+
+
+
+   .. py:method:: transform_derivative(y: torch.Tensor) -> torch.Tensor
+
+      Compute df/dy.
+
+
+
+   .. py:method:: inv_transform_derivative(z: torch.Tensor) -> torch.Tensor
+
+      Compute df⁻¹/dz.
+
+
+
+   .. py:method:: noise_transform(z: torch.Tensor) -> torch.Tensor
+
+      Return the Jacobian factor for noise propagation at z.
+
+      Evaluates f'(f⁻¹(z)), the derivative of the forward transform at
+      the original-space value corresponding to z.
+
+      :Parameters: **z** (*torch.Tensor*) -- Targets in the transformed space.
+
+      :returns: Pointwise Jacobian factor f'(f⁻¹(z)), same shape as z.
+      :rtype: torch.Tensor
+
+
+
+.. py:class:: Standardizer(data: torch.Tensor | None = None, mean: float | torch.Tensor = 0.0, std: float | torch.Tensor = 1.0, dims: tuple[int, Ellipsis] | int | None = None)
+
+   Bases: :py:obj:`obsweatherscale.transformations.transformer.FittedTransformer`
+
+
+   Standardization transformation (zero mean, unit variance).
+
+   Can be initialized in two ways:
+     1. Pass ``data`` to fit immediately at construction time.
+     2. Pass explicit ``mean`` / ``std``, or leave as defaults and call
+        ``fit()`` later.
+
+   :Parameters: * **data** (*torch.Tensor, optional*) -- If provided, ``fit()`` is called immediately on this data.
+                * **mean** (*float or torch.Tensor*) -- Initial mean. Overwritten by ``fit()``. Default is 0.
+                * **std** (*float or torch.Tensor*) -- Initial standard deviation. Overwritten by ``fit()``. Default is 1.
+                * **dims** (*tuple[int, ...] or int, optional*) -- Dimensions over which to compute mean and std.
+                  If None, all dimensions are used.
+
+
+   .. py:attribute:: dims
+      :value: None
+
+
+
+   .. py:attribute:: mean
+
+
+   .. py:attribute:: std
+
+
+   .. py:property:: description
+      :type: str
+
+
+      Return a short description of the sandard normalization.
+
+
+   .. py:method:: fit(data: torch.Tensor) -> None
+
+      Fit mean and standard deviation from input data.
+
+      :Parameters: **data** (*torch.Tensor*) -- The data to be standardized.
+
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+
+      Apply standardization: z = (y - mean) / std.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+
+      Invert standardization: y = z * std + mean.
+
+
+
+   .. py:method:: transform_derivative(y: torch.Tensor) -> torch.Tensor
+
+
+   .. py:method:: noise_transform(z: torch.Tensor) -> torch.Tensor
+
+      Return the Jacobian factor for noise propagation at z.
+
+      For standardization f(y) = (y - μ) / σ, the derivative
+      f'(y) = 1/σ is constant, so the Jacobian factor is independent
+      of z.
+
+      :Parameters: **z** (*torch.Tensor*) -- Targets in the transformed space. Used only to determine the
+                   output shape; the values do not affect the result.
+
+      :returns: Tensor of shape matching z, filled with 1/σ.
+      :rtype: torch.Tensor
+
+
+
+.. py:class:: Transformer
+
+   Abstract base class for all data transformations.
+
+   All transformers must implement:
+     - transform: forward transformation y → z
+     - inverse_transform: backward transformation z → y
+     - noise_transform: how noise scales under the transformation
+     - description: human-readable summary
+
+
+   .. py:property:: description
+      :type: str
+
+      :abstractmethod:
+
+
+      Return a short description of the transformation.
+
+
+   .. py:method:: transform(y: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply transformation to the input data.
+
+
+
+   .. py:method:: inverse_transform(z: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Apply inverse transformation to input data.
+
+
+
+   .. py:method:: noise_transform(z: torch.Tensor) -> torch.Tensor
+      :abstractmethod:
+
+
+      Return the Jacobian factor for noise propagation at z.
+
+      Given targets in the transformed space z = f(y), returns
+      f'(f⁻¹(z)), the local derivative of the forward transform
+      evaluated at the corresponding original-space value. This factor
+      is used to scale noise variance under the transformation:
+
+          σ²_z = σ²_y · [f'(f⁻¹(z))]²
+
+      :Parameters: **z** (*torch.Tensor*) -- Targets in the transformed space.
+
+      :returns: Pointwise Jacobian factor f'(f⁻¹(z)), same shape as z.
+      :rtype: torch.Tensor
+
+
+
+.. py:class:: FittedTransformer
+
+   Bases: :py:obj:`Transformer`, :py:obj:`abc.ABC`
+
+
+   Base class for transformers that learn parameters from data.
+
+   Subclasses must call fit() before transform(), or provide sensible
+   defaults that make the unfitted state explicit.
+
+
+   .. py:method:: fit(data: torch.Tensor) -> None
+      :abstractmethod:
+
+
+      Fit transformation parameters to input data.
+
+
+
+   .. py:property:: is_fitted
+      :type: bool
+
+
+      Getter of fitted state.
+
+
+.. py:class:: ParametricTransformer
+
+   Bases: :py:obj:`Transformer`, :py:obj:`abc.ABC`
+
+
+   Base class for transformers with fixed parameters (no fitting needed).
+
+   Parameters are set at construction time. No data is required before
+   calling transform().
+
+
